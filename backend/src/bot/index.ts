@@ -109,6 +109,23 @@ ${avgMoodEmoji} Среднее настроение: ${checkinStats.avgMood}/5
   await ctx.reply(text, { parse_mode: 'Markdown', ...keyboard });
 });
 
+// ===== КОМАНДА /chatid =====
+bot.command('chatid', async (ctx) => {
+  const chatId = ctx.chat?.id;
+  const chatType = ctx.chat?.type;
+  const chatTitle = (ctx.chat as any)?.title || 'Личный чат';
+
+  await ctx.reply(
+    `📋 *Информация о чате*\n\n` +
+    `🆔 Chat ID: \`${chatId}\`\n` +
+    `📝 Тип: ${chatType}\n` +
+    `💬 Название: ${chatTitle}\n\n` +
+    `Скопируйте Chat ID и добавьте в переменные Railway:\n` +
+    `\`ADMIN_CHAT_ID=${chatId}\``,
+    { parse_mode: 'Markdown' }
+  );
+});
+
 // ===== КОМАНДА /app =====
 bot.command('app', async (ctx) => {
   const keyboard = Markup.inlineKeyboard([
