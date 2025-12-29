@@ -58,6 +58,7 @@ bot.start(async (ctx) => {
     [Markup.button.webApp('📱 Открыть приложение', config.app.webappUrl)],
     [Markup.button.callback('📊 Мой прогресс', 'my_progress')],
     [Markup.button.callback('✅ Чекин сегодня', 'quick_checkin')],
+    [Markup.button.callback('📸 Загрузить фото', 'start_photo_session')],
   ]);
 
   await ctx.reply(welcomeText, keyboard);
@@ -107,6 +108,43 @@ ${avgMoodEmoji} Среднее настроение: ${checkinStats.avgMood}/5
   ]);
 
   await ctx.reply(text, { parse_mode: 'Markdown', ...keyboard });
+});
+
+// ===== КОМАНДА /photo =====
+bot.command('photo', async (ctx) => {
+  const user = ctx.user!;
+
+  // Проверяем, есть ли замер текущей недели
+  const measurement = await measurementService.getCurrentWeekMeasurement(user.id);
+
+  if (!measurement) {
+    const keyboard = Markup.inlineKeyboard([
+      [Markup.button.webApp('📱 Внести замеры', config.app.webappUrl)],
+    ]);
+    return ctx.reply(
+      '📸 Чтобы загрузить фото прогресса, сначала внеси данные о весе в приложении.',
+      keyboard
+    );
+  }
+
+  // Начинаем фото-сессию
+  photoSessionState.set(ctx.from!.id, {
+    step: 'front',
+    measurementId: measurement.id,
+    photos: {},
+  });
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('⏭️ Пропустить', 'photo_skip')],
+    [Markup.button.callback('❌ Отмена', 'photo_cancel')],
+  ]);
+
+  await ctx.reply(
+    `📸 *Загрузка фото прогресса*\n\n` +
+    `Шаг 1/3: Отправь фото *СПЕРЕДИ*\n\n` +
+    `💡 Совет: встань ровно, руки вдоль тела, хорошее освещение`,
+    { parse_mode: 'Markdown', ...keyboard }
+  );
 });
 
 // ===== КОМАНДА /chatid =====
@@ -186,6 +224,18 @@ bot.action(/workout_(.+)/, async (ctx) => {
 
 // Состояние чекина для каждого пользователя
 const checkinState = new Map<number, Partial<CheckinForm>>();
+
+// Состояние фото-сессии для каждого пользователя
+interface PhotoSession {
+  step: 'front' | 'side' | 'back' | 'done';
+  measurementId: string;
+  photos: {
+    front?: string;
+    side?: string;
+    back?: string;
+  };
+}
+const photoSessionState = new Map<number, PhotoSession>();
 
 // Обновлённые обработчики с сохранением состояния
 bot.action(/workout_(.+)/, async (ctx) => {
@@ -464,20 +514,73 @@ bot.on(message('photo'), async (ctx) => {
       .from('progress-photos')
       .getPublicUrl(fileName);
 
-    // Получаем или создаём замер текущей недели
+    // Проверяем, есть ли активная фото-сессия
+    const session = photoSessionState.get(ctx.from!.id);
+
+    if (session && session.step !== 'done') {
+      // Работаем в режиме фото-сессии
+      const currentStep = session.step;
+      session.photos[currentStep] = urlData.publicUrl;
+
+      // Сохраняем фото в БД
+      await measurementService.updatePhotos(session.measurementId, {
+        [currentStep]: urlData.publicUrl,
+      });
+
+      // Переходим к следующему шагу
+      const stepOrder: Array<'front' | 'side' | 'back'> = ['front', 'side', 'back'];
+      const currentIndex = stepOrder.indexOf(currentStep);
+      const stepNames = { front: 'СПЕРЕДИ', side: 'СБОКУ', back: 'СЗАДИ' };
+
+      if (currentIndex < 2) {
+        // Есть следующий шаг
+        const nextStep = stepOrder[currentIndex + 1];
+        session.step = nextStep;
+
+        const keyboard = Markup.inlineKeyboard([
+          [Markup.button.callback('⏭️ Пропустить', 'photo_skip')],
+          [Markup.button.callback('✅ Завершить', 'photo_finish')],
+        ]);
+
+        await ctx.reply(
+          `✅ Фото ${stepNames[currentStep]} сохранено!\n\n` +
+          `📸 Шаг ${currentIndex + 2}/3: Отправь фото *${stepNames[nextStep]}*`,
+          { parse_mode: 'Markdown', ...keyboard }
+        );
+      } else {
+        // Это было последнее фото
+        session.step = 'done';
+        photoSessionState.delete(ctx.from!.id);
+
+        const keyboard = Markup.inlineKeyboard([
+          [Markup.button.webApp('📱 Посмотреть в приложении', config.app.webappUrl)],
+        ]);
+
+        await ctx.reply(
+          `✅ Фото ${stepNames[currentStep]} сохранено!\n\n` +
+          `🎉 *Все фото загружены!*\n` +
+          `Ты можешь посмотреть их в приложении на странице замеров.`,
+          { parse_mode: 'Markdown', ...keyboard }
+        );
+      }
+      return;
+    }
+
+    // Обычный режим (без фото-сессии)
     let measurement = await measurementService.getCurrentWeekMeasurement(user.id);
 
     if (!measurement) {
       await ctx.reply(
-        '📸 Фото получено!\n\nЧтобы сохранить его к замерам, сначала внеси данные о весе и обхватах в приложении.',
+        '📸 Фото получено!\n\nЧтобы сохранить его к замерам, сначала внеси данные о весе в приложении.',
         Markup.inlineKeyboard([
           [Markup.button.webApp('📱 Внести замеры', config.app.webappUrl)],
+          [Markup.button.callback('📸 Загрузить фото', 'start_photo_session')],
         ])
       );
       return;
     }
 
-    // Определяем тип фото (фронт/бок/спина) по тексту сообщения или порядку
+    // Определяем тип фото по подписи или автоматически
     const caption = ctx.message.caption?.toLowerCase() || '';
     let photoType: 'front' | 'side' | 'back' = 'front';
 
@@ -498,12 +601,120 @@ bot.on(message('photo'), async (ctx) => {
       [photoType]: urlData.publicUrl,
     });
 
-    const photoNames = { front: 'Фронт', side: 'Бок', back: 'Спина' };
-    await ctx.reply(`✅ Фото "${photoNames[photoType]}" сохранено к замерам недели ${getCurrentWeek()}!`);
+    const photoNames = { front: 'Спереди', side: 'Сбоку', back: 'Сзади' };
+    await ctx.reply(
+      `✅ Фото "${photoNames[photoType]}" сохранено!\n\n` +
+      `💡 Используй /photo для пошаговой загрузки всех фото.`
+    );
   } catch (error) {
     console.error('Photo upload error:', error);
     await ctx.reply('❌ Ошибка при сохранении фото. Попробуй ещё раз.');
   }
+});
+
+// ===== CALLBACKS: Фото-сессия =====
+bot.action('photo_skip', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const session = photoSessionState.get(ctx.from!.id);
+  if (!session || session.step === 'done') {
+    return ctx.editMessageText('Фото-сессия не активна. Используй /photo чтобы начать.');
+  }
+
+  const stepOrder: Array<'front' | 'side' | 'back'> = ['front', 'side', 'back'];
+  const currentIndex = stepOrder.indexOf(session.step);
+  const stepNames = { front: 'СПЕРЕДИ', side: 'СБОКУ', back: 'СЗАДИ' };
+
+  if (currentIndex < 2) {
+    const nextStep = stepOrder[currentIndex + 1];
+    session.step = nextStep;
+
+    const keyboard = Markup.inlineKeyboard([
+      [Markup.button.callback('⏭️ Пропустить', 'photo_skip')],
+      [Markup.button.callback('✅ Завершить', 'photo_finish')],
+    ]);
+
+    await ctx.editMessageText(
+      `⏭️ Пропущено.\n\n` +
+      `📸 Шаг ${currentIndex + 2}/3: Отправь фото *${stepNames[nextStep]}*`,
+      { parse_mode: 'Markdown', ...keyboard }
+    );
+  } else {
+    // Пропустили последний шаг
+    session.step = 'done';
+    photoSessionState.delete(ctx.from!.id);
+
+    const uploadedCount = Object.values(session.photos).filter(Boolean).length;
+
+    const keyboard = Markup.inlineKeyboard([
+      [Markup.button.webApp('📱 Посмотреть в приложении', config.app.webappUrl)],
+    ]);
+
+    await ctx.editMessageText(
+      `✅ Фото-сессия завершена!\n\n` +
+      `📸 Загружено фото: ${uploadedCount}/3`,
+      { ...keyboard }
+    );
+  }
+});
+
+bot.action('photo_finish', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const session = photoSessionState.get(ctx.from!.id);
+  photoSessionState.delete(ctx.from!.id);
+
+  const uploadedCount = session ? Object.values(session.photos).filter(Boolean).length : 0;
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.webApp('📱 Посмотреть в приложении', config.app.webappUrl)],
+  ]);
+
+  await ctx.editMessageText(
+    `✅ Фото-сессия завершена!\n\n` +
+    `📸 Загружено фото: ${uploadedCount}/3`,
+    { ...keyboard }
+  );
+});
+
+bot.action('photo_cancel', async (ctx) => {
+  await ctx.answerCbQuery();
+  photoSessionState.delete(ctx.from!.id);
+  await ctx.editMessageText('❌ Загрузка фото отменена.');
+});
+
+bot.action('start_photo_session', async (ctx) => {
+  await ctx.answerCbQuery();
+  const user = ctx.user!;
+
+  const measurement = await measurementService.getCurrentWeekMeasurement(user.id);
+
+  if (!measurement) {
+    return ctx.editMessageText(
+      '📸 Сначала внеси данные о весе в приложении.',
+      Markup.inlineKeyboard([
+        [Markup.button.webApp('📱 Внести замеры', config.app.webappUrl)],
+      ])
+    );
+  }
+
+  photoSessionState.set(ctx.from!.id, {
+    step: 'front',
+    measurementId: measurement.id,
+    photos: {},
+  });
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('⏭️ Пропустить', 'photo_skip')],
+    [Markup.button.callback('❌ Отмена', 'photo_cancel')],
+  ]);
+
+  await ctx.editMessageText(
+    `📸 *Загрузка фото прогресса*\n\n` +
+    `Шаг 1/3: Отправь фото *СПЕРЕДИ*\n\n` +
+    `💡 Совет: встань ровно, руки вдоль тела, хорошее освещение`,
+    { parse_mode: 'Markdown', ...keyboard }
+  );
 });
 
 // ===== CALLBACK: Быстрый чекин =====
