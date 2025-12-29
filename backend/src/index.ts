@@ -72,15 +72,8 @@ async function start() {
 
     console.log('\n✅ Приложение полностью запущено!\n');
 
-    // Уведомляем о деплое, если есть информация о коммите
-    if (process.env.RAILWAY_GIT_COMMIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA) {
-      await adminNotifier.deploy({
-        commit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA,
-        branch: process.env.RAILWAY_GIT_BRANCH || process.env.VERCEL_GIT_COMMIT_REF,
-        author: process.env.RAILWAY_GIT_AUTHOR || process.env.VERCEL_GIT_COMMIT_AUTHOR_NAME,
-        message: process.env.RAILWAY_GIT_COMMIT_MESSAGE || process.env.VERCEL_GIT_COMMIT_MESSAGE,
-      });
-    }
+    // Уведомляем о деплое
+    await adminNotifier.deploy();
   } catch (error) {
     console.error('Failed to start application:', error);
     await adminNotifier.critical(error as Error, 'Application startup');

@@ -1,4 +1,6 @@
 import { Telegraf } from 'telegraf';
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
 import { config } from '../config';
 
 let bot: Telegraf | null = null;
@@ -115,27 +117,47 @@ export async function notifyCriticalError(error: Error, source: string): Promise
   await sendToAdmin(message);
 }
 
-// Уведомление о деплое
-export async function notifyDeploy(info: {
-  version?: string;
-  commit?: string;
-  branch?: string;
-  author?: string;
-  message?: string;
-}): Promise<void> {
-  const message = `
-🎉 <b>Новый деплой</b>
+// Уведомление о деплое (читает DEPLOY_CHANGELOG.txt)
+export async function notifyDeploy(): Promise<void> {
+  // Пробуем найти changelog файл
+  const possiblePaths = [
+    join(process.cwd(), 'DEPLOY_CHANGELOG.txt'),
+    join(process.cwd(), '..', 'DEPLOY_CHANGELOG.txt'),
+    '/app/DEPLOY_CHANGELOG.txt',
+  ];
+
+  let changelog = '';
+  for (const path of possiblePaths) {
+    if (existsSync(path)) {
+      try {
+        changelog = readFileSync(path, 'utf-8').trim();
+        break;
+      } catch (e) {
+        // continue
+      }
+    }
+  }
+
+  let message: string;
+  if (changelog) {
+    message = `🚀 <b>Деплой выполнен!</b>
+
+${escapeHtml(changelog)}`;
+  } else {
+    // Fallback если changelog не найден
+    const commit = process.env.RAILWAY_GIT_COMMIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA;
+    const branch = process.env.RAILWAY_GIT_BRANCH || process.env.VERCEL_GIT_COMMIT_REF;
+
+    message = `🚀 <b>Деплой выполнен!</b>
 
 📅 <b>Время:</b> ${formatDate()}
 🌍 <b>Окружение:</b> ${config.app.nodeEnv}
-${info.version ? `📦 <b>Версия:</b> ${info.version}` : ''}
-${info.branch ? `🌿 <b>Ветка:</b> ${info.branch}` : ''}
-${info.commit ? `🔗 <b>Коммит:</b> <code>${info.commit.slice(0, 7)}</code>` : ''}
-${info.author ? `👤 <b>Автор:</b> ${info.author}` : ''}
-${info.message ? `\n💬 <b>Комментарий:</b>\n${escapeHtml(info.message)}` : ''}
+${branch ? `🌿 <b>Ветка:</b> ${branch}` : ''}
+${commit ? `🔗 <b>Коммит:</b> <code>${commit.slice(0, 7)}</code>` : ''}
 
-✅ Деплой выполнен успешно
-`;
+✅ Backend запущен`;
+  }
+
   await sendToAdmin(message);
 }
 
