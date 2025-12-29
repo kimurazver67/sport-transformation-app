@@ -7,7 +7,7 @@ Telegram Mini App + бот для 4-месячного мужского фитн
 - **Frontend**: React + TypeScript + Tailwind CSS + Telegram Mini App SDK
 - **Backend**: Node.js + Express + TypeScript + Telegraf
 - **База данных**: PostgreSQL (Supabase)
-- **Хостинг**: Vercel (frontend) + Railway/Render (backend)
+- **Хостинг**: Railway (frontend + backend)
 
 ## 📁 Структура проекта
 
@@ -49,7 +49,7 @@ npm install
 1. Создайте проект на [supabase.com](https://supabase.com)
 2. Скопируйте URL и ключи из Settings → API
 3. Выполните миграции (скопируйте SQL из `backend/src/db/migrations/001_initial_schema.sql` в SQL Editor)
-4. Создайте Storage bucket "progress-photos" (Settings → Storage)
+4. Фото хранятся в Telegram (file_id), Storage не нужен
 
 ### 3. Настройка Telegram бота
 
@@ -60,7 +60,7 @@ npm install
    ```
    /setmenubutton
    Выберите бота
-   Введите URL вашего frontend (https://your-app.vercel.app)
+   Введите URL вашего frontend (https://your-app.up.railway.app)
    Введите название кнопки: "Открыть"
    ```
 
@@ -85,7 +85,7 @@ GOOGLE_SPREADSHEET_ID=your_spreadsheet_id
 PORT=3001
 NODE_ENV=development
 FRONTEND_URL=http://localhost:5173
-WEBAPP_URL=https://your-app.vercel.app
+WEBAPP_URL=https://your-app.up.railway.app
 
 # Course
 COURSE_START_DATE=2025-01-01
@@ -116,13 +116,13 @@ npm run dev:frontend
 3. Добавьте переменные окружения
 4. Railway автоматически задеплоит
 
-### Frontend на Vercel
+### Frontend на Railway
 
-1. Импортируйте репозиторий в Vercel
+1. Создайте новый сервис в том же проекте
 2. Укажите Root Directory: `frontend`
 3. Build Command: `npm run build`
-4. Output Directory: `dist`
-5. Добавьте переменные окружения
+4. Start Command: `npx serve -s dist`
+5. Добавьте переменные окружения (VITE_API_URL)
 
 ### Настройка Google Sheets (опционально)
 

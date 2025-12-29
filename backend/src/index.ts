@@ -16,7 +16,6 @@ app.use(cors({
     config.app.frontendUrl,
     config.app.webappUrl.split('?')[0], // Remove query params
     /\.up\.railway\.app$/,
-    /\.vercel\.app$/,
   ],
   credentials: true,
 }));

@@ -171,8 +171,8 @@ export async function notifyDeploy(): Promise<void> {
 ${escapeHtml(changelog)}`;
   } else {
     // Fallback если changelog не найден
-    const commit = process.env.RAILWAY_GIT_COMMIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA;
-    const branch = process.env.RAILWAY_GIT_BRANCH || process.env.VERCEL_GIT_COMMIT_REF;
+    const commit = process.env.RAILWAY_GIT_COMMIT_SHA;
+    const branch = process.env.RAILWAY_GIT_BRANCH;
 
     message = `🚀 <b>Деплой выполнен!</b>
 
