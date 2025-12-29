@@ -12,7 +12,12 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: [config.app.frontendUrl, config.app.webappUrl],
+  origin: [
+    config.app.frontendUrl,
+    config.app.webappUrl.split('?')[0], // Remove query params
+    /\.up\.railway\.app$/,
+    /\.vercel\.app$/,
+  ],
   credentials: true,
 }));
 app.use(express.json());
