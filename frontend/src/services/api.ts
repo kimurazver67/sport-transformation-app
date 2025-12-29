@@ -89,11 +89,22 @@ export const api = {
   getMeasurements: (userId: string) =>
     request<WeeklyMeasurement[]>(`/api/measurements/${userId}`),
 
-  createMeasurement: (userId: string, data: MeasurementForm) =>
-    request<WeeklyMeasurement>(`/api/measurement/${userId}`, {
+  canSubmitMeasurement: () => {
+    const tz = new Date().getTimezoneOffset()
+    return request<{
+      allowed: boolean
+      reason?: string
+      nextWindow?: { day: string; time: string }
+    }>(`/api/measurement/can-submit?tz=${tz}`)
+  },
+
+  createMeasurement: (userId: string, data: MeasurementForm) => {
+    const timezoneOffset = new Date().getTimezoneOffset()
+    return request<WeeklyMeasurement>(`/api/measurement/${userId}`, {
       method: 'POST',
-      body: JSON.stringify(data),
-    }),
+      body: JSON.stringify({ ...data, timezoneOffset }),
+    })
+  },
 
   getWeightProgress: (userId: string) =>
     request<{ week: number; weight: number }[]>(`/api/measurements/${userId}/weight`),

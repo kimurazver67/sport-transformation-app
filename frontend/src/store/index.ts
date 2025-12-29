@@ -47,8 +47,11 @@ interface Store {
   // Замеры
   currentMeasurement: WeeklyMeasurement | null
   measurements: WeeklyMeasurement[]
+  canSubmitMeasurement: boolean
+  measurementWindowInfo: { reason?: string; nextWindow?: { day: string; time: string } } | null
   fetchCurrentMeasurement: () => Promise<void>
   fetchMeasurements: () => Promise<void>
+  checkMeasurementWindow: () => Promise<void>
   submitMeasurement: (data: MeasurementForm) => Promise<void>
 
   // Статистика
@@ -146,6 +149,8 @@ export const useStore = create<Store>((set, get) => ({
   // Замеры
   currentMeasurement: null,
   measurements: [],
+  canSubmitMeasurement: true,
+  measurementWindowInfo: null,
 
   fetchCurrentMeasurement: async () => {
     const { user } = get()
@@ -168,6 +173,20 @@ export const useStore = create<Store>((set, get) => ({
       set({ measurements })
     } catch (error) {
       console.error('Failed to fetch measurements:', error)
+    }
+  },
+
+  checkMeasurementWindow: async () => {
+    try {
+      const result = await api.canSubmitMeasurement()
+      set({
+        canSubmitMeasurement: result.allowed,
+        measurementWindowInfo: result.allowed ? null : { reason: result.reason, nextWindow: result.nextWindow }
+      })
+    } catch (error) {
+      console.error('Failed to check measurement window:', error)
+      // По умолчанию разрешаем (на случай ошибки API)
+      set({ canSubmitMeasurement: true, measurementWindowInfo: null })
     }
   },
 

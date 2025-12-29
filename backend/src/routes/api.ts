@@ -5,7 +5,7 @@ import { measurementService } from '../services/measurementService';
 import { statsService } from '../services/statsService';
 import { taskService } from '../services/taskService';
 import { achievementService } from '../services/achievementService';
-import { getCurrentWeek, getDaysUntilStart, isCourseStarted } from '../config';
+import { getCurrentWeek, getDaysUntilStart, isCourseStarted, canSubmitMeasurement } from '../config';
 import { CheckinForm, MeasurementForm } from '../types';
 
 const router = Router();
@@ -100,9 +100,33 @@ router.get('/measurements/:userId', async (req: Request, res: Response) => {
   }
 });
 
+// Проверка, можно ли вносить замеры
+router.get('/measurement/can-submit', async (req: Request, res: Response) => {
+  try {
+    const timezoneOffset = req.query.tz ? parseInt(req.query.tz as string) : undefined;
+    const result = canSubmitMeasurement(timezoneOffset);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('Check measurement window error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 // Создать/обновить замер
 router.post('/measurement/:userId', async (req: Request, res: Response) => {
   try {
+    // Проверяем временное окно
+    const timezoneOffset = req.body.timezoneOffset;
+    const canSubmit = canSubmitMeasurement(timezoneOffset);
+
+    if (!canSubmit.allowed) {
+      return res.status(403).json({
+        success: false,
+        error: canSubmit.reason,
+        nextWindow: canSubmit.nextWindow,
+      });
+    }
+
     const data: MeasurementForm = req.body;
     const measurement = await measurementService.createOrUpdate(req.params.userId, data);
     res.json({ success: true, data: measurement });

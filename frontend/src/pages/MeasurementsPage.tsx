@@ -10,8 +10,11 @@ export default function MeasurementsPage() {
     courseWeek,
     currentMeasurement,
     measurements,
+    canSubmitMeasurement,
+    measurementWindowInfo,
     fetchCurrentMeasurement,
     fetchMeasurements,
+    checkMeasurementWindow,
     submitMeasurement,
   } = useStore()
   const { hapticFeedback, showAlert } = useTelegram()
@@ -33,6 +36,7 @@ export default function MeasurementsPage() {
   useEffect(() => {
     fetchCurrentMeasurement()
     fetchMeasurements()
+    checkMeasurementWindow()
   }, [])
 
   useEffect(() => {
@@ -178,7 +182,7 @@ export default function MeasurementsPage() {
           <h3 className="font-display font-bold text-steel-100 uppercase">
             {currentMeasurement ? `Неделя_${courseWeek}_Данные` : 'Новая_запись'}
           </h3>
-          {currentMeasurement && !isEditing && (
+          {currentMeasurement && !isEditing && canSubmitMeasurement && (
             <button
               onClick={() => setIsEditing(true)}
               className="font-mono text-xs text-neon-lime hover:underline"
@@ -188,7 +192,26 @@ export default function MeasurementsPage() {
           )}
         </div>
 
-        {isEditing || !currentMeasurement ? (
+        {/* Блокировка формы - показываем только когда курс начался */}
+        {!canSubmitMeasurement && measurementWindowInfo && (
+          <div className="mb-4 p-3 border-2 border-neon-orange bg-neon-orange/10">
+            <div className="flex items-start gap-2">
+              <span className="text-lg">🔒</span>
+              <div>
+                <p className="font-mono text-xs text-neon-orange font-bold uppercase">
+                  {measurementWindowInfo.reason}
+                </p>
+                {measurementWindowInfo.nextWindow && (
+                  <p className="font-mono text-[10px] text-steel-400 mt-1">
+                    Следующее окно: {measurementWindowInfo.nextWindow.day}, {measurementWindowInfo.nextWindow.time}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {canSubmitMeasurement && (isEditing || !currentMeasurement) ? (
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Weight - Required */}
             <div>
