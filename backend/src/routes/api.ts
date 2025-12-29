@@ -248,4 +248,15 @@ router.get('/course/week', (req: Request, res: Response) => {
   });
 });
 
+// Триггер уведомления о деплое (для тестирования)
+router.post('/notify-deploy', async (req: Request, res: Response) => {
+  try {
+    const { adminNotifier } = await import('../services/adminNotifierService');
+    await adminNotifier.deploy();
+    res.json({ success: true, message: 'Deploy notification sent' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: String(error) });
+  }
+});
+
 export default router;
