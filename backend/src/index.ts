@@ -72,14 +72,14 @@ async function start() {
 
     console.log('\n✅ Приложение полностью запущено!\n');
 
-    // Уведомляем о деплое (с небольшой задержкой для надёжности)
-    setTimeout(async () => {
-      try {
-        await adminNotifier.deploy();
-      } catch (e) {
-        console.error('Failed to send deploy notification:', e);
-      }
-    }, 3000);
+    // Уведомляем о деплое сразу после запуска
+    console.log('[Startup] Sending deploy notification...');
+    try {
+      await adminNotifier.deploy();
+      console.log('[Startup] Deploy notification sent successfully');
+    } catch (e) {
+      console.error('[Startup] Failed to send deploy notification:', e);
+    }
   } catch (error) {
     console.error('Failed to start application:', error);
     await adminNotifier.critical(error as Error, 'Application startup');
