@@ -54,21 +54,10 @@ export default function MeasurementsPage() {
   })
 
   useEffect(() => {
-    api.debugLog('MeasurementsPage mounted', { courseWeek })
     fetchCurrentMeasurement()
     fetchMeasurements()
     checkMeasurementWindow()
   }, [])
-
-  // Логируем изменения состояния
-  useEffect(() => {
-    api.debugLog('State changed', {
-      canSubmitMeasurement,
-      hasMeasurement: !!currentMeasurement,
-      measurementId: currentMeasurement?.id,
-      isEditing,
-    })
-  }, [canSubmitMeasurement, currentMeasurement, isEditing])
 
   useEffect(() => {
     if (currentMeasurement) {
@@ -95,22 +84,17 @@ export default function MeasurementsPage() {
     }
 
     setIsSubmitting(true)
-    api.debugLog('Submit started', { formData })
     try {
       await submitMeasurement(formData)
-      api.debugLog('Submit success', { formData })
       hapticFeedback('success')
       setIsEditing(false)
       showToast('Замеры сохранены!', 'success')
-      api.debugLog('After showToast')
     } catch (error) {
       console.error('Failed to submit measurement:', error)
-      api.debugLog('Submit error', { error: String(error) })
       hapticFeedback('error')
       showToast('Ошибка сохранения данных', 'error')
     } finally {
       setIsSubmitting(false)
-      api.debugLog('Submit finally')
     }
   }
 
