@@ -61,6 +61,9 @@ export interface WeeklyMeasurement {
   photo_front_url?: string;
   photo_side_url?: string;
   photo_back_url?: string;
+  photo_front_file_id?: string;
+  photo_side_file_id?: string;
+  photo_back_file_id?: string;
   created_at: string;
 }
 

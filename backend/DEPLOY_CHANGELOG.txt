@@ -1,9 +1,15 @@
 Последние изменения:
 
-• Исправлено: Добавлено логирование запуска для отладки уведомлений
-• Исправлено: Синхронная отправка уведомления о деплое
-• Добавлено: Ограничение внесения замеров по времени
-• Добавлено: Добавлена пошаговая загрузка фото в боте
-• Добавлено: Добавлено отображение фото прогресса в замерах
+• ВАЖНО: Переход на Telegram хранение фото (file_id)
+• Удалена зависимость от Supabase Storage (50MB лимит)
+• Добавлен прокси-эндпоинт для загрузки фото (/api/photo/:fileId/proxy)
+• Бот теперь сохраняет file_id вместо загрузки в Storage
+• Frontend обновлён для работы с новым API фото
 
-29.12.2025 21:22
+⚠️ ТРЕБУЕТСЯ: Выполнить SQL миграцию через Supabase Dashboard:
+ALTER TABLE weekly_measurements
+ADD COLUMN IF NOT EXISTS photo_front_file_id TEXT,
+ADD COLUMN IF NOT EXISTS photo_side_file_id TEXT,
+ADD COLUMN IF NOT EXISTS photo_back_file_id TEXT;
+
+29.12.2025 22:15

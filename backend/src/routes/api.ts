@@ -5,7 +5,7 @@ import { measurementService } from '../services/measurementService';
 import { statsService } from '../services/statsService';
 import { taskService } from '../services/taskService';
 import { achievementService } from '../services/achievementService';
-import { getCurrentWeek, getDaysUntilStart, isCourseStarted, canSubmitMeasurement } from '../config';
+import { getCurrentWeek, getDaysUntilStart, isCourseStarted, canSubmitMeasurement, config } from '../config';
 import { CheckinForm, MeasurementForm } from '../types';
 
 const router = Router();
@@ -280,6 +280,80 @@ router.post('/notify-deploy', async (req: Request, res: Response) => {
     res.json({ success: true, message: 'Deploy notification sent' });
   } catch (error) {
     res.status(500).json({ success: false, error: String(error) });
+  }
+});
+
+// ===== ФОТО =====
+
+// Получить временный URL фото по Telegram file_id
+// URL действителен ~1 час, потом нужно запросить снова
+router.get('/photo/:fileId', async (req: Request, res: Response) => {
+  try {
+    const { fileId } = req.params;
+
+    // Получаем информацию о файле через Telegram API
+    const telegramResponse = await fetch(
+      `https://api.telegram.org/bot${config.bot.token}/getFile?file_id=${fileId}`
+    );
+    const telegramData = await telegramResponse.json() as { ok: boolean; result?: { file_path: string }; description?: string };
+
+    if (!telegramData.ok || !telegramData.result?.file_path) {
+      return res.status(404).json({
+        success: false,
+        error: 'Photo not found',
+        details: telegramData.description
+      });
+    }
+
+    // Формируем временный URL для скачивания
+    const photoUrl = `https://api.telegram.org/file/bot${config.bot.token}/${telegramData.result.file_path}`;
+
+    res.json({
+      success: true,
+      data: {
+        url: photoUrl,
+        expiresIn: '~1 hour'
+      }
+    });
+  } catch (error) {
+    console.error('Get photo URL error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get photo URL' });
+  }
+});
+
+// Проксирование фото (чтобы не светить токен бота в URL на фронте)
+router.get('/photo/:fileId/proxy', async (req: Request, res: Response) => {
+  try {
+    const { fileId } = req.params;
+
+    // Получаем информацию о файле через Telegram API
+    const telegramResponse = await fetch(
+      `https://api.telegram.org/bot${config.bot.token}/getFile?file_id=${fileId}`
+    );
+    const telegramData = await telegramResponse.json() as { ok: boolean; result?: { file_path: string }; description?: string };
+
+    if (!telegramData.ok || !telegramData.result?.file_path) {
+      return res.status(404).json({ success: false, error: 'Photo not found' });
+    }
+
+    // Скачиваем фото и отдаём напрямую
+    const photoUrl = `https://api.telegram.org/file/bot${config.bot.token}/${telegramData.result.file_path}`;
+    const photoResponse = await fetch(photoUrl);
+
+    if (!photoResponse.ok) {
+      return res.status(404).json({ success: false, error: 'Failed to fetch photo' });
+    }
+
+    // Устанавливаем заголовки для изображения
+    res.setHeader('Content-Type', 'image/jpeg');
+    res.setHeader('Cache-Control', 'public, max-age=3600'); // Кешируем на 1 час
+
+    // Стримим изображение
+    const buffer = await photoResponse.arrayBuffer();
+    res.send(Buffer.from(buffer));
+  } catch (error) {
+    console.error('Proxy photo error:', error);
+    res.status(500).json({ success: false, error: 'Failed to proxy photo' });
   }
 });
 

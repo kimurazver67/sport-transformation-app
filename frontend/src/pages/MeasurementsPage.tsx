@@ -3,7 +3,29 @@ import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { useTelegram } from '../hooks/useTelegram'
 import WeightChart from '../components/WeightChart'
-import type { MeasurementForm } from '../types'
+import { api } from '../services/api'
+import type { MeasurementForm, WeeklyMeasurement } from '../types'
+
+// Хелпер для получения URL фото (поддержка и старых URL и новых file_id)
+function getPhotoUrl(measurement: WeeklyMeasurement, type: 'front' | 'side' | 'back'): string | null {
+  const fileIdKey = `photo_${type}_file_id` as keyof WeeklyMeasurement
+  const urlKey = `photo_${type}_url` as keyof WeeklyMeasurement
+
+  const fileId = measurement[fileIdKey] as string | undefined
+  const url = measurement[urlKey] as string | undefined
+
+  // Приоритет file_id (новый способ)
+  if (fileId) {
+    return api.getPhotoUrl(fileId)
+  }
+
+  // Fallback на старый URL (для уже загруженных фото)
+  if (url) {
+    return url
+  }
+
+  return null
+}
 
 export default function MeasurementsPage() {
   const {
@@ -337,7 +359,7 @@ export default function MeasurementsPage() {
               </button>
             </div>
           </form>
-        ) : (
+        ) : currentMeasurement ? (
           /* Display current measurements */
           <div className="space-y-2">
             <div className="flex justify-between py-2 border-b border-void-400">
@@ -379,11 +401,15 @@ export default function MeasurementsPage() {
               </div>
             </div>
           </div>
-        )}
+        ) : null}
       </motion.div>
 
       {/* Progress Photos */}
-      {currentMeasurement && (currentMeasurement.photo_front_url || currentMeasurement.photo_side_url || currentMeasurement.photo_back_url) && (
+      {currentMeasurement && (
+        getPhotoUrl(currentMeasurement, 'front') ||
+        getPhotoUrl(currentMeasurement, 'side') ||
+        getPhotoUrl(currentMeasurement, 'back')
+      ) && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -395,10 +421,10 @@ export default function MeasurementsPage() {
             Фото_прогресса
           </h3>
           <div className="grid grid-cols-3 gap-2">
-            {currentMeasurement.photo_front_url && (
+            {getPhotoUrl(currentMeasurement, 'front') && (
               <div className="relative">
                 <img
-                  src={currentMeasurement.photo_front_url}
+                  src={getPhotoUrl(currentMeasurement, 'front')!}
                   alt="Фронт"
                   className="w-full aspect-[3/4] object-cover border border-void-400"
                 />
@@ -407,10 +433,10 @@ export default function MeasurementsPage() {
                 </div>
               </div>
             )}
-            {currentMeasurement.photo_side_url && (
+            {getPhotoUrl(currentMeasurement, 'side') && (
               <div className="relative">
                 <img
-                  src={currentMeasurement.photo_side_url}
+                  src={getPhotoUrl(currentMeasurement, 'side')!}
                   alt="Бок"
                   className="w-full aspect-[3/4] object-cover border border-void-400"
                 />
@@ -419,10 +445,10 @@ export default function MeasurementsPage() {
                 </div>
               </div>
             )}
-            {currentMeasurement.photo_back_url && (
+            {getPhotoUrl(currentMeasurement, 'back') && (
               <div className="relative">
                 <img
-                  src={currentMeasurement.photo_back_url}
+                  src={getPhotoUrl(currentMeasurement, 'back')!}
                   alt="Спина"
                   className="w-full aspect-[3/4] object-cover border border-void-400"
                 />

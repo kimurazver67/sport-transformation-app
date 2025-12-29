@@ -148,4 +148,10 @@ export const api = {
   // Курс
   getCourseWeek: () =>
     request<{ week: number; isStarted: boolean; daysUntilStart: number }>(`/api/course/week`),
+
+  // Фото
+  // Получить URL фото по file_id (использует прокси, чтобы не светить токен бота)
+  getPhotoUrl: (fileId: string): string => {
+    return `${API_URL}/api/photo/${fileId}/proxy`
+  },
 }

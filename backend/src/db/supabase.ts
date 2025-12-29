@@ -67,6 +67,9 @@ export type Database = {
           photo_front_url: string | null;
           photo_side_url: string | null;
           photo_back_url: string | null;
+          photo_front_file_id: string | null;
+          photo_side_file_id: string | null;
+          photo_back_file_id: string | null;
           created_at: string;
         };
         Insert: Omit<Database['public']['Tables']['weekly_measurements']['Row'], 'id' | 'created_at'>;

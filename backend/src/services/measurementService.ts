@@ -147,7 +147,7 @@ export const measurementService = {
     return { start, current, weightChange };
   },
 
-  // Обновить URL фото
+  // Обновить URL фото (legacy - для обратной совместимости)
   async updatePhotos(
     measurementId: string,
     photos: { front?: string; side?: string; back?: string }
@@ -163,5 +163,23 @@ export const measurementService = {
       .eq('id', measurementId);
 
     if (error) throw new Error(`Failed to update photos: ${error.message}`);
+  },
+
+  // Сохранить Telegram file_id (новый способ - без лимитов)
+  async updatePhotoFileIds(
+    measurementId: string,
+    fileIds: { front?: string; side?: string; back?: string }
+  ): Promise<void> {
+    const updateData: Record<string, string> = {};
+    if (fileIds.front) updateData.photo_front_file_id = fileIds.front;
+    if (fileIds.side) updateData.photo_side_file_id = fileIds.side;
+    if (fileIds.back) updateData.photo_back_file_id = fileIds.back;
+
+    const { error } = await supabaseAdmin
+      .from('weekly_measurements')
+      .update(updateData)
+      .eq('id', measurementId);
+
+    if (error) throw new Error(`Failed to update photo file IDs: ${error.message}`);
   },
 };

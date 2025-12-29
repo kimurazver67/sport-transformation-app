@@ -488,43 +488,22 @@ bot.action('my_progress', async (ctx) => {
 // ===== ПРИЁМ ФОТО =====
 bot.on(message('photo'), async (ctx) => {
   const user = ctx.user!;
-  const photo = ctx.message.photo[ctx.message.photo.length - 1]; // Максимальное качество
+  // Берём фото максимального качества
+  const photo = ctx.message.photo[ctx.message.photo.length - 1];
+  const fileId = photo.file_id;
 
   try {
-    // Получаем URL файла
-    const file = await ctx.telegram.getFile(photo.file_id);
-    const fileUrl = `https://api.telegram.org/file/bot${config.bot.token}/${file.file_path}`;
-
-    // Загружаем в Supabase Storage
-    const response = await fetch(fileUrl);
-    const buffer = await response.arrayBuffer();
-
-    const fileName = `${user.id}/${Date.now()}_${photo.file_id}.jpg`;
-    const { error: uploadError } = await supabaseAdmin.storage
-      .from('progress-photos')
-      .upload(fileName, buffer, {
-        contentType: 'image/jpeg',
-      });
-
-    if (uploadError) {
-      throw uploadError;
-    }
-
-    const { data: urlData } = supabaseAdmin.storage
-      .from('progress-photos')
-      .getPublicUrl(fileName);
-
     // Проверяем, есть ли активная фото-сессия
     const session = photoSessionState.get(ctx.from!.id);
 
     if (session && session.step !== 'done') {
       // Работаем в режиме фото-сессии
       const currentStep = session.step;
-      session.photos[currentStep] = urlData.publicUrl;
+      session.photos[currentStep] = fileId;
 
-      // Сохраняем фото в БД
-      await measurementService.updatePhotos(session.measurementId, {
-        [currentStep]: urlData.publicUrl,
+      // Сохраняем file_id в БД (не загружаем никуда - Telegram хранит бесплатно)
+      await measurementService.updatePhotoFileIds(session.measurementId, {
+        [currentStep]: fileId,
       });
 
       // Переходим к следующему шагу
@@ -591,14 +570,14 @@ bot.on(message('photo'), async (ctx) => {
     } else if (caption.includes('фронт') || caption.includes('спереди') || caption.includes('front')) {
       photoType = 'front';
     } else {
-      // Автоопределение по уже загруженным
-      if (!measurement.photo_front_url) photoType = 'front';
-      else if (!measurement.photo_side_url) photoType = 'side';
-      else if (!measurement.photo_back_url) photoType = 'back';
+      // Автоопределение по уже загруженным (проверяем file_id)
+      if (!measurement.photo_front_file_id) photoType = 'front';
+      else if (!measurement.photo_side_file_id) photoType = 'side';
+      else if (!measurement.photo_back_file_id) photoType = 'back';
     }
 
-    await measurementService.updatePhotos(measurement.id, {
-      [photoType]: urlData.publicUrl,
+    await measurementService.updatePhotoFileIds(measurement.id, {
+      [photoType]: fileId,
     });
 
     const photoNames = { front: 'Спереди', side: 'Сбоку', back: 'Сзади' };
