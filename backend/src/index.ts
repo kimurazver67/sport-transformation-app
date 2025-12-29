@@ -57,6 +57,8 @@ app.use(async (err: Error, req: express.Request, res: express.Response, next: ex
 // Запуск
 async function start() {
   try {
+    console.log('[Startup] Starting application...');
+
     // Запускаем Express сервер
     app.listen(config.app.port, () => {
       console.log(`🚀 Сервер запущен на порту ${config.app.port}`);
@@ -64,22 +66,24 @@ async function start() {
       console.log(`   Frontend URL: ${config.app.frontendUrl}`);
     });
 
+    console.log('[Startup] Express started, starting bot...');
+
     // Запускаем Telegram бота
     await startBot();
+
+    console.log('[Startup] Bot started, starting scheduler...');
 
     // Запускаем планировщик задач
     schedulerService.start();
 
     console.log('\n✅ Приложение полностью запущено!\n');
 
-    // Уведомляем о деплое сразу после запуска
-    console.log('[Startup] Sending deploy notification...');
-    try {
-      await adminNotifier.deploy();
-      console.log('[Startup] Deploy notification sent successfully');
-    } catch (e) {
-      console.error('[Startup] Failed to send deploy notification:', e);
-    }
+    // Уведомляем о деплое сразу после запуска (не блокируем основной поток)
+    console.log('[Startup] Queueing deploy notification...');
+    adminNotifier.deploy()
+      .then(() => console.log('[Startup] Deploy notification sent successfully'))
+      .catch((e) => console.error('[Startup] Failed to send deploy notification:', e));
+
   } catch (error) {
     console.error('Failed to start application:', error);
     await adminNotifier.critical(error as Error, 'Application startup');
