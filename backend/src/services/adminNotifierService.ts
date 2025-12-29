@@ -1,6 +1,4 @@
 import { Telegraf } from 'telegraf';
-import { readFileSync, existsSync } from 'fs';
-import { join } from 'path';
 import { config } from '../config';
 
 let bot: Telegraf | null = null;
@@ -216,55 +214,60 @@ export async function notifyCriticalError(error: Error, source: string): Promise
   await sendToAdmin(message);
 }
 
-// Уведомление о деплое (читает DEPLOY_CHANGELOG.txt)
-export async function notifyDeploy(): Promise<void> {
-  // Пробуем найти changelog файл
-  const possiblePaths = [
-    join(process.cwd(), 'DEPLOY_CHANGELOG.txt'),
-    join(process.cwd(), '..', 'DEPLOY_CHANGELOG.txt'),
-    '/app/DEPLOY_CHANGELOG.txt',
-  ];
+// Перевод префиксов коммитов на русский
+function translateCommitMessage(msg: string): string {
+  // Переводим стандартные conventional commit префиксы
+  const prefixes: Record<string, string> = {
+    'fix': 'Исправлено',
+    'feat': 'Добавлено',
+    'add': 'Добавлено',
+    'update': 'Обновлено',
+    'refactor': 'Рефакторинг',
+    'docs': 'Документация',
+    'style': 'Стиль',
+    'test': 'Тесты',
+    'chore': 'Обслуживание',
+    'perf': 'Оптимизация',
+    'remove': 'Удалено',
+    'delete': 'Удалено',
+  };
 
-  console.log('[Deploy] Looking for changelog in:', possiblePaths);
-  console.log('[Deploy] CWD:', process.cwd());
-
-  let changelog = '';
-  let foundPath = '';
-  for (const path of possiblePaths) {
-    console.log('[Deploy] Checking path:', path, 'exists:', existsSync(path));
-    if (existsSync(path)) {
-      try {
-        changelog = readFileSync(path, 'utf-8').trim();
-        foundPath = path;
-        console.log('[Deploy] Found changelog at:', path);
-        break;
-      } catch (e) {
-        console.log('[Deploy] Error reading:', path, e);
-      }
+  for (const [en, ru] of Object.entries(prefixes)) {
+    const regex = new RegExp(`^${en}(\\([^)]*\\))?:\\s*`, 'i');
+    if (regex.test(msg)) {
+      return msg.replace(regex, `${ru}: `);
     }
   }
 
-  console.log('[Deploy] Changelog found:', !!changelog, 'length:', changelog.length);
+  return msg;
+}
 
-  let message: string;
-  if (changelog) {
-    message = `🚀 <b>Деплой выполнен!</b>
+// Уведомление о деплое (использует Railway env variables)
+export async function notifyDeploy(): Promise<void> {
+  const commit = process.env.RAILWAY_GIT_COMMIT_SHA;
+  const branch = process.env.RAILWAY_GIT_BRANCH;
+  const commitMessage = process.env.RAILWAY_GIT_COMMIT_MESSAGE;
+  const author = process.env.RAILWAY_GIT_AUTHOR;
 
-${escapeHtml(changelog)}`;
-  } else {
-    // Fallback если changelog не найден
-    const commit = process.env.RAILWAY_GIT_COMMIT_SHA;
-    const branch = process.env.RAILWAY_GIT_BRANCH;
+  console.log('[Deploy] Railway env:', { commit, branch, commitMessage, author });
 
-    message = `🚀 <b>Деплой выполнен!</b>
+  let changeInfo = '';
+
+  if (commitMessage) {
+    // Переводим сообщение коммита
+    const translatedMessage = translateCommitMessage(commitMessage);
+    changeInfo = `\n📝 <b>Изменения:</b> ${escapeHtml(translatedMessage)}`;
+  }
+
+  const message = `🚀 <b>Деплой выполнен!</b>
 
 📅 <b>Время:</b> ${formatDate()}
 🌍 <b>Окружение:</b> ${config.app.nodeEnv}
 ${branch ? `🌿 <b>Ветка:</b> ${branch}` : ''}
 ${commit ? `🔗 <b>Коммит:</b> <code>${commit.slice(0, 7)}</code>` : ''}
+${author ? `👤 <b>Автор:</b> ${escapeHtml(author)}` : ''}${changeInfo}
 
 ✅ Backend запущен`;
-  }
 
   console.log('[Deploy] Sending message to admin...');
   await sendToAdmin(message);

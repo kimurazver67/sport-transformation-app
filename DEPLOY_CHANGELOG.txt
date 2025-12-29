@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Add unref() to cleanup interval for graceful shutdown
 • Рефакторинг: Clean up unused constant and improve typing
 • Добавлено: Add global error handler with Telegram уведомления
 • Добавлено: Migrate from Supabase to Railway PostgreSQL + Redis
 • Обслуживание: Убраны упоминания Vercel, всё на Railway
-• Добавлено: Переход на Telegram хранение фото (file_id)
 
-29.12.2025 22:42
+29.12.2025 22:43
