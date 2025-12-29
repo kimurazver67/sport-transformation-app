@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../db/supabase';
+import { query } from '../db/postgres';
 import { Task, TaskCompletion, POINTS } from '../types';
 import { getCurrentWeek } from '../config';
 import { statsService } from './statsService';
@@ -6,18 +6,17 @@ import { statsService } from './statsService';
 export const taskService = {
   // Создать задание (только тренер)
   async create(weekNumber: number, title: string, description?: string): Promise<Task> {
-    const { data, error } = await supabaseAdmin
-      .from('tasks')
-      .insert({
-        week_number: weekNumber,
-        title,
-        description: description || null,
-      })
-      .select()
-      .single();
+    const result = await query<Task>(
+      `INSERT INTO tasks (week_number, title, description)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [weekNumber, title, description || null]
+    );
 
-    if (error) throw new Error(`Failed to create task: ${error.message}`);
-    return data as Task;
+    if (!result.rows[0]) {
+      throw new Error('Failed to create task');
+    }
+    return result.rows[0];
   },
 
   // Получить задания текущей недели
@@ -28,14 +27,12 @@ export const taskService = {
 
   // Получить задания по неделе
   async getByWeek(weekNumber: number): Promise<Task[]> {
-    const { data, error } = await supabaseAdmin
-      .from('tasks')
-      .select('*')
-      .eq('week_number', weekNumber)
-      .order('created_at', { ascending: true });
+    const result = await query<Task>(
+      'SELECT * FROM tasks WHERE week_number = $1 ORDER BY created_at ASC',
+      [weekNumber]
+    );
 
-    if (error) throw new Error(`Failed to get tasks: ${error.message}`);
-    return (data || []) as Task[];
+    return result.rows;
   },
 
   // Получить задания с прогрессом выполнения для пользователя
@@ -44,12 +41,12 @@ export const taskService = {
     const tasks = await this.getByWeek(week);
 
     // Получаем выполненные задания
-    const { data: completions } = await supabaseAdmin
-      .from('task_completions')
-      .select('task_id')
-      .eq('user_id', userId);
+    const completionsResult = await query<{ task_id: string }>(
+      'SELECT task_id FROM task_completions WHERE user_id = $1',
+      [userId]
+    );
 
-    const completedIds = new Set((completions || []).map(c => c.task_id));
+    const completedIds = new Set(completionsResult.rows.map(c => c.task_id));
 
     return tasks.map(task => ({
       ...task,
@@ -60,53 +57,43 @@ export const taskService = {
   // Отметить задание выполненным
   async complete(userId: string, taskId: string): Promise<TaskCompletion> {
     // Проверяем, не выполнено ли уже
-    const { data: existing } = await supabaseAdmin
-      .from('task_completions')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('task_id', taskId)
-      .single();
+    const existingResult = await query<{ id: string }>(
+      'SELECT id FROM task_completions WHERE user_id = $1 AND task_id = $2',
+      [userId, taskId]
+    );
 
-    if (existing) {
+    if (existingResult.rows[0]) {
       throw new Error('Task already completed');
     }
 
-    const { data, error } = await supabaseAdmin
-      .from('task_completions')
-      .insert({
-        user_id: userId,
-        task_id: taskId,
-      })
-      .select()
-      .single();
+    const insertResult = await query<TaskCompletion>(
+      `INSERT INTO task_completions (user_id, task_id)
+       VALUES ($1, $2)
+       RETURNING *`,
+      [userId, taskId]
+    );
 
-    if (error) throw new Error(`Failed to complete task: ${error.message}`);
+    if (!insertResult.rows[0]) {
+      throw new Error('Failed to complete task');
+    }
 
     // Начисляем очки
     await statsService.addPoints(userId, POINTS.TASK_COMPLETED);
 
-    return data as TaskCompletion;
+    return insertResult.rows[0];
   },
 
   // Отменить выполнение задания
   async uncomplete(userId: string, taskId: string): Promise<void> {
-    const { error } = await supabaseAdmin
-      .from('task_completions')
-      .delete()
-      .eq('user_id', userId)
-      .eq('task_id', taskId);
-
-    if (error) throw new Error(`Failed to uncomplete task: ${error.message}`);
+    await query(
+      'DELETE FROM task_completions WHERE user_id = $1 AND task_id = $2',
+      [userId, taskId]
+    );
   },
 
   // Удалить задание (только тренер)
   async delete(taskId: string): Promise<void> {
-    const { error } = await supabaseAdmin
-      .from('tasks')
-      .delete()
-      .eq('id', taskId);
-
-    if (error) throw new Error(`Failed to delete task: ${error.message}`);
+    await query('DELETE FROM tasks WHERE id = $1', [taskId]);
   },
 
   // Получить статистику выполнения заданий по участникам
@@ -120,24 +107,25 @@ export const taskService = {
     const tasks = await this.getByWeek(week);
 
     // Получаем количество участников
-    const { count: participantCount } = await supabaseAdmin
-      .from('users')
-      .select('id', { count: 'exact' })
-      .eq('role', 'participant');
+    const participantCountResult = await query<{ count: string }>(
+      `SELECT COUNT(*) as count FROM users WHERE role = 'participant'`
+    );
+    const participantCount = parseInt(participantCountResult.rows[0]?.count || '0', 10);
 
     const result = [];
 
     for (const task of tasks) {
-      const { count } = await supabaseAdmin
-        .from('task_completions')
-        .select('id', { count: 'exact' })
-        .eq('task_id', task.id);
+      const completionCountResult = await query<{ count: string }>(
+        'SELECT COUNT(*) as count FROM task_completions WHERE task_id = $1',
+        [task.id]
+      );
+      const completedCount = parseInt(completionCountResult.rows[0]?.count || '0', 10);
 
       result.push({
         taskId: task.id,
         title: task.title,
-        completedCount: count || 0,
-        totalParticipants: participantCount || 0,
+        completedCount,
+        totalParticipants: participantCount,
       });
     }
 

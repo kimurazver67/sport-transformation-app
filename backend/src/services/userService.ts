@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../db/supabase';
+import { query } from '../db/postgres';
 import { User, UserRole } from '../types';
 import { config } from '../config';
 
@@ -13,14 +13,22 @@ export interface CreateUserData {
 export const userService = {
   // Найти пользователя по Telegram ID
   async findByTelegramId(telegramId: number): Promise<User | null> {
-    const { data, error } = await supabaseAdmin
-      .from('users')
-      .select('*')
-      .eq('telegram_id', telegramId)
-      .single();
+    const result = await query<User>(
+      'SELECT * FROM users WHERE telegram_id = $1',
+      [telegramId]
+    );
 
-    if (error || !data) return null;
-    return data as User;
+    return result.rows[0] || null;
+  },
+
+  // Найти пользователя по ID
+  async findById(userId: string): Promise<User | null> {
+    const result = await query<User>(
+      'SELECT * FROM users WHERE id = $1',
+      [userId]
+    );
+
+    return result.rows[0] || null;
   },
 
   // Создать нового пользователя
@@ -31,20 +39,32 @@ export const userService = {
         ? 'trainer'
         : userData.role || 'participant';
 
-    const { data, error } = await supabaseAdmin
-      .from('users')
-      .insert({
-        telegram_id: userData.telegram_id,
-        username: userData.username || null,
-        first_name: userData.first_name,
-        last_name: userData.last_name || null,
+    const result = await query<User>(
+      `INSERT INTO users (telegram_id, username, first_name, last_name, role)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [
+        userData.telegram_id,
+        userData.username || null,
+        userData.first_name,
+        userData.last_name || null,
         role,
-      })
-      .select()
-      .single();
+      ]
+    );
 
-    if (error) throw new Error(`Failed to create user: ${error.message}`);
-    return data as User;
+    if (!result.rows[0]) {
+      throw new Error('Failed to create user');
+    }
+
+    // Создаём запись статистики для пользователя
+    await query(
+      `INSERT INTO user_stats (user_id, current_streak, max_streak, total_points, weekly_points)
+       VALUES ($1, 0, 0, 0, 0)
+       ON CONFLICT (user_id) DO NOTHING`,
+      [result.rows[0].id]
+    );
+
+    return result.rows[0];
   },
 
   // Найти или создать пользователя
@@ -56,62 +76,50 @@ export const userService = {
 
   // Обновить стартовый вес
   async updateStartWeight(userId: string, weight: number): Promise<void> {
-    const { error } = await supabaseAdmin
-      .from('users')
-      .update({ start_weight: weight })
-      .eq('id', userId);
-
-    if (error) throw new Error(`Failed to update start weight: ${error.message}`);
+    await query(
+      'UPDATE users SET start_weight = $1, updated_at = NOW() WHERE id = $2',
+      [weight, userId]
+    );
   },
 
   // Получить всех участников
   async getAllParticipants(): Promise<User[]> {
-    const { data, error } = await supabaseAdmin
-      .from('users')
-      .select('*')
-      .eq('role', 'participant')
-      .order('created_at', { ascending: true });
+    const result = await query<User>(
+      `SELECT * FROM users WHERE role = 'participant' ORDER BY created_at ASC`
+    );
 
-    if (error) throw new Error(`Failed to get participants: ${error.message}`);
-    return (data || []) as User[];
+    return result.rows;
   },
 
   // Получить участников без чекина сегодня
   async getWithoutCheckinToday(): Promise<User[]> {
     const today = new Date().toISOString().split('T')[0];
 
-    const { data, error } = await supabaseAdmin
-      .from('users')
-      .select(`
-        *,
-        daily_checkins!left(id)
-      `)
-      .eq('role', 'participant')
-      .or(`daily_checkins.date.neq.${today},daily_checkins.is.null`);
+    const result = await query<User>(
+      `SELECT u.* FROM users u
+       WHERE u.role = 'participant'
+       AND NOT EXISTS (
+         SELECT 1 FROM daily_checkins dc
+         WHERE dc.user_id = u.id AND dc.date = $1
+       )`,
+      [today]
+    );
 
-    if (error) throw new Error(`Failed to get users without checkin: ${error.message}`);
-
-    // Фильтруем пользователей без чекина
-    return (data || []).filter((u: any) =>
-      !u.daily_checkins || u.daily_checkins.length === 0
-    ) as User[];
+    return result.rows;
   },
 
   // Получить участников без замеров на текущей неделе
   async getWithoutMeasurementThisWeek(weekNumber: number): Promise<User[]> {
-    const { data, error } = await supabaseAdmin
-      .from('users')
-      .select(`
-        *,
-        weekly_measurements!left(id)
-      `)
-      .eq('role', 'participant')
-      .or(`weekly_measurements.week_number.neq.${weekNumber},weekly_measurements.is.null`);
+    const result = await query<User>(
+      `SELECT u.* FROM users u
+       WHERE u.role = 'participant'
+       AND NOT EXISTS (
+         SELECT 1 FROM weekly_measurements wm
+         WHERE wm.user_id = u.id AND wm.week_number = $1
+       )`,
+      [weekNumber]
+    );
 
-    if (error) throw new Error(`Failed to get users without measurement: ${error.message}`);
-
-    return (data || []).filter((u: any) =>
-      !u.weekly_measurements || u.weekly_measurements.length === 0
-    ) as User[];
+    return result.rows;
   },
 };

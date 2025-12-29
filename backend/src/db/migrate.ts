@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { supabaseAdmin } from './supabase';
+import { query, closePool } from './postgres';
 
 async function runMigrations() {
   console.log('🚀 Запуск миграций...\n');
@@ -15,27 +15,26 @@ async function runMigrations() {
 
     const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
 
-    const { error } = await supabaseAdmin.rpc('exec_sql', { sql_query: sql });
-
-    if (error) {
-      // Если функция exec_sql не существует, выводим инструкцию
+    try {
+      await query(sql);
+      console.log(`✅ ${file} выполнен успешно\n`);
+    } catch (error) {
       console.error(`\n❌ Ошибка при выполнении ${file}:`);
-      console.error(error.message);
-      console.log('\n📋 Скопируйте содержимое файла миграции и выполните в Supabase SQL Editor:');
-      console.log(`   Файл: ${path.join(migrationsDir, file)}\n`);
+      console.error((error as Error).message);
+      console.log(`\n📋 Файл: ${path.join(migrationsDir, file)}\n`);
+      await closePool();
       process.exit(1);
     }
-
-    console.log(`✅ ${file} выполнен успешно\n`);
   }
 
   console.log('🎉 Все миграции выполнены!');
+  await closePool();
 }
 
 // Альтернативный способ: вывести SQL для ручного выполнения
 async function printMigrations() {
-  console.log('📋 SQL миграции для Supabase:\n');
-  console.log('Скопируйте и выполните в Supabase Dashboard -> SQL Editor\n');
+  console.log('📋 SQL миграции для PostgreSQL:\n');
+  console.log('Скопируйте и выполните в вашей БД\n');
   console.log('='.repeat(60) + '\n');
 
   const migrationsDir = path.join(__dirname, 'migrations');

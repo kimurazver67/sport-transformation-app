@@ -1,42 +1,35 @@
-import { supabaseAdmin } from '../db/supabase';
+import { query } from '../db/postgres';
 import { Achievement, AchievementType, ACHIEVEMENTS_CONFIG } from '../types';
 
 export const achievementService = {
   // Получить все достижения пользователя
   async getUserAchievements(userId: string): Promise<Achievement[]> {
-    const { data, error } = await supabaseAdmin
-      .from('achievements')
-      .select('*')
-      .eq('user_id', userId)
-      .order('unlocked_at', { ascending: false });
+    const result = await query<Achievement>(
+      'SELECT * FROM achievements WHERE user_id = $1 ORDER BY unlocked_at DESC',
+      [userId]
+    );
 
-    if (error) throw new Error(`Failed to get achievements: ${error.message}`);
-    return (data || []) as Achievement[];
+    return result.rows;
   },
 
   // Разблокировать достижение
   async unlock(userId: string, type: AchievementType): Promise<Achievement | null> {
     // Проверяем, не получено ли уже
-    const { data: existing } = await supabaseAdmin
-      .from('achievements')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('achievement_type', type)
-      .single();
+    const existingResult = await query<{ id: string }>(
+      'SELECT id FROM achievements WHERE user_id = $1 AND achievement_type = $2',
+      [userId, type]
+    );
 
-    if (existing) return null; // Уже есть
+    if (existingResult.rows[0]) return null; // Уже есть
 
-    const { data, error } = await supabaseAdmin
-      .from('achievements')
-      .insert({
-        user_id: userId,
-        achievement_type: type,
-      })
-      .select()
-      .single();
+    const insertResult = await query<Achievement>(
+      `INSERT INTO achievements (user_id, achievement_type)
+       VALUES ($1, $2)
+       RETURNING *`,
+      [userId, type]
+    );
 
-    if (error) throw new Error(`Failed to unlock achievement: ${error.message}`);
-    return data as Achievement;
+    return insertResult.rows[0] || null;
   },
 
   // Проверить и разблокировать достижения
@@ -64,12 +57,12 @@ export const achievementService = {
 
   // Проверка: 7 чекинов подряд
   async checkFirstWeek(userId: string): Promise<Achievement | null> {
-    const { data: stats } = await supabaseAdmin
-      .from('user_stats')
-      .select('current_streak')
-      .eq('user_id', userId)
-      .single();
+    const result = await query<{ current_streak: number }>(
+      'SELECT current_streak FROM user_stats WHERE user_id = $1',
+      [userId]
+    );
 
+    const stats = result.rows[0];
     if (stats && stats.current_streak >= 7) {
       return this.unlock(userId, 'first_week');
     }
@@ -78,12 +71,12 @@ export const achievementService = {
 
   // Проверка: 30 дней подряд
   async checkIronDiscipline(userId: string): Promise<Achievement | null> {
-    const { data: stats } = await supabaseAdmin
-      .from('user_stats')
-      .select('current_streak')
-      .eq('user_id', userId)
-      .single();
+    const result = await query<{ current_streak: number }>(
+      'SELECT current_streak FROM user_stats WHERE user_id = $1',
+      [userId]
+    );
 
+    const stats = result.rows[0];
     if (stats && stats.current_streak >= 30) {
       return this.unlock(userId, 'iron_discipline');
     }
@@ -93,25 +86,27 @@ export const achievementService = {
   // Проверка: потеря 5 кг
   async checkMinus5kg(userId: string): Promise<Achievement | null> {
     // Получаем стартовый вес
-    const { data: user } = await supabaseAdmin
-      .from('users')
-      .select('start_weight')
-      .eq('id', userId)
-      .single();
+    const userResult = await query<{ start_weight: number | null }>(
+      'SELECT start_weight FROM users WHERE id = $1',
+      [userId]
+    );
 
+    const user = userResult.rows[0];
     if (!user?.start_weight) return null;
 
     // Получаем последний замер
-    const { data: measurements } = await supabaseAdmin
-      .from('weekly_measurements')
-      .select('weight')
-      .eq('user_id', userId)
-      .order('week_number', { ascending: false })
-      .limit(1);
+    const measurementResult = await query<{ weight: number }>(
+      `SELECT weight FROM weekly_measurements
+       WHERE user_id = $1
+       ORDER BY week_number DESC
+       LIMIT 1`,
+      [userId]
+    );
 
-    if (!measurements || measurements.length === 0) return null;
+    const measurement = measurementResult.rows[0];
+    if (!measurement) return null;
 
-    const weightLoss = user.start_weight - measurements[0].weight;
+    const weightLoss = user.start_weight - measurement.weight;
     if (weightLoss >= 5) {
       return this.unlock(userId, 'minus_5kg');
     }
@@ -120,14 +115,15 @@ export const achievementService = {
 
   // Проверка: 4 недели с фото подряд
   async checkProgressVisible(userId: string): Promise<Achievement | null> {
-    const { data: measurements } = await supabaseAdmin
-      .from('weekly_measurements')
-      .select('week_number, photo_front_url')
-      .eq('user_id', userId)
-      .not('photo_front_url', 'is', null)
-      .order('week_number', { ascending: true });
+    const result = await query<{ week_number: number; photo_front_file_id: string | null }>(
+      `SELECT week_number, photo_front_file_id FROM weekly_measurements
+       WHERE user_id = $1 AND photo_front_file_id IS NOT NULL
+       ORDER BY week_number ASC`,
+      [userId]
+    );
 
-    if (!measurements || measurements.length < 4) return null;
+    const measurements = result.rows;
+    if (measurements.length < 4) return null;
 
     // Проверяем 4 подряд идущих недели с фото
     let consecutive = 1;
@@ -146,13 +142,11 @@ export const achievementService = {
 
   // Разблокировать "Лидер недели" (вызывается по cron)
   async unlockWeekLeader(): Promise<Achievement | null> {
-    const { data: leader } = await supabaseAdmin
-      .from('leaderboard')
-      .select('id')
-      .order('weekly_points', { ascending: false })
-      .limit(1)
-      .single();
+    const result = await query<{ id: string }>(
+      'SELECT id FROM leaderboard ORDER BY weekly_points DESC LIMIT 1'
+    );
 
+    const leader = result.rows[0];
     if (!leader) return null;
     return this.unlock(leader.id, 'week_leader');
   },

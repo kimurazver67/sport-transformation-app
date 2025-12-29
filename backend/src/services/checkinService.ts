@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../db/supabase';
+import { query } from '../db/postgres';
 import { DailyCheckin, CheckinForm, POINTS } from '../types';
 import { statsService } from './statsService';
 import { achievementService } from './achievementService';
@@ -10,59 +10,73 @@ export const checkinService = {
     try {
       const today = new Date().toISOString().split('T')[0];
 
-    // Проверяем существующий чекин
-    const { data: existing } = await supabaseAdmin
-      .from('daily_checkins')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('date', today)
-      .single();
+      // Проверяем существующий чекин
+      const existingResult = await query<{ id: string }>(
+        'SELECT id FROM daily_checkins WHERE user_id = $1 AND date = $2',
+        [userId, today]
+      );
 
-    const checkinData = {
-      user_id: userId,
-      date: today,
-      workout: data.workout,
-      workout_type: data.workout_type || null,
-      nutrition: data.nutrition,
-      water: data.water,
-      water_liters: data.water_liters || null,
-      sleep_hours: data.sleep_hours,
-      mood: data.mood,
-    };
+      const existing = existingResult.rows[0];
 
-    let result: DailyCheckin;
+      let result: DailyCheckin;
 
-    if (existing) {
-      // Обновляем существующий
-      const { data: updated, error } = await supabaseAdmin
-        .from('daily_checkins')
-        .update(checkinData)
-        .eq('id', existing.id)
-        .select()
-        .single();
+      if (existing) {
+        // Обновляем существующий
+        const updateResult = await query<DailyCheckin>(
+          `UPDATE daily_checkins SET
+            workout = $1,
+            workout_type = $2,
+            nutrition = $3,
+            water = $4,
+            water_liters = $5,
+            sleep_hours = $6,
+            mood = $7
+          WHERE id = $8
+          RETURNING *`,
+          [
+            data.workout,
+            data.workout_type || null,
+            data.nutrition,
+            data.water,
+            data.water_liters || null,
+            data.sleep_hours,
+            data.mood,
+            existing.id,
+          ]
+        );
 
-      if (error) throw new Error(`Failed to update checkin: ${error.message}`);
-      result = updated as DailyCheckin;
-    } else {
-      // Создаём новый
-      const { data: created, error } = await supabaseAdmin
-        .from('daily_checkins')
-        .insert(checkinData)
-        .select()
-        .single();
+        result = updateResult.rows[0];
+      } else {
+        // Создаём новый
+        const insertResult = await query<DailyCheckin>(
+          `INSERT INTO daily_checkins
+            (user_id, date, workout, workout_type, nutrition, water, water_liters, sleep_hours, mood)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          RETURNING *`,
+          [
+            userId,
+            today,
+            data.workout,
+            data.workout_type || null,
+            data.nutrition,
+            data.water,
+            data.water_liters || null,
+            data.sleep_hours,
+            data.mood,
+          ]
+        );
 
-      if (error) throw new Error(`Failed to create checkin: ${error.message}`);
-      result = created as DailyCheckin;
+        result = insertResult.rows[0];
 
-      // Начисляем очки только за новый чекин
-      await statsService.addPoints(userId, POINTS.DAILY_CHECKIN);
-      await statsService.updateStreak(userId);
+        // Начисляем очки только за новый чекин
+        await statsService.addPoints(userId, POINTS.DAILY_CHECKIN);
+        await statsService.updateStreak(userId);
 
-      // Проверяем достижения
-      await achievementService.checkAndUnlock(userId);
-    }
+        // Проверяем достижения
+        await achievementService.checkAndUnlock(userId);
+      }
 
-    return result;
+      return result;
     } catch (error) {
       await adminNotifier.error(error as Error, {
         endpoint: 'checkinService.createOrUpdate',
@@ -77,41 +91,34 @@ export const checkinService = {
   async getTodayCheckin(userId: string): Promise<DailyCheckin | null> {
     const today = new Date().toISOString().split('T')[0];
 
-    const { data, error } = await supabaseAdmin
-      .from('daily_checkins')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('date', today)
-      .single();
+    const result = await query<DailyCheckin>(
+      'SELECT * FROM daily_checkins WHERE user_id = $1 AND date = $2',
+      [userId, today]
+    );
 
-    if (error || !data) return null;
-    return data as DailyCheckin;
+    return result.rows[0] || null;
   },
 
   // Получить чекины за период
   async getByDateRange(userId: string, startDate: string, endDate: string): Promise<DailyCheckin[]> {
-    const { data, error } = await supabaseAdmin
-      .from('daily_checkins')
-      .select('*')
-      .eq('user_id', userId)
-      .gte('date', startDate)
-      .lte('date', endDate)
-      .order('date', { ascending: true });
+    const result = await query<DailyCheckin>(
+      `SELECT * FROM daily_checkins
+       WHERE user_id = $1 AND date >= $2 AND date <= $3
+       ORDER BY date ASC`,
+      [userId, startDate, endDate]
+    );
 
-    if (error) throw new Error(`Failed to get checkins: ${error.message}`);
-    return (data || []) as DailyCheckin[];
+    return result.rows;
   },
 
   // Получить все чекины пользователя
   async getAllByUser(userId: string): Promise<DailyCheckin[]> {
-    const { data, error } = await supabaseAdmin
-      .from('daily_checkins')
-      .select('*')
-      .eq('user_id', userId)
-      .order('date', { ascending: false });
+    const result = await query<DailyCheckin>(
+      'SELECT * FROM daily_checkins WHERE user_id = $1 ORDER BY date DESC',
+      [userId]
+    );
 
-    if (error) throw new Error(`Failed to get checkins: ${error.message}`);
-    return (data || []) as DailyCheckin[];
+    return result.rows;
   },
 
   // Статистика чекинов
@@ -122,14 +129,12 @@ export const checkinService = {
     avgSleep: number;
     avgMood: number;
   }> {
-    const { data, error } = await supabaseAdmin
-      .from('daily_checkins')
-      .select('*')
-      .eq('user_id', userId);
+    const result = await query<DailyCheckin>(
+      'SELECT * FROM daily_checkins WHERE user_id = $1',
+      [userId]
+    );
 
-    if (error) throw new Error(`Failed to get checkin stats: ${error.message}`);
-
-    const checkins = data || [];
+    const checkins = result.rows;
     const total = checkins.length;
 
     if (total === 0) {

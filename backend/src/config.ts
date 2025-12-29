@@ -7,10 +7,11 @@ const envSchema = z.object({
   // Telegram
   BOT_TOKEN: z.string().min(1, 'BOT_TOKEN is required'),
 
-  // Supabase
-  SUPABASE_URL: z.string().url('SUPABASE_URL must be a valid URL'),
-  SUPABASE_ANON_KEY: z.string().min(1, 'SUPABASE_ANON_KEY is required'),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required'),
+  // Database (Railway PostgreSQL)
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+
+  // Redis (Railway Redis)
+  REDIS_URL: z.string().optional(),
 
   // Google Sheets (optional)
   GOOGLE_SERVICE_ACCOUNT_EMAIL: z.string().optional(),
@@ -43,10 +44,11 @@ export const config = {
   bot: {
     token: parsed.data.BOT_TOKEN,
   },
-  supabase: {
-    url: parsed.data.SUPABASE_URL,
-    anonKey: parsed.data.SUPABASE_ANON_KEY,
-    serviceRoleKey: parsed.data.SUPABASE_SERVICE_ROLE_KEY,
+  database: {
+    url: parsed.data.DATABASE_URL,
+  },
+  redis: {
+    url: parsed.data.REDIS_URL,
   },
   google: {
     serviceAccountEmail: parsed.data.GOOGLE_SERVICE_ACCOUNT_EMAIL,

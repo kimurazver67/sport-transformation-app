@@ -94,8 +94,9 @@ class GoogleSheetsService {
       const measurements = await measurementService.getAllByUser(p.id);
 
       for (const m of measurements) {
-        const photos = [m.photo_front_url, m.photo_side_url, m.photo_back_url]
+        const photos = [m.photo_front_file_id, m.photo_side_file_id, m.photo_back_file_id]
           .filter(Boolean)
+          .map(id => `tg://file_id/${id}`)
           .join('\n');
 
         rows.push([

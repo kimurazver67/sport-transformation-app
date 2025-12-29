@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../db/supabase';
+import { query } from '../db/postgres';
 import { WeeklyMeasurement, MeasurementForm, POINTS } from '../types';
 import { getCurrentWeek, isCourseStarted } from '../config';
 import { statsService } from './statsService';
@@ -10,77 +10,92 @@ export const measurementService = {
   // Создать или обновить замер недели
   async createOrUpdate(
     userId: string,
-    data: MeasurementForm,
-    photos?: { front?: string; side?: string; back?: string }
+    data: MeasurementForm
   ): Promise<WeeklyMeasurement> {
     try {
       // Если курс не начался, используем неделю 1 (подготовительная/стартовая)
       const weekNumber = isCourseStarted() ? getCurrentWeek() : 1;
       const today = new Date().toISOString().split('T')[0];
 
-    // Проверяем существующий замер
-    const { data: existing } = await supabaseAdmin
-      .from('weekly_measurements')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('week_number', weekNumber)
-      .single();
+      // Проверяем существующий замер
+      const existingResult = await query<{ id: string }>(
+        'SELECT id FROM weekly_measurements WHERE user_id = $1 AND week_number = $2',
+        [userId, weekNumber]
+      );
 
-    const measurementData = {
-      user_id: userId,
-      week_number: weekNumber,
-      date: today,
-      weight: data.weight,
-      chest: data.chest || null,
-      waist: data.waist || null,
-      hips: data.hips || null,
-      bicep_left: data.bicep_left || null,
-      bicep_right: data.bicep_right || null,
-      thigh_left: data.thigh_left || null,
-      thigh_right: data.thigh_right || null,
-      body_fat_percent: data.body_fat_percent || null,
-      photo_front_url: photos?.front || null,
-      photo_side_url: photos?.side || null,
-      photo_back_url: photos?.back || null,
-    };
+      const existing = existingResult.rows[0];
+      let result: WeeklyMeasurement;
+      let isNew = false;
 
-    let result: WeeklyMeasurement;
-    let isNew = false;
+      if (existing) {
+        const updateResult = await query<WeeklyMeasurement>(
+          `UPDATE weekly_measurements SET
+            date = $1,
+            weight = $2,
+            chest = $3,
+            waist = $4,
+            hips = $5,
+            bicep_left = $6,
+            bicep_right = $7,
+            thigh_left = $8,
+            thigh_right = $9,
+            body_fat_percent = $10
+          WHERE id = $11
+          RETURNING *`,
+          [
+            today,
+            data.weight,
+            data.chest || null,
+            data.waist || null,
+            data.hips || null,
+            data.bicep_left || null,
+            data.bicep_right || null,
+            data.thigh_left || null,
+            data.thigh_right || null,
+            data.body_fat_percent || null,
+            existing.id,
+          ]
+        );
 
-    if (existing) {
-      const { data: updated, error } = await supabaseAdmin
-        .from('weekly_measurements')
-        .update(measurementData)
-        .eq('id', existing.id)
-        .select()
-        .single();
+        result = updateResult.rows[0];
+      } else {
+        const insertResult = await query<WeeklyMeasurement>(
+          `INSERT INTO weekly_measurements
+            (user_id, week_number, date, weight, chest, waist, hips, bicep_left, bicep_right, thigh_left, thigh_right, body_fat_percent)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+          RETURNING *`,
+          [
+            userId,
+            weekNumber,
+            today,
+            data.weight,
+            data.chest || null,
+            data.waist || null,
+            data.hips || null,
+            data.bicep_left || null,
+            data.bicep_right || null,
+            data.thigh_left || null,
+            data.thigh_right || null,
+            data.body_fat_percent || null,
+          ]
+        );
 
-      if (error) throw new Error(`Failed to update measurement: ${error.message}`);
-      result = updated as WeeklyMeasurement;
-    } else {
-      const { data: created, error } = await supabaseAdmin
-        .from('weekly_measurements')
-        .insert(measurementData)
-        .select()
-        .single();
+        result = insertResult.rows[0];
+        isNew = true;
 
-      if (error) throw new Error(`Failed to create measurement: ${error.message}`);
-      result = created as WeeklyMeasurement;
-      isNew = true;
+        // Начисляем очки за новый замер
+        await statsService.addPoints(userId, POINTS.WEEKLY_MEASUREMENT);
+      }
 
-      // Начисляем очки за новый замер
-      await statsService.addPoints(userId, POINTS.WEEKLY_MEASUREMENT);
-    }
+      // Обновляем стартовый вес, если это первый замер
+      if (weekNumber === 1) {
+        await userService.updateStartWeight(userId, data.weight);
+      }
 
-    // Обновляем стартовый вес, если это первый замер
-    if (weekNumber === 1) {
-      await userService.updateStartWeight(userId, data.weight);
-    }
+      // Проверяем достижения
+      await achievementService.checkAndUnlock(userId);
 
-    // Проверяем достижения
-    await achievementService.checkAndUnlock(userId);
-
-    return result;
+      return result;
     } catch (error) {
       // Отправляем ошибку в админ чат
       await adminNotifier.error(error as Error, {
@@ -96,27 +111,22 @@ export const measurementService = {
   async getCurrentWeekMeasurement(userId: string): Promise<WeeklyMeasurement | null> {
     const weekNumber = isCourseStarted() ? getCurrentWeek() : 1;
 
-    const { data, error } = await supabaseAdmin
-      .from('weekly_measurements')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('week_number', weekNumber)
-      .single();
+    const result = await query<WeeklyMeasurement>(
+      'SELECT * FROM weekly_measurements WHERE user_id = $1 AND week_number = $2',
+      [userId, weekNumber]
+    );
 
-    if (error || !data) return null;
-    return data as WeeklyMeasurement;
+    return result.rows[0] || null;
   },
 
   // Получить все замеры пользователя
   async getAllByUser(userId: string): Promise<WeeklyMeasurement[]> {
-    const { data, error } = await supabaseAdmin
-      .from('weekly_measurements')
-      .select('*')
-      .eq('user_id', userId)
-      .order('week_number', { ascending: true });
+    const result = await query<WeeklyMeasurement>(
+      'SELECT * FROM weekly_measurements WHERE user_id = $1 ORDER BY week_number ASC',
+      [userId]
+    );
 
-    if (error) throw new Error(`Failed to get measurements: ${error.message}`);
-    return (data || []) as WeeklyMeasurement[];
+    return result.rows;
   },
 
   // Получить прогресс веса
@@ -147,39 +157,35 @@ export const measurementService = {
     return { start, current, weightChange };
   },
 
-  // Обновить URL фото (legacy - для обратной совместимости)
-  async updatePhotos(
-    measurementId: string,
-    photos: { front?: string; side?: string; back?: string }
-  ): Promise<void> {
-    const updateData: Record<string, string> = {};
-    if (photos.front) updateData.photo_front_url = photos.front;
-    if (photos.side) updateData.photo_side_url = photos.side;
-    if (photos.back) updateData.photo_back_url = photos.back;
-
-    const { error } = await supabaseAdmin
-      .from('weekly_measurements')
-      .update(updateData)
-      .eq('id', measurementId);
-
-    if (error) throw new Error(`Failed to update photos: ${error.message}`);
-  },
-
-  // Сохранить Telegram file_id (новый способ - без лимитов)
+  // Сохранить Telegram file_id для фото
   async updatePhotoFileIds(
     measurementId: string,
     fileIds: { front?: string; side?: string; back?: string }
   ): Promise<void> {
-    const updateData: Record<string, string> = {};
-    if (fileIds.front) updateData.photo_front_file_id = fileIds.front;
-    if (fileIds.side) updateData.photo_side_file_id = fileIds.side;
-    if (fileIds.back) updateData.photo_back_file_id = fileIds.back;
+    const updates: string[] = [];
+    const values: unknown[] = [];
+    let paramIndex = 1;
 
-    const { error } = await supabaseAdmin
-      .from('weekly_measurements')
-      .update(updateData)
-      .eq('id', measurementId);
+    if (fileIds.front) {
+      updates.push(`photo_front_file_id = $${paramIndex++}`);
+      values.push(fileIds.front);
+    }
+    if (fileIds.side) {
+      updates.push(`photo_side_file_id = $${paramIndex++}`);
+      values.push(fileIds.side);
+    }
+    if (fileIds.back) {
+      updates.push(`photo_back_file_id = $${paramIndex++}`);
+      values.push(fileIds.back);
+    }
 
-    if (error) throw new Error(`Failed to update photo file IDs: ${error.message}`);
+    if (updates.length === 0) return;
+
+    values.push(measurementId);
+
+    await query(
+      `UPDATE weekly_measurements SET ${updates.join(', ')} WHERE id = $${paramIndex}`,
+      values
+    );
   },
 };

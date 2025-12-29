@@ -58,9 +58,6 @@ export interface WeeklyMeasurement {
   thigh_left?: number;
   thigh_right?: number;
   body_fat_percent?: number;
-  photo_front_url?: string;
-  photo_side_url?: string;
-  photo_back_url?: string;
   photo_front_file_id?: string;
   photo_side_file_id?: string;
   photo_back_file_id?: string;

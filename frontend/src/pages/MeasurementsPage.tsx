@@ -6,22 +6,13 @@ import WeightChart from '../components/WeightChart'
 import { api } from '../services/api'
 import type { MeasurementForm, WeeklyMeasurement } from '../types'
 
-// Хелпер для получения URL фото (поддержка и старых URL и новых file_id)
+// Хелпер для получения URL фото через Telegram file_id
 function getPhotoUrl(measurement: WeeklyMeasurement, type: 'front' | 'side' | 'back'): string | null {
   const fileIdKey = `photo_${type}_file_id` as keyof WeeklyMeasurement
-  const urlKey = `photo_${type}_url` as keyof WeeklyMeasurement
-
   const fileId = measurement[fileIdKey] as string | undefined
-  const url = measurement[urlKey] as string | undefined
 
-  // Приоритет file_id (новый способ)
   if (fileId) {
     return api.getPhotoUrl(fileId)
-  }
-
-  // Fallback на старый URL (для уже загруженных фото)
-  if (url) {
-    return url
   }
 
   return null

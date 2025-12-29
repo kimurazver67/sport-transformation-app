@@ -9,7 +9,7 @@ import { taskService } from '../services/taskService';
 import { achievementService } from '../services/achievementService';
 import { adminNotifier } from '../services/adminNotifierService';
 import { User, WorkoutType, MoodLevel, CheckinForm } from '../types';
-import { supabaseAdmin } from '../db/supabase';
+import { query } from '../db/postgres';
 
 // Расширяем контекст
 interface BotContext extends Context {
@@ -727,15 +727,18 @@ export async function sendReminder(telegramId: number, message: string): Promise
 
 // ===== МАССОВАЯ РАССЫЛКА =====
 export async function broadcastMessage(message: string, role: 'all' | 'participant' | 'trainer' = 'all'): Promise<{ sent: number; failed: number }> {
-  let users;
+  let result;
 
   if (role === 'all') {
-    const { data } = await supabaseAdmin.from('users').select('telegram_id');
-    users = data || [];
+    result = await query<{ telegram_id: number }>('SELECT telegram_id FROM users');
   } else {
-    const { data } = await supabaseAdmin.from('users').select('telegram_id').eq('role', role);
-    users = data || [];
+    result = await query<{ telegram_id: number }>(
+      'SELECT telegram_id FROM users WHERE role = $1',
+      [role]
+    );
   }
+
+  const users = result.rows;
 
   let sent = 0;
   let failed = 0;

@@ -7,6 +7,8 @@ import { telegramAuthMiddleware, trainerOnly } from './middleware/auth';
 import { adminNotifier, initAdminNotifier } from './services/adminNotifierService';
 import apiRoutes from './routes/api';
 import adminRoutes from './routes/admin';
+import { testConnection, closePool } from './db/postgres';
+import { testRedisConnection, closeRedis } from './db/redis';
 
 const app = express();
 
@@ -58,6 +60,17 @@ async function start() {
   try {
     console.log('[Startup] Starting application...');
 
+    // Проверяем подключение к PostgreSQL
+    console.log('[Startup] Testing PostgreSQL connection...');
+    const pgConnected = await testConnection();
+    if (!pgConnected) {
+      throw new Error('Failed to connect to PostgreSQL');
+    }
+
+    // Проверяем подключение к Redis (опционально)
+    console.log('[Startup] Testing Redis connection...');
+    await testRedisConnection();
+
     // Запускаем Express сервер
     app.listen(config.app.port, () => {
       console.log(`🚀 Сервер запущен на порту ${config.app.port}`);
@@ -95,6 +108,8 @@ process.on('SIGINT', async () => {
   console.log('\n🛑 Получен SIGINT, завершение работы...');
   await stopBot('SIGINT');
   schedulerService.stop();
+  await closePool();
+  await closeRedis();
   process.exit(0);
 });
 
@@ -102,6 +117,8 @@ process.on('SIGTERM', async () => {
   console.log('\n🛑 Получен SIGTERM, завершение работы...');
   await stopBot('SIGTERM');
   schedulerService.stop();
+  await closePool();
+  await closeRedis();
   process.exit(0);
 });
 

@@ -1,23 +1,46 @@
-import { supabaseAdmin } from '../db/supabase';
+import { query } from '../db/postgres';
 import { UserStats, LeaderboardEntry, POINTS } from '../types';
+
+interface UserStatsRow {
+  user_id: string;
+  current_streak: number;
+  max_streak: number;
+  total_points: number;
+  weekly_points: number;
+  last_checkin_date: string | null;
+}
+
+interface LeaderboardRow {
+  id: string;
+  telegram_id: number;
+  username: string | null;
+  first_name: string;
+  last_name: string | null;
+  total_points: number;
+  weekly_points: number;
+  current_streak: number;
+  rank_overall: number;
+  rank_weekly: number;
+}
 
 export const statsService = {
   // Получить статистику пользователя
   async getUserStats(userId: string): Promise<UserStats | null> {
-    const { data: stats, error } = await supabaseAdmin
-      .from('user_stats')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
+    const statsResult = await query<UserStatsRow>(
+      'SELECT * FROM user_stats WHERE user_id = $1',
+      [userId]
+    );
 
-    if (error || !stats) return null;
+    const stats = statsResult.rows[0];
+    if (!stats) return null;
 
-    // Получаем позиции в рейтинге
-    const { data: leaderboard } = await supabaseAdmin
-      .from('leaderboard')
-      .select('id, rank_overall, rank_weekly')
-      .eq('id', userId)
-      .single();
+    // Получаем позиции в рейтинге через view
+    const leaderboardResult = await query<{ rank_overall: number; rank_weekly: number }>(
+      'SELECT rank_overall, rank_weekly FROM leaderboard WHERE id = $1',
+      [userId]
+    );
+
+    const leaderboard = leaderboardResult.rows[0];
 
     return {
       user_id: userId,
@@ -25,7 +48,7 @@ export const statsService = {
       max_streak: stats.max_streak,
       total_points: stats.total_points,
       weekly_points: stats.weekly_points,
-      total_checkins: 0, // будет вычислено отдельно при необходимости
+      total_checkins: 0,
       total_measurements: 0,
       tasks_completed: 0,
       rank_overall: leaderboard?.rank_overall || 0,
@@ -35,27 +58,14 @@ export const statsService = {
 
   // Добавить очки
   async addPoints(userId: string, points: number): Promise<void> {
-    const { error } = await supabaseAdmin.rpc('add_user_points', {
-      p_user_id: userId,
-      p_points: points,
-    });
-
-    // Если функция не существует, делаем вручную
-    if (error) {
-      const { data: current } = await supabaseAdmin
-        .from('user_stats')
-        .select('total_points, weekly_points')
-        .eq('user_id', userId)
-        .single();
-
-      await supabaseAdmin
-        .from('user_stats')
-        .update({
-          total_points: (current?.total_points || 0) + points,
-          weekly_points: (current?.weekly_points || 0) + points,
-        })
-        .eq('user_id', userId);
-    }
+    await query(
+      `UPDATE user_stats SET
+        total_points = total_points + $1,
+        weekly_points = weekly_points + $1,
+        updated_at = NOW()
+      WHERE user_id = $2`,
+      [points, userId]
+    );
   },
 
   // Обновить streak
@@ -64,12 +74,12 @@ export const statsService = {
     const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 
     // Получаем текущую статистику
-    const { data: stats } = await supabaseAdmin
-      .from('user_stats')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
+    const result = await query<UserStatsRow>(
+      'SELECT * FROM user_stats WHERE user_id = $1',
+      [userId]
+    );
 
+    const stats = result.rows[0];
     if (!stats) return 0;
 
     let newStreak: number;
@@ -94,47 +104,41 @@ export const statsService = {
     else if (newStreak === 30) bonusPoints = POINTS.STREAK_BONUS_30;
     else if (newStreak > 7 && newStreak % 7 === 0) bonusPoints = POINTS.STREAK_BONUS_7;
 
-    await supabaseAdmin
-      .from('user_stats')
-      .update({
-        current_streak: newStreak,
-        max_streak: newMaxStreak,
-        last_checkin_date: today,
-        total_points: stats.total_points + bonusPoints,
-        weekly_points: stats.weekly_points + bonusPoints,
-      })
-      .eq('user_id', userId);
+    await query(
+      `UPDATE user_stats SET
+        current_streak = $1,
+        max_streak = $2,
+        last_checkin_date = $3,
+        total_points = total_points + $4,
+        weekly_points = weekly_points + $4,
+        updated_at = NOW()
+      WHERE user_id = $5`,
+      [newStreak, newMaxStreak, today, bonusPoints, userId]
+    );
 
     return newStreak;
   },
 
   // Сбросить недельные очки (вызывается по cron в понедельник)
   async resetWeeklyPoints(): Promise<void> {
-    const { error } = await supabaseAdmin
-      .from('user_stats')
-      .update({ weekly_points: 0 })
-      .neq('user_id', '00000000-0000-0000-0000-000000000000'); // all rows
-
-    if (error) throw new Error(`Failed to reset weekly points: ${error.message}`);
+    await query('UPDATE user_stats SET weekly_points = 0, updated_at = NOW()');
   },
 
   // Получить рейтинг
   async getLeaderboard(limit = 20): Promise<LeaderboardEntry[]> {
-    const { data, error } = await supabaseAdmin
-      .from('leaderboard')
-      .select('*')
-      .limit(limit);
+    const result = await query<LeaderboardRow>(
+      'SELECT * FROM leaderboard LIMIT $1',
+      [limit]
+    );
 
-    if (error) throw new Error(`Failed to get leaderboard: ${error.message}`);
-
-    return (data || []).map((row: any, index: number) => ({
+    return result.rows.map((row) => ({
       user_id: row.id,
       user: {
         id: row.id,
         telegram_id: row.telegram_id,
-        username: row.username,
+        username: row.username || undefined,
         first_name: row.first_name,
-        last_name: row.last_name,
+        last_name: row.last_name || undefined,
         role: 'participant' as const,
         created_at: '',
         updated_at: '',
@@ -148,22 +152,19 @@ export const statsService = {
 
   // Получить недельный рейтинг
   async getWeeklyLeaderboard(limit = 20): Promise<LeaderboardEntry[]> {
-    const { data, error } = await supabaseAdmin
-      .from('leaderboard')
-      .select('*')
-      .order('weekly_points', { ascending: false })
-      .limit(limit);
+    const result = await query<LeaderboardRow>(
+      'SELECT * FROM leaderboard ORDER BY weekly_points DESC LIMIT $1',
+      [limit]
+    );
 
-    if (error) throw new Error(`Failed to get weekly leaderboard: ${error.message}`);
-
-    return (data || []).map((row: any, index: number) => ({
+    return result.rows.map((row) => ({
       user_id: row.id,
       user: {
         id: row.id,
         telegram_id: row.telegram_id,
-        username: row.username,
+        username: row.username || undefined,
         first_name: row.first_name,
-        last_name: row.last_name,
+        last_name: row.last_name || undefined,
         role: 'participant' as const,
         created_at: '',
         updated_at: '',
