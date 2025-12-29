@@ -23,22 +23,35 @@ function formatDate(): string {
   });
 }
 
-// Отправка сообщения в админский чат
+// Отправка сообщения в админский чат (через fetch для надёжности)
 async function sendToAdmin(message: string): Promise<void> {
-  console.log('[AdminNotifier] sendToAdmin called, bot:', !!bot, 'chatId:', config.admin.chatId);
+  console.log('[AdminNotifier] sendToAdmin called, chatId:', config.admin.chatId);
 
-  if (!bot || !config.admin.chatId) {
-    console.log('[AdminNotifier] Skipping notification (no bot or admin chat configured)');
+  if (!config.admin.chatId) {
+    console.log('[AdminNotifier] Skipping notification (no admin chat configured)');
     return;
   }
 
   try {
-    console.log('[AdminNotifier] Sending to chat:', config.admin.chatId);
-    await bot.telegram.sendMessage(config.admin.chatId, message, {
-      parse_mode: 'HTML',
-      link_preview_options: { is_disabled: true },
+    console.log('[AdminNotifier] Sending to chat via fetch:', config.admin.chatId);
+
+    const response = await fetch(`https://api.telegram.org/bot${config.bot.token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: config.admin.chatId,
+        text: message,
+        parse_mode: 'HTML',
+        disable_web_page_preview: true,
+      }),
     });
-    console.log('[AdminNotifier] Message sent successfully');
+
+    const result = await response.json();
+    if (result.ok) {
+      console.log('[AdminNotifier] Message sent successfully');
+    } else {
+      console.error('[AdminNotifier] Telegram API error:', result);
+    }
   } catch (error) {
     console.error('[AdminNotifier] Failed to send message:', error);
   }
