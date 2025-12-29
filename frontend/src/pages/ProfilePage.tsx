@@ -42,7 +42,7 @@ export default function ProfilePage() {
   ]
 
   return (
-    <div className="min-h-screen pb-24 px-4 relative overflow-hidden">
+    <div className="min-h-screen pb-4 px-4 relative overflow-hidden">
       {/* Background effects */}
       <div className="blob -top-32 -left-32 opacity-10" />
       <div className="blob -bottom-32 -right-32 opacity-10" style={{ animationDelay: '-4s' }} />

@@ -85,7 +85,7 @@ export default function MeasurementsPage() {
   const weightChange = startWeight && currentWeight ? currentWeight - startWeight : null
 
   return (
-    <div className="min-h-screen pb-24 px-4 relative overflow-hidden">
+    <div className="min-h-screen pb-4 px-4 relative overflow-hidden">
       {/* Background */}
       <div className="blob -top-32 -right-32 opacity-10" />
 

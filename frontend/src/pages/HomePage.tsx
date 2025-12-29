@@ -90,7 +90,7 @@ export default function HomePage() {
   const quote = motivationalQuotes[Math.floor(Date.now() / 86400000) % motivationalQuotes.length]
 
   return (
-    <div className="min-h-screen pb-24 relative overflow-hidden">
+    <div className="min-h-screen pb-4 relative overflow-hidden">
       {/* Background blobs */}
       <div className="blob -top-32 -left-32 opacity-20" />
       <div className="blob -bottom-32 -right-32 opacity-10" style={{ animationDelay: '-4s' }} />

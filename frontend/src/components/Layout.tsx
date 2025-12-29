@@ -23,9 +23,9 @@ export default function Layout({ children, isTrainer = false }: LayoutProps) {
   const items = isTrainer ? trainerNavItems : navItems
 
   return (
-    <div className="flex flex-col h-full min-h-screen bg-void" style={{ height: 'var(--tg-viewport-stable-height, 100vh)' }}>
+    <div className="flex flex-col bg-void" style={{ height: 'var(--tg-viewport-height, 100vh)', maxHeight: 'var(--tg-viewport-height, 100vh)' }}>
       {/* Main Content */}
-      <main className="flex-1 pb-24 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto">
         <motion.div
           key={location.pathname}
           initial={{ opacity: 0, y: 20 }}
@@ -37,7 +37,7 @@ export default function Layout({ children, isTrainer = false }: LayoutProps) {
       </main>
 
       {/* Bottom Navigation - Brutal Style */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-void-200/95 backdrop-blur-xl border-t-2 border-void-400 z-50" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      <nav className="flex-shrink-0 bg-void-200/95 backdrop-blur-xl border-t-2 border-void-400 relative">
         {/* Glowing line */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-neon-lime/50 to-transparent" />
 

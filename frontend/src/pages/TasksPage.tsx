@@ -30,7 +30,7 @@ export default function TasksPage() {
   const progress = tasks.length > 0 ? (completedCount / tasks.length) * 100 : 0
 
   return (
-    <div className="min-h-screen pb-24 px-4 relative overflow-hidden">
+    <div className="min-h-screen pb-4 px-4 relative overflow-hidden">
       {/* Background */}
       <div className="blob -top-32 -left-32 opacity-10" />
 
