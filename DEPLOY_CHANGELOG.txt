@@ -1,9 +1,9 @@
 Последние изменения:
 
-• Исправлено: Add changelog to backend folder for Railway deploy
-• Обслуживание: Add deploy changelog
-• Добавлено: Add deploy notifications to Telegram
-• Добавлено: Add course countdown display before start date
-• Исправлено: Make bottom nav part of flex layout, remove fixed positioning
+• Добавлено: Улучшен перевод список изменений на русский язык
+• Исправлено: Добавлен список изменений в папку бэкенд для деплоя
+• Обслуживание: Добавлен список изменений деплоя
+• Добавлено: Добавлены уведомления о деплое в Телеграм
+• Добавлено: Добавлен обратный отсчёт до старта курса
 
-29.12.2025 19:46
+29.12.2025 19:47

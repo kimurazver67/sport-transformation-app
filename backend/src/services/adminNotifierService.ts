@@ -25,16 +25,20 @@ function formatDate(): string {
 
 // Отправка сообщения в админский чат
 async function sendToAdmin(message: string): Promise<void> {
+  console.log('[AdminNotifier] sendToAdmin called, bot:', !!bot, 'chatId:', config.admin.chatId);
+
   if (!bot || !config.admin.chatId) {
     console.log('[AdminNotifier] Skipping notification (no bot or admin chat configured)');
     return;
   }
 
   try {
+    console.log('[AdminNotifier] Sending to chat:', config.admin.chatId);
     await bot.telegram.sendMessage(config.admin.chatId, message, {
       parse_mode: 'HTML',
       link_preview_options: { is_disabled: true },
     });
+    console.log('[AdminNotifier] Message sent successfully');
   } catch (error) {
     console.error('[AdminNotifier] Failed to send message:', error);
   }
@@ -126,17 +130,26 @@ export async function notifyDeploy(): Promise<void> {
     '/app/DEPLOY_CHANGELOG.txt',
   ];
 
+  console.log('[Deploy] Looking for changelog in:', possiblePaths);
+  console.log('[Deploy] CWD:', process.cwd());
+
   let changelog = '';
+  let foundPath = '';
   for (const path of possiblePaths) {
+    console.log('[Deploy] Checking path:', path, 'exists:', existsSync(path));
     if (existsSync(path)) {
       try {
         changelog = readFileSync(path, 'utf-8').trim();
+        foundPath = path;
+        console.log('[Deploy] Found changelog at:', path);
         break;
       } catch (e) {
-        // continue
+        console.log('[Deploy] Error reading:', path, e);
       }
     }
   }
+
+  console.log('[Deploy] Changelog found:', !!changelog, 'length:', changelog.length);
 
   let message: string;
   if (changelog) {
@@ -158,7 +171,9 @@ ${commit ? `🔗 <b>Коммит:</b> <code>${commit.slice(0, 7)}</code>` : ''}
 ✅ Backend запущен`;
   }
 
+  console.log('[Deploy] Sending message to admin...');
   await sendToAdmin(message);
+  console.log('[Deploy] Message sent');
 }
 
 // Уведомление о новом пользователе
