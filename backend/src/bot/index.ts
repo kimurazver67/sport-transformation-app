@@ -568,6 +568,10 @@ export async function startBot() {
     // Инициализируем сервис уведомлений
     adminNotifier.init(bot);
 
+    // Задержка для graceful shutdown предыдущего инстанса
+    console.log('⏳ Ожидание завершения предыдущего инстанса...');
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
     await bot.launch();
     console.log('🤖 Telegram бот запущен');
 
