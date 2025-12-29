@@ -72,9 +72,16 @@ body::after {
 
 #root {
   min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height for mobile */
+  min-height: var(--tg-viewport-stable-height, 100vh); /* Telegram viewport */
   display: flex;
   flex-direction: column;
   position: relative;
+}
+
+/* Telegram WebApp safe area */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* Custom Scrollbar */
