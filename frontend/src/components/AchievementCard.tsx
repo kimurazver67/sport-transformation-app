@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
-import type { Achievement, AchievementType } from '../../shared/types'
-import { ACHIEVEMENTS_CONFIG } from '../../shared/types'
+import type { Achievement, AchievementType } from '../types'
+import { ACHIEVEMENTS_CONFIG } from '../types'
 
 interface AchievementCardProps {
   achievement: Achievement

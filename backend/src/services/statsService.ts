@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '../db/supabase';
-import { UserStats, LeaderboardEntry, POINTS } from '../../shared/types';
+import { UserStats, LeaderboardEntry, POINTS } from '../types';
 
 export const statsService = {
   // Получить статистику пользователя

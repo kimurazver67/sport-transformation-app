@@ -9,7 +9,7 @@ import type {
   Achievement,
   CheckinForm,
   MeasurementForm,
-} from '../../shared/types'
+} from '../types'
 
 interface TelegramUser {
   id: number

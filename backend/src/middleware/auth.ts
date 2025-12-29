@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import { config } from '../config';
 import { userService } from '../services/userService';
-import { User } from '../../shared/types';
+import { User } from '../types';
 
 // Расширяем Request для хранения пользователя
 declare global {

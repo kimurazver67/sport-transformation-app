@@ -3,11 +3,10 @@ import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { useTelegram } from '../hooks/useTelegram'
 import WeightChart from '../components/WeightChart'
-import type { MeasurementForm } from '../../shared/types'
+import type { MeasurementForm } from '../types'
 
 export default function MeasurementsPage() {
   const {
-    user,
     courseWeek,
     currentMeasurement,
     measurements,

@@ -10,7 +10,7 @@ import {
   Filler,
 } from 'chart.js'
 import { Line } from 'react-chartjs-2'
-import type { WeeklyMeasurement } from '../../shared/types'
+import type { WeeklyMeasurement } from '../types'
 
 ChartJS.register(
   CategoryScale,

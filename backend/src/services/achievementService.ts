@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '../db/supabase';
-import { Achievement, AchievementType, ACHIEVEMENTS_CONFIG } from '../../shared/types';
+import { Achievement, AchievementType, ACHIEVEMENTS_CONFIG } from '../types';
 
 export const achievementService = {
   // Получить все достижения пользователя

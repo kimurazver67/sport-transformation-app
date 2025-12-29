@@ -7,7 +7,7 @@ import { measurementService } from '../services/measurementService';
 import { statsService } from '../services/statsService';
 import { taskService } from '../services/taskService';
 import { achievementService } from '../services/achievementService';
-import { User, WorkoutType, MoodLevel, CheckinForm } from '../../shared/types';
+import { User, WorkoutType, MoodLevel, CheckinForm } from '../types';
 import { supabaseAdmin } from '../db/supabase';
 
 // Расширяем контекст

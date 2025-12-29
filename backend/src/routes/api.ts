@@ -6,7 +6,7 @@ import { statsService } from '../services/statsService';
 import { taskService } from '../services/taskService';
 import { achievementService } from '../services/achievementService';
 import { getCurrentWeek } from '../config';
-import { CheckinForm, MeasurementForm } from '../../shared/types';
+import { CheckinForm, MeasurementForm } from '../types';
 
 const router = Router();
 

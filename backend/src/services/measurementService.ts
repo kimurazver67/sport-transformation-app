@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '../db/supabase';
-import { WeeklyMeasurement, MeasurementForm, POINTS } from '../../shared/types';
+import { WeeklyMeasurement, MeasurementForm, POINTS } from '../types';
 import { getCurrentWeek } from '../config';
 import { statsService } from './statsService';
 import { achievementService } from './achievementService';

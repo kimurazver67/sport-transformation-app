@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '../db/supabase';
-import { Task, TaskCompletion, POINTS } from '../../shared/types';
+import { Task, TaskCompletion, POINTS } from '../types';
 import { getCurrentWeek } from '../config';
 import { statsService } from './statsService';
 

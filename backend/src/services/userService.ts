@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '../db/supabase';
-import { User, UserRole } from '../../shared/types';
+import { User, UserRole } from '../types';
 import { config } from '../config';
 
 export interface CreateUserData {

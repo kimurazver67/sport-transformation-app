@@ -1,5 +1,5 @@
 import { supabaseAdmin } from '../db/supabase';
-import { DailyCheckin, CheckinForm, POINTS } from '../../shared/types';
+import { DailyCheckin, CheckinForm, POINTS } from '../types';
 import { statsService } from './statsService';
 import { achievementService } from './achievementService';
 

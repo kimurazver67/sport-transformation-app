@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTelegram } from '../hooks/useTelegram'
 import { useStore } from '../store'
-import type { CheckinForm as CheckinFormData, WorkoutType, MoodLevel } from '../../shared/types'
+import type { CheckinForm as CheckinFormData, WorkoutType, MoodLevel } from '../types'
 
 interface CheckinFormProps {
   onComplete?: () => void

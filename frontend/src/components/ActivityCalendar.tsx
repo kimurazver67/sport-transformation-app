@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, subMonths } from 'date-fns'
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, subMonths } from 'date-fns'
 import { ru } from 'date-fns/locale'
-import type { DailyCheckin } from '../../shared/types'
+import type { DailyCheckin } from '../types'
 
 interface ActivityCalendarProps {
   checkins: DailyCheckin[]
