@@ -1,0 +1,28 @@
+{
+  "name": "sport-transformation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Telegram Mini App для 4-месячного фитнес-курса Трансформация тела",
+  "workspaces": [
+    "backend",
+    "frontend",
+    "shared"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "build:backend": "npm run build --workspace=backend",
+    "build:frontend": "npm run build --workspace=frontend",
+    "start:backend": "npm run start --workspace=backend",
+    "db:migrate": "npm run migrate --workspace=backend",
+    "db:seed": "npm run seed --workspace=backend"
+  },
+  "keywords": [
+    "telegram",
+    "mini-app",
+    "fitness",
+    "transformation"
+  ],
+  "author": "",
+  "license": "MIT"
+}
