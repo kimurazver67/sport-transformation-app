@@ -206,95 +206,91 @@ export default function MeasurementsPage() {
               />
             </div>
 
-            {/* Body measurements grid */}
-            <div className="grid grid-cols-2 gap-3">
+            {/* Body measurements - Row 1: Грудь, Талия, Попец */}
+            <div className="grid grid-cols-3 gap-2">
               <div>
-                <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">
-                  Грудь (см)
-                </label>
+                <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">Грудь</label>
                 <input
                   type="number"
                   step="0.5"
                   value={formData.chest || ''}
                   onChange={(e) => handleInputChange('chest', e.target.value)}
-                  className="input-brutal"
-                  placeholder="100"
+                  className="input-brutal text-sm"
+                  placeholder="см"
                 />
               </div>
               <div>
-                <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">
-                  Талия (см)
-                </label>
+                <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">Талия</label>
                 <input
                   type="number"
                   step="0.5"
                   value={formData.waist || ''}
                   onChange={(e) => handleInputChange('waist', e.target.value)}
-                  className="input-brutal"
-                  placeholder="85"
+                  className="input-brutal text-sm"
+                  placeholder="см"
                 />
               </div>
               <div>
-                <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">
-                  Попец (см)
-                </label>
+                <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">Попец</label>
                 <input
                   type="number"
                   step="0.5"
                   value={formData.hips || ''}
                   onChange={(e) => handleInputChange('hips', e.target.value)}
-                  className="input-brutal"
-                  placeholder="100"
+                  className="input-brutal text-sm"
+                  placeholder="см"
                 />
               </div>
             </div>
 
-            {/* Biceps */}
-            <div>
-              <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">
-                Бицепс (см) - Лев / Прав
-              </label>
-              <div className="grid grid-cols-2 gap-3">
+            {/* Row 2: Бицепсы */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">Бицепс Л</label>
                 <input
                   type="number"
                   step="0.5"
                   value={formData.bicep_left || ''}
                   onChange={(e) => handleInputChange('bicep_left', e.target.value)}
-                  className="input-brutal"
-                  placeholder="L"
+                  className="input-brutal text-sm"
+                  placeholder="см"
                 />
+              </div>
+              <div>
+                <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">Бицепс П</label>
                 <input
                   type="number"
                   step="0.5"
                   value={formData.bicep_right || ''}
                   onChange={(e) => handleInputChange('bicep_right', e.target.value)}
-                  className="input-brutal"
-                  placeholder="R"
+                  className="input-brutal text-sm"
+                  placeholder="см"
                 />
               </div>
             </div>
 
-            {/* Thighs */}
-            <div>
-              <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">
-                Бедро (см) - Лев / Прав
-              </label>
-              <div className="grid grid-cols-2 gap-3">
+            {/* Row 3: Бедра */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">Бедро Л</label>
                 <input
                   type="number"
                   step="0.5"
                   value={formData.thigh_left || ''}
                   onChange={(e) => handleInputChange('thigh_left', e.target.value)}
-                  className="input-brutal"
-                  placeholder="L"
+                  className="input-brutal text-sm"
+                  placeholder="см"
                 />
+              </div>
+              <div>
+                <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">Бедро П</label>
                 <input
                   type="number"
                   step="0.5"
                   value={formData.thigh_right || ''}
                   onChange={(e) => handleInputChange('thigh_right', e.target.value)}
-                  className="input-brutal"
-                  placeholder="R"
+                  className="input-brutal text-sm"
+                  placeholder="см"
                 />
               </div>
             </div>
@@ -320,29 +316,45 @@ export default function MeasurementsPage() {
           </form>
         ) : (
           /* Display current measurements */
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex justify-between py-2 border-b border-void-400">
               <span className="font-mono text-xs text-steel-500 uppercase">Вес</span>
               <span className="font-display font-bold text-neon-lime">{currentMeasurement.weight} кг</span>
             </div>
-            {currentMeasurement.chest && (
-              <div className="flex justify-between py-2 border-b border-void-400">
-                <span className="font-mono text-xs text-steel-500 uppercase">Грудь</span>
-                <span className="font-mono text-steel-200">{currentMeasurement.chest} см</span>
+            <div className="grid grid-cols-3 gap-2 py-2 border-b border-void-400">
+              <div className="text-center">
+                <div className="font-mono text-[10px] text-steel-500 uppercase">Грудь</div>
+                <div className="font-mono text-steel-200">{currentMeasurement.chest || '—'}</div>
               </div>
-            )}
-            {currentMeasurement.waist && (
-              <div className="flex justify-between py-2 border-b border-void-400">
-                <span className="font-mono text-xs text-steel-500 uppercase">Талия</span>
-                <span className="font-mono text-steel-200">{currentMeasurement.waist} см</span>
+              <div className="text-center">
+                <div className="font-mono text-[10px] text-steel-500 uppercase">Талия</div>
+                <div className="font-mono text-steel-200">{currentMeasurement.waist || '—'}</div>
               </div>
-            )}
-            {currentMeasurement.hips && (
-              <div className="flex justify-between py-2 border-b border-void-400">
-                <span className="font-mono text-xs text-steel-500 uppercase">Попец</span>
-                <span className="font-mono text-steel-200">{currentMeasurement.hips} см</span>
+              <div className="text-center">
+                <div className="font-mono text-[10px] text-steel-500 uppercase">Попец</div>
+                <div className="font-mono text-steel-200">{currentMeasurement.hips || '—'}</div>
               </div>
-            )}
+            </div>
+            <div className="grid grid-cols-2 gap-2 py-2 border-b border-void-400">
+              <div className="text-center">
+                <div className="font-mono text-[10px] text-steel-500 uppercase">Бицепс Л</div>
+                <div className="font-mono text-steel-200">{currentMeasurement.bicep_left || '—'}</div>
+              </div>
+              <div className="text-center">
+                <div className="font-mono text-[10px] text-steel-500 uppercase">Бицепс П</div>
+                <div className="font-mono text-steel-200">{currentMeasurement.bicep_right || '—'}</div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2 py-2">
+              <div className="text-center">
+                <div className="font-mono text-[10px] text-steel-500 uppercase">Бедро Л</div>
+                <div className="font-mono text-steel-200">{currentMeasurement.thigh_left || '—'}</div>
+              </div>
+              <div className="text-center">
+                <div className="font-mono text-[10px] text-steel-500 uppercase">Бедро П</div>
+                <div className="font-mono text-steel-200">{currentMeasurement.thigh_right || '—'}</div>
+              </div>
+            </div>
           </div>
         )}
       </motion.div>
