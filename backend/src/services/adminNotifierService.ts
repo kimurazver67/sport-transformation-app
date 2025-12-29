@@ -15,7 +15,6 @@ interface ErrorEntry {
 
 const errorCache = new Map<string, ErrorEntry>();
 const ERROR_COOLDOWN = 60000; // 1 минута между одинаковыми ошибками
-const ERROR_BATCH_INTERVAL = 5000; // 5 секунд для группировки ошибок
 const MAX_ERRORS_PER_MINUTE = 10; // Максимум 10 уведомлений в минуту
 
 let errorCountThisMinute = 0;

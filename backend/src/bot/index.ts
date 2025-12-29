@@ -24,12 +24,17 @@ bot.catch(async (err: unknown, ctx) => {
   const error = err instanceof Error ? err : new Error(String(err));
   console.error('Bot error:', error);
 
+  // Извлекаем информацию о команде с типизацией
+  const message = ctx.message as { text?: string } | undefined;
+  const callbackQuery = ctx.callbackQuery as { data?: string } | undefined;
+  const command = message?.text || callbackQuery?.data || 'N/A';
+
   // Отправляем уведомление в админский чат
   await adminNotifier.error(error, {
     endpoint: 'Telegram Bot',
     method: ctx.updateType,
     userId: ctx.from?.id?.toString(),
-    additionalInfo: `Command: ${(ctx as any).message?.text || (ctx.callbackQuery as any)?.data || 'N/A'}`,
+    additionalInfo: `Command: ${command}`,
   });
 
   // Пытаемся уведомить пользователя
