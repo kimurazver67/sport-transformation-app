@@ -13,32 +13,38 @@ export default function AchievementCard({ achievement }: AchievementCardProps) {
 
   return (
     <motion.div
-      className="card flex items-center gap-3"
+      className="p-4 border-2 border-neon-lime bg-neon-lime/5 flex items-center gap-4"
       initial={{ scale: 0.8, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
-      whileHover={{ scale: 1.02 }}
+      whileHover={{ x: 4 }}
+      style={{ boxShadow: '4px 4px 0 0 #BFFF00' }}
     >
-      <div className="w-12 h-12 bg-primary-500/20 rounded-xl flex items-center justify-center">
+      <div className="w-14 h-14 border-2 border-neon-lime bg-neon-lime/10 flex items-center justify-center">
         <span className="text-2xl">{config.icon}</span>
       </div>
       <div className="flex-1">
-        <h4 className="font-semibold text-white">{config.title}</h4>
-        <p className="text-xs text-dark-400">{config.description}</p>
+        <h4 className="font-display font-bold text-steel-100 uppercase">{config.title}</h4>
+        <p className="font-mono text-[10px] text-steel-500 mt-1">{config.description}</p>
       </div>
-      <div className="text-primary-500">
-        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+      <motion.div
+        className="text-neon-lime"
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ delay: 0.2 }}
+      >
+        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
           <path
             fillRule="evenodd"
             d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
             clipRule="evenodd"
           />
         </svg>
-      </div>
+      </motion.div>
     </motion.div>
   )
 }
 
-// Компонент для списка всех достижений (включая незаработанные)
+// Achievement list component with locked/unlocked states
 export function AchievementsList({ unlockedAchievements }: { unlockedAchievements: Achievement[] }) {
   const allTypes: AchievementType[] = [
     'first_week',
@@ -52,31 +58,52 @@ export function AchievementsList({ unlockedAchievements }: { unlockedAchievement
 
   return (
     <div className="space-y-3">
-      {allTypes.map((type) => {
+      {allTypes.map((type, index) => {
         const config = ACHIEVEMENTS_CONFIG[type]
         const isUnlocked = unlockedSet.has(type)
 
         return (
           <motion.div
             key={type}
-            className={`card flex items-center gap-3 ${
-              !isUnlocked ? 'opacity-50' : ''
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: index * 0.05 }}
+            className={`p-4 border-2 flex items-center gap-4 transition-all ${
+              isUnlocked
+                ? 'border-neon-lime bg-neon-lime/5'
+                : 'border-void-400 bg-void-200 opacity-50'
             }`}
-            whileHover={{ scale: 1.02 }}
+            style={{
+              boxShadow: isUnlocked ? '4px 4px 0 0 #BFFF00' : 'none'
+            }}
+            whileHover={isUnlocked ? { x: 4 } : {}}
           >
-            <div
-              className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                isUnlocked ? 'bg-primary-500/20' : 'bg-dark-700'
-              }`}
-            >
-              <span className="text-2xl">{config.icon}</span>
+            <div className={`w-12 h-12 border-2 flex items-center justify-center ${
+              isUnlocked
+                ? 'border-neon-lime bg-neon-lime/10'
+                : 'border-void-400 bg-void-300'
+            }`}>
+              <span className={`text-xl ${!isUnlocked ? 'grayscale' : ''}`}>
+                {config.icon}
+              </span>
             </div>
             <div className="flex-1">
-              <h4 className="font-semibold text-white">{config.title}</h4>
-              <p className="text-xs text-dark-400">{config.description}</p>
+              <h4 className={`font-display font-bold uppercase ${
+                isUnlocked ? 'text-steel-100' : 'text-steel-500'
+              }`}>
+                {config.title}
+              </h4>
+              <p className="font-mono text-[10px] text-steel-500 mt-1">
+                {config.description}
+              </p>
             </div>
             {isUnlocked ? (
-              <div className="text-primary-500">
+              <motion.div
+                className="text-neon-lime"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.3 + index * 0.05 }}
+              >
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path
                     fillRule="evenodd"
@@ -84,9 +111,9 @@ export function AchievementsList({ unlockedAchievements }: { unlockedAchievement
                     clipRule="evenodd"
                   />
                 </svg>
-              </div>
+              </motion.div>
             ) : (
-              <div className="text-dark-600">
+              <div className="text-steel-600">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                   <path
                     fillRule="evenodd"

@@ -7,6 +7,7 @@ import { measurementService } from '../services/measurementService';
 import { statsService } from '../services/statsService';
 import { taskService } from '../services/taskService';
 import { achievementService } from '../services/achievementService';
+import { adminNotifier } from '../services/adminNotifierService';
 import { User, WorkoutType, MoodLevel, CheckinForm } from '../types';
 import { supabaseAdmin } from '../db/supabase';
 
@@ -21,12 +22,25 @@ export const bot = new Telegraf<BotContext>(config.bot.token);
 // Middleware: привязка пользователя к контексту
 bot.use(async (ctx, next) => {
   if (ctx.from) {
+    const existingUser = await userService.findByTelegramId(ctx.from.id);
+    const isNewUser = !existingUser;
+
     ctx.user = await userService.findOrCreate({
       telegram_id: ctx.from.id,
       username: ctx.from.username,
       first_name: ctx.from.first_name,
       last_name: ctx.from.last_name,
     });
+
+    // Уведомляем о новом пользователе
+    if (isNewUser && ctx.user) {
+      await adminNotifier.newUser({
+        telegramId: ctx.from.id,
+        firstName: ctx.from.first_name,
+        lastName: ctx.from.last_name,
+        username: ctx.from.username,
+      });
+    }
   }
   return next();
 });
@@ -281,10 +295,33 @@ bot.action(/mood_(\d)/, async (ctx) => {
 
     await ctx.editMessageText(text, keyboard);
 
+    // Уведомляем админа о чекине
+    const moodNames: Record<number, string> = { 1: 'bad', 2: 'tired', 3: 'okay', 4: 'good', 5: 'great' };
+    await adminNotifier.checkin(
+      { firstName: ctx.user!.first_name, username: ctx.user!.username || undefined },
+      {
+        mood: moodNames[mood] || 'okay',
+        workout: state.workout || false,
+        nutrition: state.nutrition || false,
+        points: 10,
+        streak: stats?.current_streak || 1,
+      }
+    );
+
+    // Уведомляем о новых достижениях
+    for (const a of achievements) {
+      const info = achievementService.getAchievementInfo(a.achievement_type as any);
+      await adminNotifier.achievement(
+        { firstName: ctx.user!.first_name, username: ctx.user!.username || undefined },
+        { name: info.title, description: info.description }
+      );
+    }
+
     // Очищаем состояние
     checkinState.delete(ctx.from!.id);
   } catch (error) {
     console.error('Checkin error:', error);
+    await adminNotifier.error(error as Error, { additionalInfo: 'Bot checkin flow' });
     await ctx.editMessageText('❌ Ошибка при сохранении чекина. Попробуй ещё раз.');
   }
 });
@@ -511,15 +548,23 @@ export async function broadcastMessage(message: string, role: 'all' | 'participa
 // Запуск бота
 export async function startBot() {
   try {
+    // Инициализируем сервис уведомлений
+    adminNotifier.init(bot);
+
     await bot.launch();
     console.log('🤖 Telegram бот запущен');
+
+    // Уведомляем о запуске
+    await adminNotifier.startup();
   } catch (error) {
     console.error('Failed to start bot:', error);
+    await adminNotifier.critical(error as Error, 'Bot startup');
     throw error;
   }
 }
 
 // Graceful shutdown
-export function stopBot() {
+export async function stopBot(reason?: string) {
+  await adminNotifier.shutdown(reason || 'SIGTERM');
   bot.stop('SIGTERM');
 }

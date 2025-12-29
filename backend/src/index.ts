@@ -1,9 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import { config } from './config';
-import { startBot, stopBot } from './bot';
+import { startBot, stopBot, bot } from './bot';
 import { schedulerService } from './services/schedulerService';
 import { telegramAuthMiddleware, trainerOnly } from './middleware/auth';
+import { adminNotifier, initAdminNotifier } from './services/adminNotifierService';
 import apiRoutes from './routes/api';
 import adminRoutes from './routes/admin';
 
@@ -31,8 +32,17 @@ app.use('/api', apiRoutes);
 app.use('/admin', trainerOnly, adminRoutes);
 
 // Error handler
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use(async (err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Unhandled error:', err);
+
+  // Отправляем уведомление об ошибке в админский чат
+  await adminNotifier.error(err, {
+    endpoint: req.path,
+    method: req.method,
+    userId: (req as any).user?.id,
+    additionalInfo: `Query: ${JSON.stringify(req.query)}`,
+  });
+
   res.status(500).json({
     success: false,
     error: config.app.nodeEnv === 'development' ? err.message : 'Internal server error',
@@ -56,25 +66,51 @@ async function start() {
     schedulerService.start();
 
     console.log('\n✅ Приложение полностью запущено!\n');
+
+    // Уведомляем о деплое, если есть информация о коммите
+    if (process.env.RAILWAY_GIT_COMMIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA) {
+      await adminNotifier.deploy({
+        commit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA,
+        branch: process.env.RAILWAY_GIT_BRANCH || process.env.VERCEL_GIT_COMMIT_REF,
+        author: process.env.RAILWAY_GIT_AUTHOR || process.env.VERCEL_GIT_COMMIT_AUTHOR_NAME,
+        message: process.env.RAILWAY_GIT_COMMIT_MESSAGE || process.env.VERCEL_GIT_COMMIT_MESSAGE,
+      });
+    }
   } catch (error) {
     console.error('Failed to start application:', error);
+    await adminNotifier.critical(error as Error, 'Application startup');
     process.exit(1);
   }
 }
 
 // Graceful shutdown
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
   console.log('\n🛑 Получен SIGINT, завершение работы...');
-  stopBot();
+  await stopBot('SIGINT');
   schedulerService.stop();
   process.exit(0);
 });
 
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   console.log('\n🛑 Получен SIGTERM, завершение работы...');
-  stopBot();
+  await stopBot('SIGTERM');
   schedulerService.stop();
   process.exit(0);
+});
+
+// Обработка необработанных исключений
+process.on('uncaughtException', async (error) => {
+  console.error('Uncaught Exception:', error);
+  await adminNotifier.critical(error, 'Uncaught Exception');
+  process.exit(1);
+});
+
+process.on('unhandledRejection', async (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  await adminNotifier.critical(
+    reason instanceof Error ? reason : new Error(String(reason)),
+    'Unhandled Promise Rejection'
+  );
 });
 
 // Запуск приложения

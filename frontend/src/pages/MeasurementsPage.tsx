@@ -55,7 +55,7 @@ export default function MeasurementsPage() {
     e.preventDefault()
 
     if (!formData.weight || formData.weight <= 0) {
-      showAlert('Укажите вес')
+      showAlert('Enter weight value')
       return
     }
 
@@ -64,11 +64,11 @@ export default function MeasurementsPage() {
       await submitMeasurement(formData)
       hapticFeedback('success')
       setIsEditing(false)
-      showAlert('Замеры сохранены!')
+      showAlert('Measurements saved!')
     } catch (error) {
       console.error('Failed to submit measurement:', error)
       hapticFeedback('error')
-      showAlert('Ошибка при сохранении')
+      showAlert('Error saving data')
     } finally {
       setIsSubmitting(false)
     }
@@ -79,162 +79,193 @@ export default function MeasurementsPage() {
     setFormData({ ...formData, [field]: numValue })
   }
 
-  // Вычисляем прогресс
+  // Calculate progress
   const startWeight = measurements.length > 0 ? measurements[0].weight : null
   const currentWeight = measurements.length > 0 ? measurements[measurements.length - 1].weight : null
   const weightChange = startWeight && currentWeight ? currentWeight - startWeight : null
 
   return (
-    <div className="space-y-4">
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <h1 className="text-2xl font-bold">📏 Замеры</h1>
-        <p className="text-dark-400 text-sm">Неделя {courseWeek}</p>
-      </motion.div>
+    <div className="min-h-screen pb-24 px-4 relative overflow-hidden">
+      {/* Background */}
+      <div className="blob -top-32 -right-32 opacity-10" />
 
-      {/* Прогресс веса */}
+      {/* Header */}
+      <motion.header
+        initial={{ opacity: 0, y: -30 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="pt-6 pb-4"
+      >
+        <div className="font-mono text-xs text-steel-500 uppercase tracking-widest mb-1">
+          Week_{String(courseWeek).padStart(2, '0')} // Tracking
+        </div>
+        <h1 className="font-display text-3xl font-bold text-steel-100 uppercase tracking-wider">
+          Body_Data
+        </h1>
+      </motion.header>
+
+      {/* Weight Progress Card */}
       {weightChange !== null && (
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`card ${
+          className={`p-4 mb-6 border-2 relative overflow-hidden ${
             weightChange < 0
-              ? 'bg-gradient-to-r from-primary-900/30 to-dark-800 border-primary-700'
+              ? 'border-neon-lime bg-neon-lime/5'
               : weightChange > 0
-              ? 'bg-gradient-to-r from-red-900/30 to-dark-800 border-red-700'
-              : ''
+              ? 'border-neon-orange bg-neon-orange/5'
+              : 'border-neon-cyan bg-neon-cyan/5'
           }`}
+          style={{
+            boxShadow: weightChange < 0
+              ? '4px 4px 0 0 #BFFF00'
+              : weightChange > 0
+              ? '4px 4px 0 0 #FF6B00'
+              : '4px 4px 0 0 #00F5FF'
+          }}
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-dark-400">Изменение веса</p>
-              <p className="text-2xl font-bold">
-                {weightChange > 0 ? '+' : ''}
-                {weightChange.toFixed(1)} кг
-              </p>
+              <div className="font-mono text-[10px] text-steel-500 uppercase tracking-widest mb-1">
+                Weight_Delta
+              </div>
+              <div className={`font-display text-3xl font-bold ${
+                weightChange < 0 ? 'text-neon-lime' : weightChange > 0 ? 'text-neon-orange' : 'text-neon-cyan'
+              }`}>
+                {weightChange > 0 ? '+' : ''}{weightChange.toFixed(1)} kg
+              </div>
             </div>
             <div className="text-right">
-              <p className="text-sm text-dark-400">Начало → Сейчас</p>
-              <p className="text-lg">
-                {startWeight?.toFixed(1)} → {currentWeight?.toFixed(1)} кг
-              </p>
+              <div className="font-mono text-[10px] text-steel-500 uppercase">Start → Now</div>
+              <div className="font-mono text-lg text-steel-300">
+                {startWeight?.toFixed(1)} → {currentWeight?.toFixed(1)}
+              </div>
             </div>
           </div>
+
+          {/* Progress indicator */}
+          <motion.div
+            className={`absolute bottom-0 left-0 h-1 ${
+              weightChange < 0 ? 'bg-neon-lime' : weightChange > 0 ? 'bg-neon-orange' : 'bg-neon-cyan'
+            }`}
+            initial={{ width: 0 }}
+            animate={{ width: '100%' }}
+            transition={{ duration: 1 }}
+          />
         </motion.div>
       )}
 
-      {/* График */}
+      {/* Weight Chart */}
       {measurements.length > 0 && (
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
+          className="mb-6"
         >
           <WeightChart measurements={measurements} />
         </motion.div>
       )}
 
-      {/* Форма замеров */}
+      {/* Measurements Form */}
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="card"
+        className="border-2 border-void-400 bg-void-200 p-4 mb-6"
+        style={{ boxShadow: '4px 4px 0 0 #333' }}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold">
-            {currentMeasurement ? 'Замеры недели ' + courseWeek : 'Внести замеры'}
+          <h3 className="font-display font-bold text-steel-100 uppercase">
+            {currentMeasurement ? `Week_${courseWeek}_Data` : 'New_Entry'}
           </h3>
           {currentMeasurement && !isEditing && (
             <button
               onClick={() => setIsEditing(true)}
-              className="text-sm text-primary-400"
+              className="font-mono text-xs text-neon-lime hover:underline"
             >
-              Изменить
+              [EDIT]
             </button>
           )}
         </div>
 
         {isEditing || !currentMeasurement ? (
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Вес - обязательное поле */}
+            {/* Weight - Required */}
             <div>
-              <label className="block text-sm text-dark-400 mb-1">
-                Вес (кг) *
+              <label className="block font-mono text-xs text-steel-500 uppercase tracking-wider mb-2">
+                Weight (kg) *
               </label>
               <input
                 type="number"
                 step="0.1"
                 value={formData.weight || ''}
                 onChange={(e) => handleInputChange('weight', e.target.value)}
-                className="input"
+                className="input-brutal"
                 placeholder="75.5"
                 required
               />
             </div>
 
-            {/* Обхваты */}
+            {/* Body measurements grid */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm text-dark-400 mb-1">
-                  Грудь (см)
+                <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">
+                  Chest (cm)
                 </label>
                 <input
                   type="number"
                   step="0.5"
                   value={formData.chest || ''}
                   onChange={(e) => handleInputChange('chest', e.target.value)}
-                  className="input"
+                  className="input-brutal"
                   placeholder="100"
                 />
               </div>
               <div>
-                <label className="block text-sm text-dark-400 mb-1">
-                  Талия (см)
+                <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">
+                  Waist (cm)
                 </label>
                 <input
                   type="number"
                   step="0.5"
                   value={formData.waist || ''}
                   onChange={(e) => handleInputChange('waist', e.target.value)}
-                  className="input"
+                  className="input-brutal"
                   placeholder="85"
                 />
               </div>
               <div>
-                <label className="block text-sm text-dark-400 mb-1">
-                  Бёдра (см)
+                <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">
+                  Hips (cm)
                 </label>
                 <input
                   type="number"
                   step="0.5"
                   value={formData.hips || ''}
                   onChange={(e) => handleInputChange('hips', e.target.value)}
-                  className="input"
+                  className="input-brutal"
                   placeholder="100"
                 />
               </div>
               <div>
-                <label className="block text-sm text-dark-400 mb-1">
-                  % жира
+                <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">
+                  Body Fat %
                 </label>
                 <input
                   type="number"
                   step="0.1"
                   value={formData.body_fat_percent || ''}
                   onChange={(e) => handleInputChange('body_fat_percent', e.target.value)}
-                  className="input"
+                  className="input-brutal"
                   placeholder="20"
                 />
               </div>
             </div>
 
-            {/* Бицепсы */}
+            {/* Biceps */}
             <div>
-              <label className="block text-sm text-dark-400 mb-1">
-                Бицепс (см)
+              <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">
+                Biceps (cm) - Left / Right
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <input
@@ -242,24 +273,24 @@ export default function MeasurementsPage() {
                   step="0.5"
                   value={formData.bicep_left || ''}
                   onChange={(e) => handleInputChange('bicep_left', e.target.value)}
-                  className="input"
-                  placeholder="Левый"
+                  className="input-brutal"
+                  placeholder="L"
                 />
                 <input
                   type="number"
                   step="0.5"
                   value={formData.bicep_right || ''}
                   onChange={(e) => handleInputChange('bicep_right', e.target.value)}
-                  className="input"
-                  placeholder="Правый"
+                  className="input-brutal"
+                  placeholder="R"
                 />
               </div>
             </div>
 
-            {/* Бёдра */}
+            {/* Thighs */}
             <div>
-              <label className="block text-sm text-dark-400 mb-1">
-                Бедро (см)
+              <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">
+                Thighs (cm) - Left / Right
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <input
@@ -267,79 +298,86 @@ export default function MeasurementsPage() {
                   step="0.5"
                   value={formData.thigh_left || ''}
                   onChange={(e) => handleInputChange('thigh_left', e.target.value)}
-                  className="input"
-                  placeholder="Левое"
+                  className="input-brutal"
+                  placeholder="L"
                 />
                 <input
                   type="number"
                   step="0.5"
                   value={formData.thigh_right || ''}
                   onChange={(e) => handleInputChange('thigh_right', e.target.value)}
-                  className="input"
-                  placeholder="Правое"
+                  className="input-brutal"
+                  placeholder="R"
                 />
               </div>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 pt-2">
               {isEditing && (
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
-                  className="btn btn-secondary flex-1"
+                  className="flex-1 py-3 border-2 border-void-400 font-mono text-sm font-bold text-steel-400 uppercase hover:border-steel-400 transition-all"
                 >
-                  Отмена
+                  Cancel
                 </button>
               )}
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="btn btn-primary flex-1"
+                className="flex-1 btn-brutal disabled:opacity-50"
               >
-                {isSubmitting ? 'Сохранение...' : 'Сохранить'}
+                {isSubmitting ? 'Saving...' : 'Save_Data'}
               </button>
             </div>
           </form>
         ) : (
-          /* Отображение текущих замеров */
+          /* Display current measurements */
           <div className="space-y-3">
-            <div className="flex justify-between py-2 border-b border-dark-700">
-              <span className="text-dark-400">Вес</span>
-              <span className="font-semibold">{currentMeasurement.weight} кг</span>
+            <div className="flex justify-between py-2 border-b border-void-400">
+              <span className="font-mono text-xs text-steel-500 uppercase">Weight</span>
+              <span className="font-display font-bold text-neon-lime">{currentMeasurement.weight} kg</span>
             </div>
             {currentMeasurement.chest && (
-              <div className="flex justify-between py-2 border-b border-dark-700">
-                <span className="text-dark-400">Грудь</span>
-                <span>{currentMeasurement.chest} см</span>
+              <div className="flex justify-between py-2 border-b border-void-400">
+                <span className="font-mono text-xs text-steel-500 uppercase">Chest</span>
+                <span className="font-mono text-steel-200">{currentMeasurement.chest} cm</span>
               </div>
             )}
             {currentMeasurement.waist && (
-              <div className="flex justify-between py-2 border-b border-dark-700">
-                <span className="text-dark-400">Талия</span>
-                <span>{currentMeasurement.waist} см</span>
+              <div className="flex justify-between py-2 border-b border-void-400">
+                <span className="font-mono text-xs text-steel-500 uppercase">Waist</span>
+                <span className="font-mono text-steel-200">{currentMeasurement.waist} cm</span>
               </div>
             )}
             {currentMeasurement.hips && (
-              <div className="flex justify-between py-2 border-b border-dark-700">
-                <span className="text-dark-400">Бёдра</span>
-                <span>{currentMeasurement.hips} см</span>
+              <div className="flex justify-between py-2 border-b border-void-400">
+                <span className="font-mono text-xs text-steel-500 uppercase">Hips</span>
+                <span className="font-mono text-steel-200">{currentMeasurement.hips} cm</span>
               </div>
             )}
           </div>
         )}
       </motion.div>
 
-      {/* Инфо о фото */}
+      {/* Photo Info */}
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="card bg-dark-800/50"
+        className="border-2 border-void-400 p-4 bg-void-200/50"
       >
-        <p className="text-sm text-dark-400">
-          📸 Чтобы добавить фото прогресса, отправьте их боту в Telegram.
-          Подпишите: "фронт", "бок" или "спина".
-        </p>
+        <div className="flex items-start gap-3">
+          <span className="text-xl">📸</span>
+          <div>
+            <p className="font-mono text-xs text-steel-400">
+              To add progress photos, send them to the bot in Telegram.
+            </p>
+            <p className="font-mono text-[10px] text-steel-500 mt-1">
+              Label: "front", "side" or "back"
+            </p>
+          </div>
+        </div>
       </motion.div>
     </div>
   )

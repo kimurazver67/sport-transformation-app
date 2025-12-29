@@ -26,6 +26,9 @@ const envSchema = z.object({
   // Course
   COURSE_START_DATE: z.string().default('2025-01-01'),
   TRAINER_TELEGRAM_ID: z.string().optional(),
+
+  // Admin Chat
+  ADMIN_CHAT_ID: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -61,6 +64,9 @@ export const config = {
     trainerTelegramId: parsed.data.TRAINER_TELEGRAM_ID
       ? parseInt(parsed.data.TRAINER_TELEGRAM_ID, 10)
       : undefined,
+  },
+  admin: {
+    chatId: parsed.data.ADMIN_CHAT_ID,
   },
 };
 
