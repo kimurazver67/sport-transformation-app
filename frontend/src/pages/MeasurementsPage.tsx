@@ -30,10 +30,17 @@ export default function MeasurementsPage() {
     checkMeasurementWindow,
     submitMeasurement,
   } = useStore()
-  const { hapticFeedback, showAlert } = useTelegram()
+  const { hapticFeedback } = useTelegram()
 
   const [isEditing, setIsEditing] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
+
+  // Показать toast вместо showAlert (который перезагружает страницу)
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type })
+    setTimeout(() => setToast(null), 3000)
+  }
   const [formData, setFormData] = useState<MeasurementForm>({
     weight: 0,
     chest: undefined,
@@ -83,7 +90,7 @@ export default function MeasurementsPage() {
     e.preventDefault()
 
     if (!formData.weight || formData.weight <= 0) {
-      showAlert('Введи значение веса')
+      showToast('Введи значение веса', 'error')
       return
     }
 
@@ -94,13 +101,13 @@ export default function MeasurementsPage() {
       api.debugLog('Submit success', { formData })
       hapticFeedback('success')
       setIsEditing(false)
-      showAlert('Замеры сохранены!')
-      api.debugLog('After showAlert')
+      showToast('Замеры сохранены!', 'success')
+      api.debugLog('After showToast')
     } catch (error) {
       console.error('Failed to submit measurement:', error)
       api.debugLog('Submit error', { error: String(error) })
       hapticFeedback('error')
-      showAlert('Ошибка сохранения данных')
+      showToast('Ошибка сохранения данных', 'error')
     } finally {
       setIsSubmitting(false)
       api.debugLog('Submit finally')
@@ -119,6 +126,23 @@ export default function MeasurementsPage() {
 
   return (
     <div className="min-h-screen pb-4 px-4 relative overflow-hidden">
+      {/* Toast notification */}
+      {toast && (
+        <motion.div
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -50 }}
+          className={`fixed top-4 left-4 right-4 z-50 p-3 border-2 ${
+            toast.type === 'success'
+              ? 'border-neon-lime bg-neon-lime/20 text-neon-lime'
+              : 'border-neon-orange bg-neon-orange/20 text-neon-orange'
+          }`}
+          style={{ boxShadow: toast.type === 'success' ? '4px 4px 0 0 #BFFF00' : '4px 4px 0 0 #FF6B00' }}
+        >
+          <p className="font-mono text-sm font-bold text-center">{toast.message}</p>
+        </motion.div>
+      )}
+
       {/* Background */}
       <div className="blob -top-32 -right-32 opacity-10" />
 
