@@ -236,7 +236,7 @@ export default function MeasurementsPage() {
               </div>
               <div>
                 <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">
-                  Бедра (см)
+                  Попец (см)
                 </label>
                 <input
                   type="number"
@@ -339,7 +339,7 @@ export default function MeasurementsPage() {
             )}
             {currentMeasurement.hips && (
               <div className="flex justify-between py-2 border-b border-void-400">
-                <span className="font-mono text-xs text-steel-500 uppercase">Бедра</span>
+                <span className="font-mono text-xs text-steel-500 uppercase">Попец</span>
                 <span className="font-mono text-steel-200">{currentMeasurement.hips} см</span>
               </div>
             )}
