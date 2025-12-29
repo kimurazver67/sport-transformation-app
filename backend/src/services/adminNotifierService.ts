@@ -64,8 +64,8 @@ function shouldSendError(errorKey: string): { send: boolean; count?: number } {
   return { send: true, count };
 }
 
-// Очистка старых записей каждые 10 минут
-setInterval(() => {
+// Очистка старых записей каждые 10 минут (unref чтобы не блокировать graceful shutdown)
+const cleanupInterval = setInterval(() => {
   const now = Date.now();
   for (const [key, entry] of errorCache.entries()) {
     if (now - entry.firstSeen > 600000) { // 10 минут
@@ -73,6 +73,7 @@ setInterval(() => {
     }
   }
 }, 600000);
+cleanupInterval.unref();
 
 // Инициализация сервиса с ботом
 export function initAdminNotifier(telegrafBot: Telegraf) {

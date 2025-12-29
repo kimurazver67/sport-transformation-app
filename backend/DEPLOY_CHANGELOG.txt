@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Рефакторинг: Clean up unused constant and improve typing
 • Добавлено: Add global error handler with Telegram уведомления
 • Добавлено: Migrate from Supabase to Railway PostgreSQL + Redis
 • Обслуживание: Убраны упоминания Vercel, всё на Railway
 • Добавлено: Переход на Telegram хранение фото (file_id)
-• Исправлено: Убрана 15-сек задержка при старте бота
 
-29.12.2025 22:34
+29.12.2025 22:42
