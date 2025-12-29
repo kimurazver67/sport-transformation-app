@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Add список изменений file fallback for CLI деплой
 • Добавлено: Use Railway env vars for уведомления о деплое
 • Исправлено: Add unref() to cleanup interval for graceful shutdown
 • Рефакторинг: Clean up unused constant and improve typing
 • Добавлено: Add global error handler with Telegram уведомления
-• Добавлено: Migrate from Supabase to Railway PostgreSQL + Redis
 
-29.12.2025 22:46
+29.12.2025 22:51

@@ -781,22 +781,40 @@ export async function broadcastMessage(message: string, role: 'all' | 'participa
   return { sent, failed };
 }
 
-// Запуск бота
+// Запуск бота с retry при конфликте (409)
 export async function startBot() {
-  try {
-    // Инициализируем сервис уведомлений
-    adminNotifier.init(bot);
+  // Инициализируем сервис уведомлений
+  adminNotifier.init(bot);
 
-    // Запуск с dropPendingUpdates для избежания конфликтов
-    await bot.launch({ dropPendingUpdates: true });
-    console.log('🤖 Telegram бот запущен');
+  const maxRetries = 5;
+  const retryDelay = 3000; // 3 секунды между попытками
 
-    // Уведомляем о запуске
-    await adminNotifier.startup();
-  } catch (error) {
-    console.error('Failed to start bot:', error);
-    await adminNotifier.critical(error as Error, 'Bot startup');
-    throw error;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`🤖 Попытка запуска бота (${attempt}/${maxRetries})...`);
+
+      // Запуск с dropPendingUpdates для избежания конфликтов
+      await bot.launch({ dropPendingUpdates: true });
+      console.log('🤖 Telegram бот запущен');
+
+      // Уведомляем о запуске
+      await adminNotifier.startup();
+      return; // Успешно запустились
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      // Проверяем, это ли 409 конфликт
+      if (errorMessage.includes('409') && attempt < maxRetries) {
+        console.log(`⏳ Конфликт с другим инстансом, ждём ${retryDelay / 1000}с...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        continue;
+      }
+
+      // Другая ошибка или последняя попытка
+      console.error('Failed to start bot:', error);
+      await adminNotifier.critical(error as Error, 'Bot startup');
+      throw error;
+    }
   }
 }
 
