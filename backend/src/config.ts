@@ -57,7 +57,8 @@ export const config = {
     port: parseInt(parsed.data.PORT, 10),
     nodeEnv: parsed.data.NODE_ENV,
     frontendUrl: parsed.data.FRONTEND_URL,
-    webappUrl: parsed.data.WEBAPP_URL || parsed.data.FRONTEND_URL,
+    // Добавляем версию для сброса кэша Telegram WebView
+    webappUrl: `${parsed.data.WEBAPP_URL || parsed.data.FRONTEND_URL}?v=${Date.now()}`,
   },
   course: {
     startDate: new Date(parsed.data.COURSE_START_DATE),
