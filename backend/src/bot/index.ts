@@ -790,7 +790,7 @@ export async function broadcastMessage(message: string, role: 'all' | 'participa
 }
 
 // Запуск бота с retry при конфликте (409)
-export async function startBot() {
+export async function startBot(): Promise<void> {
   // Инициализируем сервис уведомлений
   adminNotifier.init(bot);
 
@@ -801,8 +801,23 @@ export async function startBot() {
     try {
       console.log(`🤖 Попытка запуска бота (${attempt}/${maxRetries})...`);
 
-      // Запуск с dropPendingUpdates для избежания конфликтов
-      await bot.launch({ dropPendingUpdates: true });
+      // ВАЖНО: bot.launch() в Telegraf v4.16+ зависает навсегда при await
+      // Используем .then() паттерн и небольшую задержку для проверки успешного запуска
+      const launchPromise = bot.launch({ dropPendingUpdates: true });
+
+      // Даём боту время на инициализацию (getMe и первый getUpdates)
+      await Promise.race([
+        new Promise<void>((resolve) => {
+          launchPromise.then(() => {
+            console.log('🤖 bot.launch() resolved');
+            resolve();
+          }).catch((err) => {
+            console.error('🤖 bot.launch() error:', err);
+          });
+        }),
+        new Promise<void>((resolve) => setTimeout(resolve, 2000)), // 2 секунды таймаут
+      ]);
+
       console.log('🤖 Telegram бот запущен');
 
       // Уведомляем о запуске
