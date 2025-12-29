@@ -26,6 +26,8 @@ jobs:
 
       - name: Build
         working-directory: frontend
+        env:
+          VITE_API_URL: https://sport-transformation-production.up.railway.app
         run: npm run build
 
       - name: Create package.json for Railway
