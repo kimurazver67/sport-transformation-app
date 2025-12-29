@@ -22,6 +22,14 @@ export const bot = new Telegraf<BotContext>(config.bot.token);
 // ===== ГЛОБАЛЬНЫЙ ОБРАБОТЧИК ОШИБОК БОТА =====
 bot.catch(async (err: unknown, ctx) => {
   const error = err instanceof Error ? err : new Error(String(err));
+  const errorMessage = error.message || '';
+
+  // Игнорируем 409 ошибки - это нормально при деплое (смена инстанса)
+  if (errorMessage.includes('409') || errorMessage.includes('Conflict')) {
+    console.log('[Bot] Ignoring 409 conflict error (expected during deploy)');
+    return;
+  }
+
   console.error('Bot error:', error);
 
   // Извлекаем информацию о команде с типизацией

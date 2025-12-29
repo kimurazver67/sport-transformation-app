@@ -90,11 +90,15 @@ async function start() {
 
     console.log('\n✅ Приложение полностью запущено!\n');
 
-    // Уведомляем о деплое сразу после запуска (не блокируем основной поток)
-    console.log('[Startup] Queueing deploy notification...');
-    adminNotifier.deploy()
-      .then(() => console.log('[Startup] Deploy notification sent successfully'))
-      .catch((e) => console.error('[Startup] Failed to send deploy notification:', e));
+    // Уведомляем о деплое сразу после запуска
+    console.log('[Startup] Sending deploy notification...');
+    try {
+      await adminNotifier.deploy();
+      console.log('[Startup] Deploy notification sent successfully');
+    } catch (e) {
+      console.error('[Startup] Failed to send deploy notification:', e);
+      // Не критично - продолжаем работу
+    }
 
   } catch (error) {
     console.error('Failed to start application:', error);

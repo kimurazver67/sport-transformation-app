@@ -163,6 +163,13 @@ export async function notifyError(
     additionalInfo?: string;
   }
 ): Promise<void> {
+  // Игнорируем 409 ошибки - это нормально при деплое
+  const errorMessage = error.message || '';
+  if (errorMessage.includes('409') || errorMessage.includes('Conflict')) {
+    console.log('[AdminNotifier] Ignoring 409 conflict error');
+    return;
+  }
+
   // Создаём ключ для дедупликации ошибок
   const errorKey = `${error.message}:${context?.endpoint || ''}`;
   const { send, count } = shouldSendError(errorKey);
@@ -267,6 +274,10 @@ function readChangelogFile(): string | null {
 
 // Уведомление о деплое (использует Railway env variables или файл changelog)
 export async function notifyDeploy(): Promise<void> {
+  console.log('[Deploy] notifyDeploy called');
+  console.log('[Deploy] ADMIN_CHAT_ID:', config.admin.chatId);
+  console.log('[Deploy] BOT_TOKEN exists:', !!config.bot.token);
+
   const commit = process.env.RAILWAY_GIT_COMMIT_SHA;
   const branch = process.env.RAILWAY_GIT_BRANCH;
   const commitMessage = process.env.RAILWAY_GIT_COMMIT_MESSAGE;
@@ -292,7 +303,9 @@ ${author ? `👤 <b>Автор:</b> ${escapeHtml(author)}` : ''}
 ✅ Backend запущен`;
   } else {
     // Fallback на файл changelog
+    console.log('[Deploy] No Railway env, trying changelog file...');
     const changelog = readChangelogFile();
+    console.log('[Deploy] Changelog from file:', changelog ? 'found' : 'not found');
 
     if (changelog) {
       message = `🚀 <b>Деплой выполнен!</b>
@@ -309,9 +322,16 @@ ${escapeHtml(changelog)}`;
     }
   }
 
-  console.log('[Deploy] Sending message to admin...');
-  await sendToAdmin(message);
-  console.log('[Deploy] Message sent');
+  console.log('[Deploy] Message prepared, sending to admin...');
+  console.log('[Deploy] Message length:', message.length);
+
+  try {
+    await sendToAdmin(message);
+    console.log('[Deploy] Message sent successfully');
+  } catch (error) {
+    console.error('[Deploy] Failed to send message:', error);
+    throw error;
+  }
 }
 
 // Уведомление о новом пользователе
