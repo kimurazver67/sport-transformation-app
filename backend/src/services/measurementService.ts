@@ -1,9 +1,10 @@
 import { supabaseAdmin } from '../db/supabase';
 import { WeeklyMeasurement, MeasurementForm, POINTS } from '../types';
-import { getCurrentWeek } from '../config';
+import { getCurrentWeek, isCourseStarted } from '../config';
 import { statsService } from './statsService';
 import { achievementService } from './achievementService';
 import { userService } from './userService';
+import { adminNotifier } from './adminNotifierService';
 
 export const measurementService = {
   // Создать или обновить замер недели
@@ -12,8 +13,10 @@ export const measurementService = {
     data: MeasurementForm,
     photos?: { front?: string; side?: string; back?: string }
   ): Promise<WeeklyMeasurement> {
-    const weekNumber = getCurrentWeek();
-    const today = new Date().toISOString().split('T')[0];
+    try {
+      // Если курс не начался, используем неделю 0 (подготовительная)
+      const weekNumber = isCourseStarted() ? getCurrentWeek() : 0;
+      const today = new Date().toISOString().split('T')[0];
 
     // Проверяем существующий замер
     const { data: existing } = await supabaseAdmin
@@ -78,11 +81,20 @@ export const measurementService = {
     await achievementService.checkAndUnlock(userId);
 
     return result;
+    } catch (error) {
+      // Отправляем ошибку в админ чат
+      await adminNotifier.error(error as Error, {
+        endpoint: 'measurementService.createOrUpdate',
+        userId,
+        additionalInfo: `Data: ${JSON.stringify(data)}`,
+      });
+      throw error;
+    }
   },
 
   // Получить замер текущей недели
   async getCurrentWeekMeasurement(userId: string): Promise<WeeklyMeasurement | null> {
-    const weekNumber = getCurrentWeek();
+    const weekNumber = isCourseStarted() ? getCurrentWeek() : 0;
 
     const { data, error } = await supabaseAdmin
       .from('weekly_measurements')

@@ -2,11 +2,13 @@ import { supabaseAdmin } from '../db/supabase';
 import { DailyCheckin, CheckinForm, POINTS } from '../types';
 import { statsService } from './statsService';
 import { achievementService } from './achievementService';
+import { adminNotifier } from './adminNotifierService';
 
 export const checkinService = {
   // Создать или обновить чекин за сегодня
   async createOrUpdate(userId: string, data: CheckinForm): Promise<DailyCheckin> {
-    const today = new Date().toISOString().split('T')[0];
+    try {
+      const today = new Date().toISOString().split('T')[0];
 
     // Проверяем существующий чекин
     const { data: existing } = await supabaseAdmin
@@ -61,6 +63,14 @@ export const checkinService = {
     }
 
     return result;
+    } catch (error) {
+      await adminNotifier.error(error as Error, {
+        endpoint: 'checkinService.createOrUpdate',
+        userId,
+        additionalInfo: `Data: ${JSON.stringify(data)}`,
+      });
+      throw error;
+    }
   },
 
   // Получить чекин за сегодня
