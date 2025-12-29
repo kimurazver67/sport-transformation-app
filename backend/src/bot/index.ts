@@ -481,11 +481,11 @@ bot.on(message('photo'), async (ctx) => {
     const caption = ctx.message.caption?.toLowerCase() || '';
     let photoType: 'front' | 'side' | 'back' = 'front';
 
-    if (caption.includes('бок') || caption.includes('side')) {
+    if (caption.includes('бок') || caption.includes('сбоку') || caption.includes('side')) {
       photoType = 'side';
-    } else if (caption.includes('спина') || caption.includes('back')) {
+    } else if (caption.includes('спина') || caption.includes('сзади') || caption.includes('back')) {
       photoType = 'back';
-    } else if (caption.includes('фронт') || caption.includes('front')) {
+    } else if (caption.includes('фронт') || caption.includes('спереди') || caption.includes('front')) {
       photoType = 'front';
     } else {
       // Автоопределение по уже загруженным

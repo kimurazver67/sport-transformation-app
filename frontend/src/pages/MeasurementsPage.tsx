@@ -359,11 +359,64 @@ export default function MeasurementsPage() {
         )}
       </motion.div>
 
+      {/* Progress Photos */}
+      {currentMeasurement && (currentMeasurement.photo_front_url || currentMeasurement.photo_side_url || currentMeasurement.photo_back_url) && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="border-2 border-void-400 bg-void-200 p-4 mb-6"
+          style={{ boxShadow: '4px 4px 0 0 #333' }}
+        >
+          <h3 className="font-display font-bold text-steel-100 uppercase mb-3">
+            Фото_прогресса
+          </h3>
+          <div className="grid grid-cols-3 gap-2">
+            {currentMeasurement.photo_front_url && (
+              <div className="relative">
+                <img
+                  src={currentMeasurement.photo_front_url}
+                  alt="Фронт"
+                  className="w-full aspect-[3/4] object-cover border border-void-400"
+                />
+                <div className="absolute bottom-0 left-0 right-0 bg-void/80 text-center py-1">
+                  <span className="font-mono text-[10px] text-steel-400 uppercase">Фронт</span>
+                </div>
+              </div>
+            )}
+            {currentMeasurement.photo_side_url && (
+              <div className="relative">
+                <img
+                  src={currentMeasurement.photo_side_url}
+                  alt="Бок"
+                  className="w-full aspect-[3/4] object-cover border border-void-400"
+                />
+                <div className="absolute bottom-0 left-0 right-0 bg-void/80 text-center py-1">
+                  <span className="font-mono text-[10px] text-steel-400 uppercase">Бок</span>
+                </div>
+              </div>
+            )}
+            {currentMeasurement.photo_back_url && (
+              <div className="relative">
+                <img
+                  src={currentMeasurement.photo_back_url}
+                  alt="Спина"
+                  className="w-full aspect-[3/4] object-cover border border-void-400"
+                />
+                <div className="absolute bottom-0 left-0 right-0 bg-void/80 text-center py-1">
+                  <span className="font-mono text-[10px] text-steel-400 uppercase">Спина</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
+
       {/* Photo Info */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
+        transition={{ delay: 0.4 }}
         className="border-2 border-void-400 p-4 bg-void-200/50"
       >
         <div className="flex items-start gap-3">
@@ -373,7 +426,7 @@ export default function MeasurementsPage() {
               Чтобы добавить фото прогресса, отправь их боту в Телеграм.
             </p>
             <p className="font-mono text-[10px] text-steel-500 mt-1">
-              Подпись: "спереди", "сбоку" или "сзади"
+              Подпись: "фронт", "бок" или "спина"
             </p>
           </div>
         </div>
