@@ -14,8 +14,8 @@ export const measurementService = {
     photos?: { front?: string; side?: string; back?: string }
   ): Promise<WeeklyMeasurement> {
     try {
-      // Если курс не начался, используем неделю 0 (подготовительная)
-      const weekNumber = isCourseStarted() ? getCurrentWeek() : 0;
+      // Если курс не начался, используем неделю 1 (подготовительная/стартовая)
+      const weekNumber = isCourseStarted() ? getCurrentWeek() : 1;
       const today = new Date().toISOString().split('T')[0];
 
     // Проверяем существующий замер
@@ -94,7 +94,7 @@ export const measurementService = {
 
   // Получить замер текущей недели
   async getCurrentWeekMeasurement(userId: string): Promise<WeeklyMeasurement | null> {
-    const weekNumber = isCourseStarted() ? getCurrentWeek() : 0;
+    const weekNumber = isCourseStarted() ? getCurrentWeek() : 1;
 
     const { data, error } = await supabaseAdmin
       .from('weekly_measurements')

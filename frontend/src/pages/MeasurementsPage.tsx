@@ -247,19 +247,6 @@ export default function MeasurementsPage() {
                   placeholder="100"
                 />
               </div>
-              <div>
-                <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">
-                  % Жира
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={formData.body_fat_percent || ''}
-                  onChange={(e) => handleInputChange('body_fat_percent', e.target.value)}
-                  className="input-brutal"
-                  placeholder="20"
-                />
-              </div>
             </div>
 
             {/* Biceps */}
