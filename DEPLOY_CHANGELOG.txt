@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Add changelog to backend folder for Railway deploy
 • Обслуживание: Add deploy changelog
 • Добавлено: Add deploy notifications to Telegram
 • Добавлено: Add course countdown display before start date
 • Исправлено: Make bottom nav part of flex layout, remove fixed positioning
-• Исправлено: Fix bottom navigation position for Telegram viewport
 
-29.12.2025 19:42
+29.12.2025 19:46
