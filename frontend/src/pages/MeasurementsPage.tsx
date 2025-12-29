@@ -224,6 +224,7 @@ export default function MeasurementsPage() {
           </div>
         )}
 
+        {/* Show form only when allowed AND (editing OR no data yet) */}
         {canSubmitMeasurement && (isEditing || !currentMeasurement) ? (
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Weight - Required */}
@@ -351,7 +352,7 @@ export default function MeasurementsPage() {
             </div>
           </form>
         ) : currentMeasurement ? (
-          /* Display current measurements */
+          /* Display current measurements - shown regardless of canSubmitMeasurement */
           <div className="space-y-2">
             <div className="flex justify-between py-2 border-b border-void-400">
               <span className="font-mono text-xs text-steel-500 uppercase">Вес</span>
@@ -392,7 +393,14 @@ export default function MeasurementsPage() {
               </div>
             </div>
           </div>
-        ) : null}
+        ) : (
+          /* No measurements yet and window closed - show placeholder */
+          <div className="text-center py-4">
+            <p className="font-mono text-sm text-steel-500">
+              Данные замеров пока не внесены
+            </p>
+          </div>
+        )}
       </motion.div>
 
       {/* Progress Photos */}

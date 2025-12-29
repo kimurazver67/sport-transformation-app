@@ -1,7 +1,9 @@
 Последние изменения:
 
-• Исправлено: Игнорируем 409 ошибки при смене инстанса (ожидаемое поведение при деплое)
-• Исправлено: Deploy notification теперь отправляется с await и подробным логированием
-• Добавлено: Фильтрация 409 ошибок в bot.catch и adminNotifier.error
+• Исправлено: Игнорировать 409 ошибки при деплое и исправить деплой notification
+• Исправлено: Add retry logic for bot startup on 409 conflict
+• Исправлено: Add список изменений file fallback for CLI деплой
+• Добавлено: Use Railway env vars for уведомления о деплое
+• Исправлено: Add unref() to cleanup interval for graceful shutdown
 
-29.12.2025 23:45
+29.12.2025 23:00
