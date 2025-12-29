@@ -19,6 +19,27 @@ interface BotContext extends Context {
 // Создаём бота
 export const bot = new Telegraf<BotContext>(config.bot.token);
 
+// ===== ГЛОБАЛЬНЫЙ ОБРАБОТЧИК ОШИБОК БОТА =====
+bot.catch(async (err: unknown, ctx) => {
+  const error = err instanceof Error ? err : new Error(String(err));
+  console.error('Bot error:', error);
+
+  // Отправляем уведомление в админский чат
+  await adminNotifier.error(error, {
+    endpoint: 'Telegram Bot',
+    method: ctx.updateType,
+    userId: ctx.from?.id?.toString(),
+    additionalInfo: `Command: ${(ctx as any).message?.text || (ctx.callbackQuery as any)?.data || 'N/A'}`,
+  });
+
+  // Пытаемся уведомить пользователя
+  try {
+    await ctx.reply('❌ Произошла ошибка. Попробуй ещё раз или обратись к тренеру.');
+  } catch {
+    // Игнорируем ошибку отправки
+  }
+});
+
 // Middleware: привязка пользователя к контексту
 bot.use(async (ctx, next) => {
   if (ctx.from) {

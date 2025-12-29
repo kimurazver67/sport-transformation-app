@@ -5,6 +5,76 @@ import { config } from '../config';
 
 let bot: Telegraf | null = null;
 
+// ===== RATE LIMITING ДЛЯ ОШИБОК =====
+// Не спамим одинаковыми ошибками
+interface ErrorEntry {
+  count: number;
+  firstSeen: number;
+  lastSent: number;
+}
+
+const errorCache = new Map<string, ErrorEntry>();
+const ERROR_COOLDOWN = 60000; // 1 минута между одинаковыми ошибками
+const ERROR_BATCH_INTERVAL = 5000; // 5 секунд для группировки ошибок
+const MAX_ERRORS_PER_MINUTE = 10; // Максимум 10 уведомлений в минуту
+
+let errorCountThisMinute = 0;
+let minuteResetTime = Date.now();
+
+function shouldSendError(errorKey: string): { send: boolean; count?: number } {
+  const now = Date.now();
+
+  // Сбрасываем счётчик каждую минуту
+  if (now - minuteResetTime > 60000) {
+    errorCountThisMinute = 0;
+    minuteResetTime = now;
+  }
+
+  // Превышен лимит ошибок в минуту
+  if (errorCountThisMinute >= MAX_ERRORS_PER_MINUTE) {
+    return { send: false };
+  }
+
+  const entry = errorCache.get(errorKey);
+
+  if (!entry) {
+    // Новая ошибка
+    errorCache.set(errorKey, {
+      count: 1,
+      firstSeen: now,
+      lastSent: now,
+    });
+    errorCountThisMinute++;
+    return { send: true };
+  }
+
+  // Ошибка уже была
+  entry.count++;
+
+  if (now - entry.lastSent < ERROR_COOLDOWN) {
+    // Ещё не прошёл cooldown
+    return { send: false };
+  }
+
+  // Отправляем с информацией о количестве
+  const count = entry.count;
+  entry.count = 0;
+  entry.lastSent = now;
+  errorCountThisMinute++;
+
+  return { send: true, count };
+}
+
+// Очистка старых записей каждые 10 минут
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of errorCache.entries()) {
+    if (now - entry.firstSeen > 600000) { // 10 минут
+      errorCache.delete(key);
+    }
+  }
+}, 600000);
+
 // Инициализация сервиса с ботом
 export function initAdminNotifier(telegrafBot: Telegraf) {
   bot = telegrafBot;
@@ -83,7 +153,7 @@ export async function notifyShutdown(reason: string = 'Штатное завер
   await sendToAdmin(message);
 }
 
-// Уведомление об ошибке
+// Уведомление об ошибке (с rate limiting)
 export async function notifyError(
   error: Error,
   context?: {
@@ -93,12 +163,24 @@ export async function notifyError(
     additionalInfo?: string;
   }
 ): Promise<void> {
+  // Создаём ключ для дедупликации ошибок
+  const errorKey = `${error.message}:${context?.endpoint || ''}`;
+  const { send, count } = shouldSendError(errorKey);
+
+  if (!send) {
+    console.log(`[AdminNotifier] Error rate-limited: ${error.message}`);
+    return;
+  }
+
   let contextInfo = '';
   if (context) {
     if (context.endpoint) contextInfo += `\n🔗 <b>Endpoint:</b> ${context.method || 'GET'} ${context.endpoint}`;
     if (context.userId) contextInfo += `\n👤 <b>User ID:</b> ${context.userId}`;
     if (context.additionalInfo) contextInfo += `\n📝 <b>Доп. инфо:</b> ${context.additionalInfo}`;
   }
+
+  // Добавляем информацию о повторах
+  const repeatInfo = count && count > 1 ? `\n🔄 <b>Повторов:</b> ${count}x за последнюю минуту` : '';
 
   const stackPreview = error.stack
     ? error.stack.split('\n').slice(0, 5).join('\n')
@@ -109,7 +191,7 @@ export async function notifyError(
 
 📅 <b>Время:</b> ${formatDate()}
 ❌ <b>Сообщение:</b> ${escapeHtml(error.message)}
-${contextInfo}
+${contextInfo}${repeatInfo}
 
 <b>Stack trace:</b>
 <pre>${escapeHtml(stackPreview)}</pre>
