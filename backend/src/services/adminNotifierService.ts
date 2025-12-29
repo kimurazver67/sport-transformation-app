@@ -46,7 +46,7 @@ async function sendToAdmin(message: string): Promise<void> {
       }),
     });
 
-    const result = await response.json();
+    const result = await response.json() as { ok: boolean; description?: string };
     if (result.ok) {
       console.log('[AdminNotifier] Message sent successfully');
     } else {
