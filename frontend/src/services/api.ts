@@ -154,4 +154,20 @@ export const api = {
   getPhotoUrl: (fileId: string): string => {
     return `${API_URL}/api/photo/${fileId}/proxy`
   },
+
+  // Debug logging - отправляет лог в телеграм бота
+  debugLog: async (message: string, data?: unknown): Promise<void> => {
+    try {
+      await fetch(`${API_URL}/api/debug/log`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Telegram-Init-Data': getInitData(),
+        },
+        body: JSON.stringify({ message, data }),
+      })
+    } catch (e) {
+      console.error('Debug log failed:', e)
+    }
+  },
 }

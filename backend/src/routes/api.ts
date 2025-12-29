@@ -357,4 +357,30 @@ router.get('/photo/:fileId/proxy', async (req: Request, res: Response) => {
   }
 });
 
+// ===== DEBUG LOGGING =====
+import { adminNotifier } from '../services/adminNotifierService';
+
+router.post('/debug/log', async (req: Request, res: Response) => {
+  try {
+    const { message, data } = req.body;
+    const logMessage = `🔍 <b>Frontend Debug</b>\n\n📝 ${message}\n\n<pre>${JSON.stringify(data, null, 2)}</pre>`;
+
+    // Отправляем в телеграм через fetch
+    await fetch(`https://api.telegram.org/bot${config.bot.token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: config.admin.chatId,
+        text: logMessage,
+        parse_mode: 'HTML',
+      }),
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Debug log error:', error);
+    res.status(500).json({ success: false, error: 'Failed to send debug log' });
+  }
+});
+
 export default router;
