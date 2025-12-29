@@ -40,10 +40,10 @@ export default function LeaderboardPage() {
         className="pt-6 pb-4"
       >
         <div className="font-mono text-xs text-steel-500 uppercase tracking-widest mb-1">
-          Competition_Mode
+          Режим_соревнования
         </div>
         <h1 className="font-display text-3xl font-bold text-steel-100 uppercase tracking-wider">
-          Leaderboard
+          Рейтинг
         </h1>
       </motion.header>
 
@@ -62,7 +62,7 @@ export default function LeaderboardPage() {
               : 'text-steel-400 hover:text-steel-200'
           }`}
         >
-          All_Time
+          За_все_время
         </button>
         <button
           onClick={() => setActiveTab('weekly')}
@@ -72,7 +72,7 @@ export default function LeaderboardPage() {
               : 'text-steel-400 hover:text-steel-200'
           }`}
         >
-          This_Week
+          Эта_неделя
         </button>
       </motion.div>
 
@@ -183,7 +183,7 @@ export default function LeaderboardPage() {
         className="space-y-2"
       >
         <div className="font-mono text-xs text-steel-500 uppercase tracking-widest mb-3">
-          Rankings_List
+          Список_рейтинга
         </div>
 
         <AnimatePresence mode="wait">
@@ -259,14 +259,14 @@ export default function LeaderboardPage() {
                         </span>
                         {isCurrentUser && (
                           <span className="font-mono text-[10px] text-neon-lime border border-neon-lime px-1">
-                            YOU
+                            ТЫ
                           </span>
                         )}
                       </div>
                       {entry.current_streak > 0 && (
                         <div className="font-mono text-[10px] text-steel-500 flex items-center gap-1">
                           <span>🔥</span>
-                          <span>{entry.current_streak} DAY STREAK</span>
+                          <span>{entry.current_streak} ДНЕЙ ПОДРЯД</span>
                         </div>
                       )}
                     </div>
@@ -303,8 +303,8 @@ export default function LeaderboardPage() {
             className="border-2 border-void-400 p-8 text-center"
           >
             <span className="text-4xl block mb-3">🏆</span>
-            <p className="font-mono text-sm text-steel-500">NO_DATA_AVAILABLE</p>
-            <p className="font-mono text-xs text-steel-600 mt-1">Be the first to compete!</p>
+            <p className="font-mono text-sm text-steel-500">НЕТ_ДАННЫХ</p>
+            <p className="font-mono text-xs text-steel-600 mt-1">Будь первым в соревновании!</p>
           </motion.div>
         )}
       </motion.div>

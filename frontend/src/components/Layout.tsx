@@ -7,15 +7,15 @@ interface LayoutProps {
 }
 
 const navItems = [
-  { path: '/', icon: '🏠', label: 'HOME', activeIcon: '⚡' },
-  { path: '/measurements', icon: '📏', label: 'DATA', activeIcon: '📊' },
-  { path: '/leaderboard', icon: '🏆', label: 'RANK', activeIcon: '👑' },
-  { path: '/profile', icon: '👤', label: 'USER', activeIcon: '🔥' },
+  { path: '/', icon: '🏠', label: 'ГЛАВНАЯ', activeIcon: '⚡' },
+  { path: '/measurements', icon: '📏', label: 'ЗАМЕРЫ', activeIcon: '📊' },
+  { path: '/leaderboard', icon: '🏆', label: 'РЕЙТИНГ', activeIcon: '👑' },
+  { path: '/profile', icon: '👤', label: 'ПРОФИЛЬ', activeIcon: '🔥' },
 ]
 
 const trainerNavItems = [
   ...navItems,
-  { path: '/admin', icon: '⚙️', label: 'ADMIN', activeIcon: '🎛️' },
+  { path: '/admin', icon: '⚙️', label: 'АДМИН', activeIcon: '🎛️' },
 ]
 
 export default function Layout({ children, isTrainer = false }: LayoutProps) {

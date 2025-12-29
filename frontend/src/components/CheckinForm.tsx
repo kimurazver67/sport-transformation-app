@@ -9,18 +9,18 @@ interface CheckinFormProps {
 }
 
 const workoutOptions: { type: WorkoutType | 'skip'; label: string; icon: string; color: string }[] = [
-  { type: 'strength', label: 'STRENGTH', icon: '💪', color: 'neon-lime' },
-  { type: 'cardio', label: 'CARDIO', icon: '🏃', color: 'neon-cyan' },
-  { type: 'rest', label: 'REST_DAY', icon: '😴', color: 'neon-magenta' },
-  { type: 'skip', label: 'SKIP', icon: '❌', color: 'neon-orange' },
+  { type: 'strength', label: 'СИЛОВАЯ', icon: '💪', color: 'neon-lime' },
+  { type: 'cardio', label: 'КАРДИО', icon: '🏃', color: 'neon-cyan' },
+  { type: 'rest', label: 'ОТДЫХ', icon: '😴', color: 'neon-magenta' },
+  { type: 'skip', label: 'ПРОПУСК', icon: '❌', color: 'neon-orange' },
 ]
 
 const moodOptions: { value: MoodLevel; emoji: string; label: string }[] = [
-  { value: 1, emoji: '😢', label: 'BAD' },
-  { value: 2, emoji: '😕', label: 'MEH' },
-  { value: 3, emoji: '😐', label: 'OK' },
-  { value: 4, emoji: '🙂', label: 'GOOD' },
-  { value: 5, emoji: '😃', label: 'GREAT' },
+  { value: 1, emoji: '😢', label: 'ПЛОХО' },
+  { value: 2, emoji: '😕', label: 'ТАК' },
+  { value: 3, emoji: '😐', label: 'ОК' },
+  { value: 4, emoji: '🙂', label: 'ХОРОШО' },
+  { value: 5, emoji: '😃', label: 'СУПЕР' },
 ]
 
 const sleepOptions = [5, 6, 7, 8, 9, 10]
@@ -41,11 +41,11 @@ export default function CheckinForm({ onComplete }: CheckinFormProps) {
   })
 
   const steps = [
-    { key: 'workout', title: 'WORKOUT', icon: '💪' },
-    { key: 'nutrition', title: 'NUTRITION', icon: '🥗' },
-    { key: 'water', title: 'HYDRATION', icon: '💧' },
-    { key: 'sleep', title: 'SLEEP', icon: '😴' },
-    { key: 'mood', title: 'MOOD', icon: '🎭' },
+    { key: 'workout', title: 'ТРЕНИРОВКА', icon: '💪' },
+    { key: 'nutrition', title: 'ПИТАНИЕ', icon: '🥗' },
+    { key: 'water', title: 'ВОДА', icon: '💧' },
+    { key: 'sleep', title: 'СОН', icon: '😴' },
+    { key: 'mood', title: 'НАСТРОЕНИЕ', icon: '🎭' },
   ]
 
   const handleWorkout = (type: WorkoutType | 'skip') => {
@@ -125,14 +125,14 @@ export default function CheckinForm({ onComplete }: CheckinFormProps) {
       {/* Step Indicator */}
       <div className="flex items-center justify-between mb-6">
         <div className="font-mono text-xs text-steel-500 uppercase tracking-widest">
-          Step_{String(step + 1).padStart(2, '0')} // {steps[step]?.title}
+          Шаг_{String(step + 1).padStart(2, '0')} // {steps[step]?.title}
         </div>
         {step > 0 && (
           <button
             onClick={goBack}
             className="font-mono text-xs text-steel-400 hover:text-neon-lime transition-colors flex items-center gap-2"
           >
-            <span className="text-neon-lime">[</span> BACK <span className="text-neon-lime">]</span>
+            <span className="text-neon-lime">[</span> НАЗАД <span className="text-neon-lime">]</span>
           </button>
         )}
       </div>
@@ -148,7 +148,7 @@ export default function CheckinForm({ onComplete }: CheckinFormProps) {
             transition={{ duration: 0.2 }}
           >
             <h3 className="font-display text-xl font-bold text-steel-100 mb-4 uppercase tracking-wider">
-              Training_Status?
+              Тренировка_сегодня?
             </h3>
             <div className="grid grid-cols-2 gap-3">
               {workoutOptions.map((opt, i) => (
@@ -195,7 +195,7 @@ export default function CheckinForm({ onComplete }: CheckinFormProps) {
             transition={{ duration: 0.2 }}
           >
             <h3 className="font-display text-xl font-bold text-steel-100 mb-4 uppercase tracking-wider">
-              Nutrition_On_Point?
+              Питание_по_плану?
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <motion.button
@@ -212,7 +212,7 @@ export default function CheckinForm({ onComplete }: CheckinFormProps) {
                 >
                   ✅
                 </motion.span>
-                <span className="font-mono text-sm font-bold text-neon-lime">YES</span>
+                <span className="font-mono text-sm font-bold text-neon-lime">ДА</span>
               </motion.button>
               <motion.button
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -232,7 +232,7 @@ export default function CheckinForm({ onComplete }: CheckinFormProps) {
                 >
                   ❌
                 </motion.span>
-                <span className="font-mono text-sm font-bold text-neon-orange">NO</span>
+                <span className="font-mono text-sm font-bold text-neon-orange">НЕТ</span>
               </motion.button>
             </div>
           </motion.div>
@@ -248,7 +248,7 @@ export default function CheckinForm({ onComplete }: CheckinFormProps) {
             transition={{ duration: 0.2 }}
           >
             <h3 className="font-display text-xl font-bold text-steel-100 mb-4 uppercase tracking-wider">
-              Hydration_Check?
+              Водный_баланс?
             </h3>
             <div className="grid grid-cols-2 gap-4">
               <motion.button
@@ -266,7 +266,7 @@ export default function CheckinForm({ onComplete }: CheckinFormProps) {
                 >
                   💧
                 </motion.span>
-                <span className="font-mono text-sm font-bold text-neon-cyan">HYDRATED</span>
+                <span className="font-mono text-sm font-bold text-neon-cyan">ВЫПИЛ</span>
               </motion.button>
               <motion.button
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -286,7 +286,7 @@ export default function CheckinForm({ onComplete }: CheckinFormProps) {
                 >
                   🏜️
                 </motion.span>
-                <span className="font-mono text-sm font-bold text-neon-orange">THIRSTY</span>
+                <span className="font-mono text-sm font-bold text-neon-orange">НЕ ВЫПИЛ</span>
               </motion.button>
             </div>
           </motion.div>
@@ -302,7 +302,7 @@ export default function CheckinForm({ onComplete }: CheckinFormProps) {
             transition={{ duration: 0.2 }}
           >
             <h3 className="font-display text-xl font-bold text-steel-100 mb-4 uppercase tracking-wider">
-              Sleep_Hours?
+              Сколько_часов_сна?
             </h3>
             <div className="grid grid-cols-3 gap-3">
               {sleepOptions.map((hours, i) => (
@@ -323,7 +323,7 @@ export default function CheckinForm({ onComplete }: CheckinFormProps) {
                 >
                   <span className="font-display text-3xl font-bold text-steel-100">{hours}</span>
                   <span className="font-mono text-[10px] text-steel-500 block mt-1">
-                    {hours === 10 ? '+' : ''} HRS
+                    {hours === 10 ? '+' : ''} ЧАС
                   </span>
                   {hours >= 7 && hours <= 8 && (
                     <div className="absolute top-1 right-1">
@@ -334,7 +334,7 @@ export default function CheckinForm({ onComplete }: CheckinFormProps) {
               ))}
             </div>
             <p className="font-mono text-[10px] text-steel-500 mt-3 text-center">
-              OPTIMAL: 7-8 HOURS
+              ОПТИМАЛЬНО: 7-8 ЧАСОВ
             </p>
           </motion.div>
         )}
@@ -349,7 +349,7 @@ export default function CheckinForm({ onComplete }: CheckinFormProps) {
             transition={{ duration: 0.2 }}
           >
             <h3 className="font-display text-xl font-bold text-steel-100 mb-4 uppercase tracking-wider">
-              Energy_Level?
+              Уровень_энергии?
             </h3>
             <div className="flex justify-between gap-2">
               {moodOptions.map((opt, i) => (
@@ -395,7 +395,7 @@ export default function CheckinForm({ onComplete }: CheckinFormProps) {
                     animate={{ opacity: [1, 0.3, 1] }}
                     transition={{ repeat: Infinity, duration: 0.8 }}
                   />
-                  <span className="font-mono text-xs text-neon-lime">SAVING...</span>
+                  <span className="font-mono text-xs text-neon-lime">СОХРАНЕНИЕ...</span>
                 </div>
               </motion.div>
             )}

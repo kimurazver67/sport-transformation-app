@@ -26,14 +26,31 @@ function App() {
   }, [webApp])
 
   useEffect(() => {
-    if (tgUser && ready) {
-      setTelegramUser(tgUser)
-      fetchUser(tgUser.id)
+    if (ready) {
+      if (tgUser) {
+        setTelegramUser(tgUser)
+        fetchUser(tgUser.id)
+      } else {
+        console.error('No Telegram user available')
+      }
     }
   }, [tgUser, ready, setTelegramUser, fetchUser])
 
-  if (isLoading || !ready) {
+  // Показываем лоадер пока не готовы или загружаем данные
+  if (!ready || (isLoading && tgUser)) {
     return <LoadingScreen />
+  }
+
+  // Если нет пользователя Telegram - ошибка
+  if (!tgUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-void-100 text-steel-100 p-4">
+        <div className="text-center">
+          <p className="text-xl mb-2">⚠️ Ошибка</p>
+          <p className="text-steel-400">Откройте приложение через Telegram</p>
+        </div>
+      </div>
+    )
   }
 
   // Если пользователь - тренер, показываем админку

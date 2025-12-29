@@ -22,13 +22,23 @@ export default function ProfilePage() {
     fetchCheckins()
   }, [])
 
-  if (!user || !telegramUser) return null
+  if (!user || !telegramUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="w-12 h-12 border-4 border-neon-lime border-t-transparent rounded-full"
+        />
+      </div>
+    )
+  }
 
   const statCards = [
-    { label: 'Total_XP', value: stats?.total_points || 0, color: 'neon-lime' },
-    { label: 'Rank', value: `#${stats?.rank_overall || '-'}`, color: 'neon-cyan' },
-    { label: 'Max_Streak', value: stats?.max_streak || 0, color: 'neon-magenta' },
-    { label: 'Checkins', value: checkins.length, color: 'neon-orange' },
+    { label: 'Всего_XP', value: stats?.total_points || 0, color: 'neon-lime' },
+    { label: 'Место', value: `#${stats?.rank_overall || '-'}`, color: 'neon-cyan' },
+    { label: 'Макс_стрик', value: stats?.max_streak || 0, color: 'neon-magenta' },
+    { label: 'Чекины', value: checkins.length, color: 'neon-orange' },
   ]
 
   return (
@@ -74,7 +84,7 @@ export default function ProfilePage() {
               transition={{ delay: 0.1 }}
             >
               <div className="font-mono text-xs text-steel-500 uppercase tracking-widest mb-1">
-                Athlete_Profile
+                Профиль_атлета
               </div>
               <h1 className="font-display text-2xl font-bold text-steel-100 uppercase">
                 {user.first_name} {user.last_name}
@@ -94,7 +104,7 @@ export default function ProfilePage() {
               >
                 <span className="text-sm">🔥</span>
                 <span className="font-mono text-xs font-bold text-neon-orange">
-                  {stats.current_streak} DAY STREAK
+                  {stats.current_streak} ДНЕЙ ПОДРЯД
                 </span>
               </motion.div>
             )}
@@ -110,7 +120,7 @@ export default function ProfilePage() {
         className="mb-6"
       >
         <div className="font-mono text-xs text-steel-500 uppercase tracking-widest mb-3">
-          Statistics_Overview
+          Обзор_статистики
         </div>
         <div className="grid grid-cols-2 gap-3">
           {statCards.map((stat, i) => (
@@ -155,7 +165,7 @@ export default function ProfilePage() {
         <div className="flex items-center gap-2 mb-4">
           <span className="text-xl">🏅</span>
           <h2 className="font-display text-lg font-bold text-steel-100 uppercase">
-            Achievements
+            Достижения
           </h2>
           <div className="flex-1 h-px bg-gradient-to-r from-neon-lime/50 to-transparent ml-2" />
         </div>
@@ -172,7 +182,7 @@ export default function ProfilePage() {
           onClick={close}
           className="w-full py-4 border-2 border-void-400 bg-void-200 font-mono text-sm font-bold text-steel-400 uppercase tracking-wider hover:border-neon-lime hover:text-neon-lime transition-all"
         >
-          [ Close_App ]
+          [ Закрыть ]
         </button>
       </motion.section>
     </div>

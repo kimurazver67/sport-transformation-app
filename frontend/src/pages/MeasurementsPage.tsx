@@ -55,7 +55,7 @@ export default function MeasurementsPage() {
     e.preventDefault()
 
     if (!formData.weight || formData.weight <= 0) {
-      showAlert('Enter weight value')
+      showAlert('Введи значение веса')
       return
     }
 
@@ -64,11 +64,11 @@ export default function MeasurementsPage() {
       await submitMeasurement(formData)
       hapticFeedback('success')
       setIsEditing(false)
-      showAlert('Measurements saved!')
+      showAlert('Замеры сохранены!')
     } catch (error) {
       console.error('Failed to submit measurement:', error)
       hapticFeedback('error')
-      showAlert('Error saving data')
+      showAlert('Ошибка сохранения данных')
     } finally {
       setIsSubmitting(false)
     }
@@ -96,10 +96,10 @@ export default function MeasurementsPage() {
         className="pt-6 pb-4"
       >
         <div className="font-mono text-xs text-steel-500 uppercase tracking-widest mb-1">
-          Week_{String(courseWeek).padStart(2, '0')} // Tracking
+          Неделя_{String(courseWeek).padStart(2, '0')} // Замеры
         </div>
         <h1 className="font-display text-3xl font-bold text-steel-100 uppercase tracking-wider">
-          Body_Data
+          Данные_тела
         </h1>
       </motion.header>
 
@@ -126,16 +126,16 @@ export default function MeasurementsPage() {
           <div className="flex items-center justify-between">
             <div>
               <div className="font-mono text-[10px] text-steel-500 uppercase tracking-widest mb-1">
-                Weight_Delta
+                Изменение_веса
               </div>
               <div className={`font-display text-3xl font-bold ${
                 weightChange < 0 ? 'text-neon-lime' : weightChange > 0 ? 'text-neon-orange' : 'text-neon-cyan'
               }`}>
-                {weightChange > 0 ? '+' : ''}{weightChange.toFixed(1)} kg
+                {weightChange > 0 ? '+' : ''}{weightChange.toFixed(1)} кг
               </div>
             </div>
             <div className="text-right">
-              <div className="font-mono text-[10px] text-steel-500 uppercase">Start → Now</div>
+              <div className="font-mono text-[10px] text-steel-500 uppercase">Старт → Сейчас</div>
               <div className="font-mono text-lg text-steel-300">
                 {startWeight?.toFixed(1)} → {currentWeight?.toFixed(1)}
               </div>
@@ -176,14 +176,14 @@ export default function MeasurementsPage() {
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-display font-bold text-steel-100 uppercase">
-            {currentMeasurement ? `Week_${courseWeek}_Data` : 'New_Entry'}
+            {currentMeasurement ? `Неделя_${courseWeek}_Данные` : 'Новая_запись'}
           </h3>
           {currentMeasurement && !isEditing && (
             <button
               onClick={() => setIsEditing(true)}
               className="font-mono text-xs text-neon-lime hover:underline"
             >
-              [EDIT]
+              [ИЗМЕНИТЬ]
             </button>
           )}
         </div>
@@ -193,7 +193,7 @@ export default function MeasurementsPage() {
             {/* Weight - Required */}
             <div>
               <label className="block font-mono text-xs text-steel-500 uppercase tracking-wider mb-2">
-                Weight (kg) *
+                Вес (кг) *
               </label>
               <input
                 type="number"
@@ -210,7 +210,7 @@ export default function MeasurementsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">
-                  Chest (cm)
+                  Грудь (см)
                 </label>
                 <input
                   type="number"
@@ -223,7 +223,7 @@ export default function MeasurementsPage() {
               </div>
               <div>
                 <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">
-                  Waist (cm)
+                  Талия (см)
                 </label>
                 <input
                   type="number"
@@ -236,7 +236,7 @@ export default function MeasurementsPage() {
               </div>
               <div>
                 <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">
-                  Hips (cm)
+                  Бедра (см)
                 </label>
                 <input
                   type="number"
@@ -249,7 +249,7 @@ export default function MeasurementsPage() {
               </div>
               <div>
                 <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">
-                  Body Fat %
+                  % Жира
                 </label>
                 <input
                   type="number"
@@ -265,7 +265,7 @@ export default function MeasurementsPage() {
             {/* Biceps */}
             <div>
               <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">
-                Biceps (cm) - Left / Right
+                Бицепс (см) - Лев / Прав
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <input
@@ -290,7 +290,7 @@ export default function MeasurementsPage() {
             {/* Thighs */}
             <div>
               <label className="block font-mono text-[10px] text-steel-500 uppercase mb-1">
-                Thighs (cm) - Left / Right
+                Бедро (см) - Лев / Прав
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <input
@@ -319,7 +319,7 @@ export default function MeasurementsPage() {
                   onClick={() => setIsEditing(false)}
                   className="flex-1 py-3 border-2 border-void-400 font-mono text-sm font-bold text-steel-400 uppercase hover:border-steel-400 transition-all"
                 >
-                  Cancel
+                  Отмена
                 </button>
               )}
               <button
@@ -327,7 +327,7 @@ export default function MeasurementsPage() {
                 disabled={isSubmitting}
                 className="flex-1 btn-brutal disabled:opacity-50"
               >
-                {isSubmitting ? 'Saving...' : 'Save_Data'}
+                {isSubmitting ? 'Сохранение...' : 'Сохранить'}
               </button>
             </div>
           </form>
@@ -335,25 +335,25 @@ export default function MeasurementsPage() {
           /* Display current measurements */
           <div className="space-y-3">
             <div className="flex justify-between py-2 border-b border-void-400">
-              <span className="font-mono text-xs text-steel-500 uppercase">Weight</span>
-              <span className="font-display font-bold text-neon-lime">{currentMeasurement.weight} kg</span>
+              <span className="font-mono text-xs text-steel-500 uppercase">Вес</span>
+              <span className="font-display font-bold text-neon-lime">{currentMeasurement.weight} кг</span>
             </div>
             {currentMeasurement.chest && (
               <div className="flex justify-between py-2 border-b border-void-400">
-                <span className="font-mono text-xs text-steel-500 uppercase">Chest</span>
-                <span className="font-mono text-steel-200">{currentMeasurement.chest} cm</span>
+                <span className="font-mono text-xs text-steel-500 uppercase">Грудь</span>
+                <span className="font-mono text-steel-200">{currentMeasurement.chest} см</span>
               </div>
             )}
             {currentMeasurement.waist && (
               <div className="flex justify-between py-2 border-b border-void-400">
-                <span className="font-mono text-xs text-steel-500 uppercase">Waist</span>
-                <span className="font-mono text-steel-200">{currentMeasurement.waist} cm</span>
+                <span className="font-mono text-xs text-steel-500 uppercase">Талия</span>
+                <span className="font-mono text-steel-200">{currentMeasurement.waist} см</span>
               </div>
             )}
             {currentMeasurement.hips && (
               <div className="flex justify-between py-2 border-b border-void-400">
-                <span className="font-mono text-xs text-steel-500 uppercase">Hips</span>
-                <span className="font-mono text-steel-200">{currentMeasurement.hips} cm</span>
+                <span className="font-mono text-xs text-steel-500 uppercase">Бедра</span>
+                <span className="font-mono text-steel-200">{currentMeasurement.hips} см</span>
               </div>
             )}
           </div>
@@ -371,10 +371,10 @@ export default function MeasurementsPage() {
           <span className="text-xl">📸</span>
           <div>
             <p className="font-mono text-xs text-steel-400">
-              To add progress photos, send them to the bot in Telegram.
+              Чтобы добавить фото прогресса, отправь их боту в Телеграм.
             </p>
             <p className="font-mono text-[10px] text-steel-500 mt-1">
-              Label: "front", "side" or "back"
+              Подпись: "спереди", "сбоку" или "сзади"
             </p>
           </div>
         </div>

@@ -69,13 +69,23 @@ export default function HomePage() {
     fetchTodayCheckin()
   }
 
-  if (!user) return null
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="w-12 h-12 border-4 border-neon-lime border-t-transparent rounded-full"
+        />
+      </div>
+    )
+  }
 
   const motivationalQuotes = [
-    "PUSH HARDER THAN YESTERDAY",
-    "DISCIPLINE BEATS MOTIVATION",
-    "NO EXCUSES, ONLY RESULTS",
-    "TRANSFORM OR STAY THE SAME",
+    "РАБОТАЙ УСЕРДНЕЕ, ЧЕМ ВЧЕРА",
+    "ДИСЦИПЛИНА ПОБЕЖДАЕТ МОТИВАЦИЮ",
+    "НИКАКИХ ОПРАВДАНИЙ, ТОЛЬКО РЕЗУЛЬТАТ",
+    "МЕНЯЙСЯ ИЛИ ОСТАВАЙСЯ ПРЕЖНИМ",
   ]
   const quote = motivationalQuotes[Math.floor(Date.now() / 86400000) % motivationalQuotes.length]
 
@@ -99,7 +109,7 @@ export default function HomePage() {
               transition={{ delay: 0.1 }}
               className="font-mono text-xs text-steel-500 uppercase tracking-widest"
             >
-              Week_{String(courseWeek).padStart(2, '0')} // Active
+              Неделя_{String(courseWeek).padStart(2, '0')} // Активна
             </motion.p>
             <motion.h1
               initial={{ opacity: 0, x: -20 }}
@@ -114,9 +124,9 @@ export default function HomePage() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
               className="font-mono text-xs text-neon-lime mt-1 glitch"
-              data-text="TRANSFORMATION_MODE"
+              data-text="РЕЖИМ_ТРАНСФОРМАЦИИ"
             >
-              TRANSFORMATION_MODE
+              РЕЖИМ_ТРАНСФОРМАЦИИ
             </motion.div>
           </div>
 
@@ -142,7 +152,7 @@ export default function HomePage() {
             className="brutal-card group"
           >
             <div className="font-mono text-[10px] text-steel-500 uppercase tracking-wider mb-2">
-              Total_XP
+              Всего_XP
             </div>
             <div className="font-display text-2xl font-bold text-neon-lime text-glow">
               <AnimatedCounter value={stats?.total_points || 0} />
@@ -163,7 +173,7 @@ export default function HomePage() {
             className="brutal-card-cyan group"
           >
             <div className="font-mono text-[10px] text-steel-500 uppercase tracking-wider mb-2">
-              Rank
+              Место
             </div>
             <div className="font-display text-2xl font-bold text-neon-cyan">
               #{stats?.rank_overall || '--'}
@@ -178,7 +188,7 @@ export default function HomePage() {
             className="brutal-card-magenta group"
           >
             <div className="font-mono text-[10px] text-steel-500 uppercase tracking-wider mb-2">
-              Week_XP
+              За_неделю
             </div>
             <div className="font-display text-2xl font-bold text-neon-magenta">
               <AnimatedCounter value={stats?.weekly_points || 0} duration={1000} />
@@ -202,7 +212,7 @@ export default function HomePage() {
                 onClick={() => setShowCheckinForm(false)}
                 className="font-mono text-xs text-steel-400 hover:text-neon-lime mb-4 flex items-center gap-2 transition-colors"
               >
-                <span className="text-neon-lime">[</span> CANCEL <span className="text-neon-lime">]</span>
+                <span className="text-neon-lime">[</span> ОТМЕНА <span className="text-neon-lime">]</span>
               </button>
               <CheckinForm onComplete={handleCheckinComplete} />
             </motion.div>
@@ -232,26 +242,26 @@ export default function HomePage() {
                   </motion.div>
                   <div>
                     <h3 className="font-display font-bold text-steel-100 uppercase tracking-wider">
-                      Check-in Complete
+                      Чекин выполнен
                     </h3>
-                    <p className="font-mono text-[10px] text-steel-500">+10 XP EARNED</p>
+                    <p className="font-mono text-[10px] text-steel-500">+10 XP ПОЛУЧЕНО</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowCheckinForm(true)}
                   className="btn-ghost text-xs"
                 >
-                  [EDIT]
+                  [ИЗМЕНИТЬ]
                 </button>
               </div>
 
               <div className="grid grid-cols-5 gap-2">
                 {[
-                  { icon: todayCheckin.workout ? '💪' : '✗', label: 'GYM', active: todayCheckin.workout },
-                  { icon: todayCheckin.nutrition ? '🥗' : '✗', label: 'FOOD', active: todayCheckin.nutrition },
-                  { icon: todayCheckin.water ? '💧' : '✗', label: 'H2O', active: todayCheckin.water },
-                  { icon: `${todayCheckin.sleep_hours}h`, label: 'SLEEP', active: true },
-                  { icon: ['😢', '😕', '😐', '🙂', '😃'][todayCheckin.mood - 1], label: 'MOOD', active: true },
+                  { icon: todayCheckin.workout ? '💪' : '✗', label: 'ЗАЛА', active: todayCheckin.workout },
+                  { icon: todayCheckin.nutrition ? '🥗' : '✗', label: 'ЕДА', active: todayCheckin.nutrition },
+                  { icon: todayCheckin.water ? '💧' : '✗', label: 'ВОДА', active: todayCheckin.water },
+                  { icon: `${todayCheckin.sleep_hours}ч`, label: 'СОН', active: true },
+                  { icon: ['😢', '😕', '😐', '🙂', '😃'][todayCheckin.mood - 1], label: 'НАСТР', active: true },
                 ].map((item, i) => (
                   <motion.div
                     key={item.label}
@@ -296,10 +306,10 @@ export default function HomePage() {
                   </motion.div>
                   <div className="text-left">
                     <h3 className="font-display font-bold text-steel-100 uppercase tracking-wider">
-                      Daily Check-in
+                      Ежедневный чекин
                     </h3>
                     <p className="font-mono text-xs text-steel-500">
-                      LOG YOUR PROGRESS NOW
+                      ОТМЕТЬ СВОЙ ПРОГРЕСС
                     </p>
                   </div>
                 </div>
@@ -331,10 +341,10 @@ export default function HomePage() {
                 </div>
                 <div>
                   <h4 className="font-display font-bold text-sm text-steel-100 uppercase">
-                    Measurements
+                    Замеры
                   </h4>
                   <p className="font-mono text-[10px] text-steel-500">
-                    TRACK PROGRESS
+                    ОТСЛЕЖИВАЙ ПРОГРЕСС
                   </p>
                 </div>
               </div>
@@ -353,10 +363,10 @@ export default function HomePage() {
                 </div>
                 <div>
                   <h4 className="font-display font-bold text-sm text-steel-100 uppercase">
-                    Missions
+                    Задания
                   </h4>
                   <p className="font-mono text-[10px] text-steel-500">
-                    WEEK_{String(courseWeek).padStart(2, '0')}
+                    НЕДЕЛЯ_{String(courseWeek).padStart(2, '0')}
                   </p>
                 </div>
               </div>

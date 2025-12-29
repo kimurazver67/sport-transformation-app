@@ -41,10 +41,10 @@ export default function TasksPage() {
         className="pt-6 pb-4"
       >
         <div className="font-mono text-xs text-steel-500 uppercase tracking-widest mb-1">
-          Week_{String(courseWeek).padStart(2, '0')} // Missions
+          Неделя_{String(courseWeek).padStart(2, '0')} // Задания
         </div>
         <h1 className="font-display text-3xl font-bold text-steel-100 uppercase tracking-wider">
-          Weekly_Tasks
+          Задания_недели
         </h1>
       </motion.header>
 
@@ -58,7 +58,7 @@ export default function TasksPage() {
         >
           <div className="flex items-center justify-between mb-3">
             <span className="font-mono text-xs text-steel-500 uppercase tracking-wider">
-              Mission_Progress
+              Прогресс_заданий
             </span>
             <span className="font-display text-lg font-bold text-neon-magenta">
               {completedCount}/{tasks.length}
@@ -82,7 +82,7 @@ export default function TasksPage() {
               className="mt-3 text-center"
             >
               <span className="font-mono text-sm text-neon-lime">
-                🎉 ALL MISSIONS COMPLETE!
+                🎉 ВСЕ ЗАДАНИЯ ВЫПОЛНЕНЫ!
               </span>
             </motion.div>
           )}
@@ -97,7 +97,7 @@ export default function TasksPage() {
         className="space-y-3"
       >
         <div className="font-mono text-xs text-steel-500 uppercase tracking-widest mb-3">
-          Tasks_Queue
+          Список_заданий
         </div>
 
         {tasks.map((task, index) => (
@@ -189,9 +189,9 @@ export default function TasksPage() {
             className="border-2 border-void-400 p-8 text-center"
           >
             <span className="text-4xl block mb-3">📋</span>
-            <p className="font-mono text-sm text-steel-500">NO_TASKS_AVAILABLE</p>
+            <p className="font-mono text-sm text-steel-500">НЕТ_ЗАДАНИЙ</p>
             <p className="font-mono text-xs text-steel-600 mt-1">
-              Trainer will add tasks after webinar
+              Тренер добавит задания после вебинара
             </p>
           </motion.div>
         )}
@@ -208,10 +208,10 @@ export default function TasksPage() {
           <span className="text-xl">💡</span>
           <div>
             <p className="font-mono text-xs text-steel-400">
-              Each completed task earns you <span className="text-neon-lime font-bold">+15 XP</span>
+              За каждое задание ты получаешь <span className="text-neon-lime font-bold">+15 XP</span>
             </p>
             <p className="font-mono text-[10px] text-steel-500 mt-1">
-              Complete all before the next webinar!
+              Выполни все до следующего вебинара!
             </p>
           </div>
         </div>
