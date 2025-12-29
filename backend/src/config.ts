@@ -77,7 +77,22 @@ export function getCurrentWeek(): number {
   const start = config.course.startDate;
   const diffTime = now.getTime() - start.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  return Math.max(1, Math.floor(diffDays / 7) + 1);
+  if (diffDays < 0) return 0; // Курс ещё не начался
+  return Math.floor(diffDays / 7) + 1;
+}
+
+// Дней до старта курса (если курс не начался)
+export function getDaysUntilStart(): number {
+  const now = new Date();
+  const start = config.course.startDate;
+  const diffTime = start.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return Math.max(0, diffDays);
+}
+
+// Проверка, начался ли курс
+export function isCourseStarted(): boolean {
+  return new Date() >= config.course.startDate;
 }
 
 // Проверка, является ли сегодня воскресенье (день замеров)

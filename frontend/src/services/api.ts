@@ -136,5 +136,5 @@ export const api = {
 
   // Курс
   getCourseWeek: () =>
-    request<number>(`/api/course/week`).then((data: any) => data.week),
+    request<{ week: number; isStarted: boolean; daysUntilStart: number }>(`/api/course/week`),
 }

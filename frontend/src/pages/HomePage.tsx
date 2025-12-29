@@ -59,7 +59,7 @@ function StreakFire({ streak }: { streak: number }) {
 }
 
 export default function HomePage() {
-  const { user, stats, todayCheckin, courseWeek, fetchTodayCheckin } = useStore()
+  const { user, stats, todayCheckin, courseWeek, isCourseStarted, daysUntilStart, fetchTodayCheckin } = useStore()
   const { hapticFeedback } = useTelegram()
   const [showCheckinForm, setShowCheckinForm] = useState(false)
 
@@ -109,7 +109,9 @@ export default function HomePage() {
               transition={{ delay: 0.1 }}
               className="font-mono text-xs text-steel-500 uppercase tracking-widest"
             >
-              Неделя_{String(courseWeek).padStart(2, '0')} // Активна
+              {isCourseStarted
+                ? `Неделя_${String(courseWeek).padStart(2, '0')} // Активна`
+                : `До старта: ${daysUntilStart} дн.`}
             </motion.p>
             <motion.h1
               initial={{ opacity: 0, x: -20 }}
@@ -366,7 +368,9 @@ export default function HomePage() {
                     Задания
                   </h4>
                   <p className="font-mono text-[10px] text-steel-500">
-                    НЕДЕЛЯ_{String(courseWeek).padStart(2, '0')}
+                    {isCourseStarted
+                      ? `НЕДЕЛЯ_${String(courseWeek).padStart(2, '0')}`
+                      : 'СКОРО'}
                   </p>
                 </div>
               </div>

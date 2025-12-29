@@ -5,7 +5,7 @@ import { measurementService } from '../services/measurementService';
 import { statsService } from '../services/statsService';
 import { taskService } from '../services/taskService';
 import { achievementService } from '../services/achievementService';
-import { getCurrentWeek } from '../config';
+import { getCurrentWeek, getDaysUntilStart, isCourseStarted } from '../config';
 import { CheckinForm, MeasurementForm } from '../types';
 
 const router = Router();
@@ -236,9 +236,16 @@ router.get('/achievements/:userId', async (req: Request, res: Response) => {
 
 // ===== ОБЩЕЕ =====
 
-// Текущая неделя курса
+// Текущая неделя курса и статус
 router.get('/course/week', (req: Request, res: Response) => {
-  res.json({ success: true, data: { week: getCurrentWeek() } });
+  res.json({
+    success: true,
+    data: {
+      week: getCurrentWeek(),
+      isStarted: isCourseStarted(),
+      daysUntilStart: getDaysUntilStart()
+    }
+  });
 });
 
 export default router;

@@ -73,6 +73,8 @@ interface Store {
 
   // Неделя курса
   courseWeek: number
+  isCourseStarted: boolean
+  daysUntilStart: number
   fetchCourseWeek: () => Promise<void>
 }
 
@@ -266,11 +268,17 @@ export const useStore = create<Store>((set, get) => ({
 
   // Неделя курса
   courseWeek: 1,
+  isCourseStarted: false,
+  daysUntilStart: 0,
 
   fetchCourseWeek: async () => {
     try {
-      const week = await api.getCourseWeek()
-      set({ courseWeek: week })
+      const data = await api.getCourseWeek()
+      set({
+        courseWeek: data.week,
+        isCourseStarted: data.isStarted,
+        daysUntilStart: data.daysUntilStart
+      })
     } catch (error) {
       console.error('Failed to fetch course week:', error)
     }
