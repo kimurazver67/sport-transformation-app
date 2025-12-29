@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Use Railway env vars for уведомления о деплое
 • Исправлено: Add unref() to cleanup interval for graceful shutdown
 • Рефакторинг: Clean up unused constant and improve typing
 • Добавлено: Add global error handler with Telegram уведомления
 • Добавлено: Migrate from Supabase to Railway PostgreSQL + Redis
-• Обслуживание: Убраны упоминания Vercel, всё на Railway
 
-29.12.2025 22:43
+29.12.2025 22:46

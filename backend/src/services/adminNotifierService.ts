@@ -1,4 +1,6 @@
 import { Telegraf } from 'telegraf';
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
 import { config } from '../config';
 
 let bot: Telegraf | null = null;
@@ -242,7 +244,28 @@ function translateCommitMessage(msg: string): string {
   return msg;
 }
 
-// Уведомление о деплое (использует Railway env variables)
+// Читаем changelog из файла (fallback для CLI deploy)
+function readChangelogFile(): string | null {
+  const possiblePaths = [
+    join(process.cwd(), 'DEPLOY_CHANGELOG.txt'),
+    join(process.cwd(), 'backend', 'DEPLOY_CHANGELOG.txt'),
+    '/app/DEPLOY_CHANGELOG.txt',
+    '/app/backend/DEPLOY_CHANGELOG.txt',
+  ];
+
+  for (const path of possiblePaths) {
+    if (existsSync(path)) {
+      try {
+        return readFileSync(path, 'utf-8').trim();
+      } catch {
+        continue;
+      }
+    }
+  }
+  return null;
+}
+
+// Уведомление о деплое (использует Railway env variables или файл changelog)
 export async function notifyDeploy(): Promise<void> {
   const commit = process.env.RAILWAY_GIT_COMMIT_SHA;
   const branch = process.env.RAILWAY_GIT_BRANCH;
@@ -251,23 +274,40 @@ export async function notifyDeploy(): Promise<void> {
 
   console.log('[Deploy] Railway env:', { commit, branch, commitMessage, author });
 
-  let changeInfo = '';
+  let message: string;
 
   if (commitMessage) {
-    // Переводим сообщение коммита
+    // Есть Railway env - используем их
     const translatedMessage = translateCommitMessage(commitMessage);
-    changeInfo = `\n📝 <b>Изменения:</b> ${escapeHtml(translatedMessage)}`;
-  }
 
-  const message = `🚀 <b>Деплой выполнен!</b>
+    message = `🚀 <b>Деплой выполнен!</b>
 
 📅 <b>Время:</b> ${formatDate()}
 🌍 <b>Окружение:</b> ${config.app.nodeEnv}
 ${branch ? `🌿 <b>Ветка:</b> ${branch}` : ''}
 ${commit ? `🔗 <b>Коммит:</b> <code>${commit.slice(0, 7)}</code>` : ''}
-${author ? `👤 <b>Автор:</b> ${escapeHtml(author)}` : ''}${changeInfo}
+${author ? `👤 <b>Автор:</b> ${escapeHtml(author)}` : ''}
+📝 <b>Изменения:</b> ${escapeHtml(translatedMessage)}
 
 ✅ Backend запущен`;
+  } else {
+    // Fallback на файл changelog
+    const changelog = readChangelogFile();
+
+    if (changelog) {
+      message = `🚀 <b>Деплой выполнен!</b>
+
+${escapeHtml(changelog)}`;
+    } else {
+      // Минимальное сообщение
+      message = `🚀 <b>Деплой выполнен!</b>
+
+📅 <b>Время:</b> ${formatDate()}
+🌍 <b>Окружение:</b> ${config.app.nodeEnv}
+
+✅ Backend запущен`;
+    }
+  }
 
   console.log('[Deploy] Sending message to admin...');
   await sendToAdmin(message);
