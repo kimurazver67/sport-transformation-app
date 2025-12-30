@@ -1,9 +1,9 @@
 Последние изменения:
 
+• debug: Add route logging to App.tsx
 • debug: Add mount/unmount and store state logging
 • debug: Send error to Telegram from MeasurementsPage ErrorBoundary
 • debug: Add logging to MeasurementsPage to trace black screen issue
 • Добавлено: Add global error handler that sends errors to Telegram
-• Исправлено: Add defensive coding for measurements API responses
 
-30.12.2025 10:40
+30.12.2025 10:47

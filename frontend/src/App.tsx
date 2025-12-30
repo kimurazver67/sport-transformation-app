@@ -11,13 +11,14 @@ import TasksPage from './pages/TasksPage'
 import AdminPage from './pages/AdminPage'
 import LoadingScreen from './components/LoadingScreen'
 
-// Debug function
+// Debug function - через бэкенд
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 async function sendDebug(msg: string) {
   try {
-    await fetch('https://api.telegram.org/bot8189539417:AAGki4aTKHCxgFpvMxOsDL9zdNcFaO2i6fA/sendMessage', {
+    await fetch(`${API_URL}/api/debug/log`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: '-1003380571535', text: `🔍 App: ${msg}` }),
+      body: JSON.stringify({ message: `App: ${msg}` }),
     })
   } catch (e) { /* ignore */ }
 }
