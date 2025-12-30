@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Show participant goal in admin panel
 • Исправлено: Add debug endpoint for role/goal testing
 • Исправлено: Add migration endpoint for goal column
 • Добавлено: Add goal selection for participants before course start
 • Добавлено: Add weekly progress bonus system
-• Исправлено: Neutral color scheme for progress cards
 
-30.12.2025 13:51
+30.12.2025 13:54

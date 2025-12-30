@@ -1,37 +1,29 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState } from 'react'
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from 'chart.js'
+import { Line } from 'react-chartjs-2'
 import type { WeeklyMeasurement } from '../types'
 
-// Динамический импорт chart.js для избежания ошибок SSR/hydration
-let ChartJS: any = null
-let Line: any = null
-let chartLoaded = false
-
-async function loadChart() {
-  if (chartLoaded) return true
-  try {
-    const chartjs = await import('chart.js')
-    const reactChartjs = await import('react-chartjs-2')
-
-    ChartJS = chartjs.Chart
-    Line = reactChartjs.Line
-
-    ChartJS.register(
-      chartjs.CategoryScale,
-      chartjs.LinearScale,
-      chartjs.PointElement,
-      chartjs.LineElement,
-      chartjs.Title,
-      chartjs.Tooltip,
-      chartjs.Legend,
-      chartjs.Filler
-    )
-    chartLoaded = true
-    return true
-  } catch (error) {
-    console.error('Failed to load chart.js:', error)
-    return false
-  }
-}
+// Регистрируем компоненты chart.js
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+)
 
 interface BodyMeasurementsChartProps {
   measurements: WeeklyMeasurement[]
@@ -47,8 +39,6 @@ const MEASUREMENT_COLORS = {
 }
 
 export default function BodyMeasurementsChart({ measurements }: BodyMeasurementsChartProps) {
-  const [isChartReady, setIsChartReady] = useState(chartLoaded)
-  const [hasError, setHasError] = useState(false)
   const [visibleLines, setVisibleLines] = useState({
     chest: true,
     waist: true,
@@ -56,17 +46,6 @@ export default function BodyMeasurementsChart({ measurements }: BodyMeasurements
     bicep: true,
     thigh: true,
   })
-
-  useEffect(() => {
-    if (!chartLoaded) {
-      loadChart()
-        .then((success) => {
-          setIsChartReady(success)
-          if (!success) setHasError(true)
-        })
-        .catch(() => setHasError(true))
-    }
-  }, [])
 
   // Проверяем есть ли данные объёмов
   const hasBodyData = useMemo(() => {
@@ -76,96 +55,90 @@ export default function BodyMeasurementsChart({ measurements }: BodyMeasurements
   }, [measurements])
 
   const chartData = useMemo(() => {
-    try {
-      const sorted = [...measurements].sort((a, b) => a.week_number - b.week_number)
+    const sorted = [...measurements].sort((a, b) => a.week_number - b.week_number)
 
-      const datasets: any[] = []
+    const datasets: any[] = []
 
-      if (visibleLines.chest && sorted.some(m => m.chest)) {
-        datasets.push({
-          label: 'Грудь',
-          data: sorted.map((m) => m.chest || null),
-          borderColor: MEASUREMENT_COLORS.chest.border,
-          backgroundColor: MEASUREMENT_COLORS.chest.bg,
-          tension: 0.4,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          spanGaps: true,
-        })
-      }
+    if (visibleLines.chest && sorted.some(m => m.chest)) {
+      datasets.push({
+        label: 'Грудь',
+        data: sorted.map((m) => m.chest ? Number(m.chest) : null),
+        borderColor: MEASUREMENT_COLORS.chest.border,
+        backgroundColor: MEASUREMENT_COLORS.chest.bg,
+        tension: 0.4,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        spanGaps: true,
+      })
+    }
 
-      if (visibleLines.waist && sorted.some(m => m.waist)) {
-        datasets.push({
-          label: 'Талия',
-          data: sorted.map((m) => m.waist || null),
-          borderColor: MEASUREMENT_COLORS.waist.border,
-          backgroundColor: MEASUREMENT_COLORS.waist.bg,
-          tension: 0.4,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          spanGaps: true,
-        })
-      }
+    if (visibleLines.waist && sorted.some(m => m.waist)) {
+      datasets.push({
+        label: 'Талия',
+        data: sorted.map((m) => m.waist ? Number(m.waist) : null),
+        borderColor: MEASUREMENT_COLORS.waist.border,
+        backgroundColor: MEASUREMENT_COLORS.waist.bg,
+        tension: 0.4,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        spanGaps: true,
+      })
+    }
 
-      if (visibleLines.hips && sorted.some(m => m.hips)) {
-        datasets.push({
-          label: 'Бёдра',
-          data: sorted.map((m) => m.hips || null),
-          borderColor: MEASUREMENT_COLORS.hips.border,
-          backgroundColor: MEASUREMENT_COLORS.hips.bg,
-          tension: 0.4,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          spanGaps: true,
-        })
-      }
+    if (visibleLines.hips && sorted.some(m => m.hips)) {
+      datasets.push({
+        label: 'Бёдра',
+        data: sorted.map((m) => m.hips ? Number(m.hips) : null),
+        borderColor: MEASUREMENT_COLORS.hips.border,
+        backgroundColor: MEASUREMENT_COLORS.hips.bg,
+        tension: 0.4,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        spanGaps: true,
+      })
+    }
 
-      if (visibleLines.bicep && sorted.some(m => m.bicep_left || m.bicep_right)) {
-        // Среднее бицепсов
-        datasets.push({
-          label: 'Бицепс (ср.)',
-          data: sorted.map((m) => {
-            const left = m.bicep_left
-            const right = m.bicep_right
-            if (left && right) return (left + right) / 2
-            return left || right || null
-          }),
-          borderColor: MEASUREMENT_COLORS.bicep.border,
-          backgroundColor: MEASUREMENT_COLORS.bicep.bg,
-          tension: 0.4,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          spanGaps: true,
-        })
-      }
+    if (visibleLines.bicep && sorted.some(m => m.bicep_left || m.bicep_right)) {
+      // Среднее бицепсов
+      datasets.push({
+        label: 'Бицепс (ср.)',
+        data: sorted.map((m) => {
+          const left = m.bicep_left ? Number(m.bicep_left) : null
+          const right = m.bicep_right ? Number(m.bicep_right) : null
+          if (left && right) return (left + right) / 2
+          return left || right || null
+        }),
+        borderColor: MEASUREMENT_COLORS.bicep.border,
+        backgroundColor: MEASUREMENT_COLORS.bicep.bg,
+        tension: 0.4,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        spanGaps: true,
+      })
+    }
 
-      if (visibleLines.thigh && sorted.some(m => m.thigh_left || m.thigh_right)) {
-        // Среднее бёдер
-        datasets.push({
-          label: 'Бедро (ср.)',
-          data: sorted.map((m) => {
-            const left = m.thigh_left
-            const right = m.thigh_right
-            if (left && right) return (left + right) / 2
-            return left || right || null
-          }),
-          borderColor: MEASUREMENT_COLORS.thigh.border,
-          backgroundColor: MEASUREMENT_COLORS.thigh.bg,
-          tension: 0.4,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          spanGaps: true,
-        })
-      }
+    if (visibleLines.thigh && sorted.some(m => m.thigh_left || m.thigh_right)) {
+      // Среднее бёдер
+      datasets.push({
+        label: 'Бедро (ср.)',
+        data: sorted.map((m) => {
+          const left = m.thigh_left ? Number(m.thigh_left) : null
+          const right = m.thigh_right ? Number(m.thigh_right) : null
+          if (left && right) return (left + right) / 2
+          return left || right || null
+        }),
+        borderColor: MEASUREMENT_COLORS.thigh.border,
+        backgroundColor: MEASUREMENT_COLORS.thigh.bg,
+        tension: 0.4,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+        spanGaps: true,
+      })
+    }
 
-      return {
-        labels: sorted.map((m) => `W${m.week_number}`),
-        datasets,
-      }
-    } catch (error) {
-      console.error('Error creating body chart data:', error)
-      setHasError(true)
-      return null
+    return {
+      labels: sorted.map((m) => `W${m.week_number}`),
+      datasets,
     }
   }, [measurements, visibleLines])
 
@@ -250,38 +223,6 @@ export default function BodyMeasurementsChart({ measurements }: BodyMeasurements
   // Не показываем если нет данных объёмов
   if (!hasBodyData || measurements.length === 0) {
     return null
-  }
-
-  if (hasError || !chartData) {
-    return (
-      <div className="border-2 border-neon-orange bg-void-200 p-4" style={{ boxShadow: '4px 4px 0 0 #FF6B00' }}>
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-xl">⚠️</span>
-          <h3 className="font-display font-bold text-neon-orange uppercase">
-            График_недоступен
-          </h3>
-        </div>
-        <p className="font-mono text-xs text-steel-500">
-          Не удалось загрузить график объёмов.
-        </p>
-      </div>
-    )
-  }
-
-  if (!isChartReady || !Line) {
-    return (
-      <div className="border-2 border-void-400 bg-void-200 p-4" style={{ boxShadow: '4px 4px 0 0 #333' }}>
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-xl">📐</span>
-          <h3 className="font-display font-bold text-steel-100 uppercase">
-            Body_Progress
-          </h3>
-        </div>
-        <div className="h-56 flex items-center justify-center">
-          <div className="w-8 h-8 border-2 border-neon-cyan border-t-transparent rounded-full animate-spin" />
-        </div>
-      </div>
-    )
   }
 
   const toggleLine = (key: keyof typeof visibleLines) => {
