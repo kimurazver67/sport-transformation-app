@@ -31,6 +31,14 @@ export const taskService = {
     return this.getByWeek(weekNumber);
   },
 
+  // Получить все задания
+  async getAll(): Promise<Task[]> {
+    const result = await query<Task>(
+      'SELECT * FROM tasks ORDER BY week_number ASC, is_bonus ASC, created_at ASC'
+    );
+    return result.rows;
+  },
+
   // Получить задания по неделе
   async getByWeek(weekNumber: number): Promise<Task[]> {
     const result = await query<Task>(
@@ -39,6 +47,48 @@ export const taskService = {
     );
 
     return result.rows;
+  },
+
+  // Обновить задание
+  async update(
+    taskId: string,
+    data: { title?: string; description?: string; goal?: UserGoal | null; is_bonus?: boolean }
+  ): Promise<Task> {
+    const updates: string[] = [];
+    const values: unknown[] = [];
+    let paramIndex = 1;
+
+    if (data.title !== undefined) {
+      updates.push(`title = $${paramIndex++}`);
+      values.push(data.title);
+    }
+    if (data.description !== undefined) {
+      updates.push(`description = $${paramIndex++}`);
+      values.push(data.description);
+    }
+    if (data.goal !== undefined) {
+      updates.push(`goal = $${paramIndex++}`);
+      values.push(data.goal);
+    }
+    if (data.is_bonus !== undefined) {
+      updates.push(`is_bonus = $${paramIndex++}`);
+      values.push(data.is_bonus);
+    }
+
+    if (updates.length === 0) {
+      const result = await query<Task>('SELECT * FROM tasks WHERE id = $1', [taskId]);
+      if (!result.rows[0]) throw new Error('Task not found');
+      return result.rows[0];
+    }
+
+    values.push(taskId);
+    const result = await query<Task>(
+      `UPDATE tasks SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
+      values
+    );
+
+    if (!result.rows[0]) throw new Error('Task not found');
+    return result.rows[0];
   },
 
   // Получить задания по неделе, отфильтрованные по цели пользователя

@@ -133,21 +133,47 @@ router.get('/participant/:userId', async (req: Request, res: Response) => {
 
 // ===== ЗАДАНИЯ =====
 
+// Получить все задания (опционально по неделе)
+router.get('/tasks', async (req: Request, res: Response) => {
+  try {
+    const weekNumber = req.query.week ? parseInt(req.query.week as string) : undefined;
+    const tasks = weekNumber !== undefined
+      ? await taskService.getByWeek(weekNumber)
+      : await taskService.getAll();
+    res.json({ success: true, data: tasks });
+  } catch (error) {
+    console.error('Get tasks error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 // Создать задание
 router.post('/tasks', async (req: Request, res: Response) => {
   try {
-    const { week_number, title, description } = req.body;
+    const { week_number, title, description, goal, is_bonus } = req.body;
 
     if (!title) {
       return res.status(400).json({ success: false, error: 'Title is required' });
     }
 
     const week = week_number || getCurrentWeek();
-    const task = await taskService.create(week, title, description);
+    const task = await taskService.create(week, title, description, goal, is_bonus);
 
     res.json({ success: true, data: task });
   } catch (error) {
     console.error('Create task error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Обновить задание
+router.put('/tasks/:taskId', async (req: Request, res: Response) => {
+  try {
+    const { title, description, goal, is_bonus } = req.body;
+    const task = await taskService.update(req.params.taskId, { title, description, goal, is_bonus });
+    res.json({ success: true, data: task });
+  } catch (error) {
+    console.error('Update task error:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });

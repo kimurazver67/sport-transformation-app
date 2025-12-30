@@ -1,8 +1,17 @@
 import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useTelegram } from '../hooks/useTelegram'
 import { useStore } from '../store'
 import { api } from '../services/api'
+
+interface TaskData {
+  id: string
+  week_number: number
+  title: string
+  description?: string
+  goal?: 'weight_loss' | 'muscle_gain' | null
+  is_bonus?: boolean
+}
 
 interface ParticipantData {
   user: {
@@ -43,9 +52,18 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'dashboard' | 'participants' | 'tasks'>('dashboard')
 
-  // Форма нового задания
-  const [newTaskTitle, setNewTaskTitle] = useState('')
-  const [isCreatingTask, setIsCreatingTask] = useState(false)
+  // Задания
+  const [tasks, setTasks] = useState<TaskData[]>([])
+  const [selectedWeek, setSelectedWeek] = useState(courseWeek || 1)
+  const [showTaskModal, setShowTaskModal] = useState(false)
+  const [editingTask, setEditingTask] = useState<TaskData | null>(null)
+  const [taskForm, setTaskForm] = useState({
+    title: '',
+    description: '',
+    goal: null as 'weight_loss' | 'muscle_gain' | null,
+    is_bonus: false,
+  })
+  const [isSavingTask, setIsSavingTask] = useState(false)
 
   // Модалка рассылки
   const [showBroadcastModal, setShowBroadcastModal] = useState(false)
@@ -55,6 +73,12 @@ export default function AdminPage() {
   useEffect(() => {
     fetchData()
   }, [])
+
+  useEffect(() => {
+    if (activeTab === 'tasks') {
+      fetchTasks()
+    }
+  }, [activeTab, selectedWeek])
 
   const fetchData = async () => {
     try {
@@ -71,6 +95,15 @@ export default function AdminPage() {
       setError(err instanceof Error ? err.message : 'Ошибка загрузки данных')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const fetchTasks = async () => {
+    try {
+      const data = await api.getAdminTasks(selectedWeek)
+      setTasks(data)
+    } catch (err) {
+      console.error('Failed to fetch tasks:', err)
     }
   }
 
@@ -115,20 +148,74 @@ export default function AdminPage() {
     }
   }
 
-  const createTask = async () => {
-    if (!newTaskTitle.trim()) return
+  const openTaskModal = (task?: TaskData) => {
+    if (task) {
+      setEditingTask(task)
+      setTaskForm({
+        title: task.title,
+        description: task.description || '',
+        goal: task.goal || null,
+        is_bonus: task.is_bonus || false,
+      })
+    } else {
+      setEditingTask(null)
+      setTaskForm({
+        title: '',
+        description: '',
+        goal: null,
+        is_bonus: false,
+      })
+    }
+    setShowTaskModal(true)
+    hapticFeedback('light')
+  }
 
-    setIsCreatingTask(true)
+  const saveTask = async () => {
+    if (!taskForm.title.trim()) return
+
+    setIsSavingTask(true)
     try {
-      await api.createAdminTask(courseWeek, newTaskTitle)
-      hapticFeedback('success')
-      setNewTaskTitle('')
-      showAlert('Задание создано!')
+      if (editingTask) {
+        await api.updateAdminTask(editingTask.id, {
+          title: taskForm.title,
+          description: taskForm.description || undefined,
+          goal: taskForm.goal,
+          is_bonus: taskForm.is_bonus,
+        })
+        hapticFeedback('success')
+        showAlert('Задание обновлено!')
+      } else {
+        await api.createAdminTask({
+          week_number: selectedWeek,
+          title: taskForm.title,
+          description: taskForm.description || undefined,
+          goal: taskForm.goal,
+          is_bonus: taskForm.is_bonus,
+        })
+        hapticFeedback('success')
+        showAlert('Задание создано!')
+      }
+      setShowTaskModal(false)
+      fetchTasks()
     } catch (err) {
       hapticFeedback('error')
-      showAlert('Ошибка при создании')
+      showAlert('Ошибка при сохранении')
     } finally {
-      setIsCreatingTask(false)
+      setIsSavingTask(false)
+    }
+  }
+
+  const deleteTask = async (task: TaskData) => {
+    const confirmed = await showConfirm(`Удалить задание "${task.title}"?`)
+    if (!confirmed) return
+
+    try {
+      await api.deleteAdminTask(task.id)
+      hapticFeedback('success')
+      fetchTasks()
+    } catch (err) {
+      hapticFeedback('error')
+      showAlert('Ошибка при удалении')
     }
   }
 
@@ -445,43 +532,278 @@ export default function AdminPage() {
           animate={{ opacity: 1 }}
           className="space-y-4"
         >
-          {/* Create Task Form */}
+          {/* Week Selector + Add Button */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="brutal-card"
+            className="flex items-center gap-3"
           >
-            <div className="font-mono text-[10px] text-steel-500 uppercase tracking-widest mb-3">
-              Новое задание // Неделя_{String(courseWeek).padStart(2, '0')}
-            </div>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newTaskTitle}
-                onChange={(e) => setNewTaskTitle(e.target.value)}
-                placeholder="Название задания..."
-                className="input-brutal flex-1"
-              />
+            <div className="flex items-center gap-2 flex-1">
               <button
-                onClick={createTask}
-                disabled={isCreatingTask || !newTaskTitle.trim()}
-                className="btn-brutal px-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => setSelectedWeek(Math.max(1, selectedWeek - 1))}
+                className="w-10 h-10 border-2 border-void-400 text-steel-300 hover:border-neon-lime hover:text-neon-lime transition-all font-mono"
               >
-                +
+                ←
+              </button>
+              <div className="flex-1 text-center">
+                <span className="font-mono text-xs text-steel-500 uppercase">Неделя</span>
+                <div className="font-display text-2xl font-bold text-neon-lime">
+                  {String(selectedWeek).padStart(2, '0')}
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedWeek(Math.min(16, selectedWeek + 1))}
+                className="w-10 h-10 border-2 border-void-400 text-steel-300 hover:border-neon-lime hover:text-neon-lime transition-all font-mono"
+              >
+                →
               </button>
             </div>
+            <button
+              onClick={() => openTaskModal()}
+              className="btn-brutal px-4 py-2 flex items-center gap-2"
+            >
+              <span className="text-xl">+</span>
+              <span className="hidden sm:inline">Добавить</span>
+            </button>
           </motion.div>
 
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="font-mono text-xs text-steel-500 text-center"
-          >
-            Задания отображаются у участников после создания.
-          </motion.p>
+          {/* Tasks List */}
+          <div className="space-y-3">
+            <AnimatePresence mode="popLayout">
+              {tasks.length === 0 ? (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center py-8"
+                >
+                  <div className="text-4xl mb-2">📋</div>
+                  <p className="font-mono text-sm text-steel-500">
+                    Нет заданий на эту неделю
+                  </p>
+                  <button
+                    onClick={() => openTaskModal()}
+                    className="mt-4 font-mono text-sm text-neon-lime hover:underline"
+                  >
+                    + Добавить первое задание
+                  </button>
+                </motion.div>
+              ) : (
+                tasks.map((task, index) => (
+                  <motion.div
+                    key={task.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ delay: index * 0.03 }}
+                    className={`bg-void-200 border-2 p-4 ${
+                      task.is_bonus
+                        ? 'border-neon-orange'
+                        : task.goal === 'weight_loss'
+                        ? 'border-red-500'
+                        : task.goal === 'muscle_gain'
+                        ? 'border-blue-500'
+                        : 'border-void-400'
+                    }`}
+                    style={{
+                      boxShadow: task.is_bonus
+                        ? '4px 4px 0 0 #FF6B00'
+                        : task.goal === 'weight_loss'
+                        ? '4px 4px 0 0 #EF4444'
+                        : task.goal === 'muscle_gain'
+                        ? '4px 4px 0 0 #3B82F6'
+                        : '4px 4px 0 0 rgba(191, 255, 0, 0.2)',
+                    }}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-display font-bold text-steel-100 truncate">
+                            {task.title}
+                          </h3>
+                          {task.is_bonus && (
+                            <span className="px-2 py-0.5 bg-neon-orange/20 text-neon-orange text-[10px] font-mono uppercase">
+                              Бонус
+                            </span>
+                          )}
+                          {task.goal && (
+                            <span className="text-lg" title={task.goal === 'weight_loss' ? 'Сушка' : 'Масса'}>
+                              {task.goal === 'weight_loss' ? '🔥' : '💪'}
+                            </span>
+                          )}
+                        </div>
+                        {task.description && (
+                          <p className="font-mono text-xs text-steel-400 mt-1 line-clamp-2">
+                            {task.description}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => openTaskModal(task)}
+                          className="w-8 h-8 flex items-center justify-center border border-void-400 text-steel-400 hover:border-neon-cyan hover:text-neon-cyan transition-all"
+                          title="Редактировать"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => deleteTask(task)}
+                          className="w-8 h-8 flex items-center justify-center border border-void-400 text-steel-400 hover:border-red-500 hover:text-red-500 transition-all"
+                          title="Удалить"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Stats */}
+          {tasks.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex justify-center gap-4 pt-2"
+            >
+              <span className="font-mono text-xs text-steel-500">
+                Всего: <span className="text-neon-lime">{tasks.length}</span>
+              </span>
+              <span className="font-mono text-xs text-steel-500">
+                🔥 {tasks.filter(t => t.goal === 'weight_loss').length}
+              </span>
+              <span className="font-mono text-xs text-steel-500">
+                💪 {tasks.filter(t => t.goal === 'muscle_gain').length}
+              </span>
+              <span className="font-mono text-xs text-steel-500">
+                Бонус: {tasks.filter(t => t.is_bonus).length}
+              </span>
+            </motion.div>
+          )}
         </motion.div>
       )}
+
+      {/* Task Modal */}
+      <AnimatePresence>
+        {showTaskModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-void/80 flex items-center justify-center p-4 z-50"
+            onClick={() => setShowTaskModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-void-200 border-2 border-neon-lime p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
+              style={{ boxShadow: '8px 8px 0 0 #BFFF00' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="font-mono text-xs text-steel-500 uppercase tracking-widest mb-4">
+                {editingTask ? 'Редактировать задание' : 'Новое задание'} // Неделя_{String(selectedWeek).padStart(2, '0')}
+              </div>
+
+              {/* Title */}
+              <div className="mb-4">
+                <label className="font-mono text-xs text-steel-400 uppercase block mb-2">
+                  Название *
+                </label>
+                <input
+                  type="text"
+                  value={taskForm.title}
+                  onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
+                  placeholder="Название задания..."
+                  className="input-brutal w-full"
+                  autoFocus
+                />
+              </div>
+
+              {/* Description */}
+              <div className="mb-4">
+                <label className="font-mono text-xs text-steel-400 uppercase block mb-2">
+                  Описание
+                </label>
+                <textarea
+                  value={taskForm.description}
+                  onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
+                  placeholder="Подробное описание..."
+                  rows={3}
+                  className="input-brutal w-full resize-none"
+                />
+              </div>
+
+              {/* Goal */}
+              <div className="mb-4">
+                <label className="font-mono text-xs text-steel-400 uppercase block mb-2">
+                  Для кого
+                </label>
+                <div className="flex gap-2">
+                  {[
+                    { value: null, label: 'Все', emoji: '👥' },
+                    { value: 'weight_loss' as const, label: 'Сушка', emoji: '🔥' },
+                    { value: 'muscle_gain' as const, label: 'Масса', emoji: '💪' },
+                  ].map((option) => (
+                    <button
+                      key={option.value || 'all'}
+                      onClick={() => setTaskForm({ ...taskForm, goal: option.value })}
+                      className={`flex-1 py-2 border-2 font-mono text-sm transition-all ${
+                        taskForm.goal === option.value
+                          ? 'border-neon-lime bg-neon-lime/10 text-neon-lime'
+                          : 'border-void-400 text-steel-400 hover:border-steel-300'
+                      }`}
+                    >
+                      {option.emoji} {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bonus */}
+              <div className="mb-6">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <div
+                    className={`w-6 h-6 border-2 flex items-center justify-center transition-all ${
+                      taskForm.is_bonus
+                        ? 'border-neon-orange bg-neon-orange text-void'
+                        : 'border-void-400'
+                    }`}
+                    onClick={() => setTaskForm({ ...taskForm, is_bonus: !taskForm.is_bonus })}
+                  >
+                    {taskForm.is_bonus && '✓'}
+                  </div>
+                  <div>
+                    <span className="font-mono text-sm text-steel-300">Бонусное задание</span>
+                    <span className="font-mono text-xs text-steel-500 block">
+                      Даёт x2 очков за выполнение
+                    </span>
+                  </div>
+                </label>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowTaskModal(false)}
+                  className="btn-brutal-outline flex-1"
+                  disabled={isSavingTask}
+                >
+                  Отмена
+                </button>
+                <button
+                  onClick={saveTask}
+                  className="btn-brutal flex-1"
+                  disabled={isSavingTask || !taskForm.title.trim()}
+                >
+                  {isSavingTask ? '...' : editingTask ? 'Сохранить' : 'Создать'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Broadcast Modal */}
       {showBroadcastModal && (

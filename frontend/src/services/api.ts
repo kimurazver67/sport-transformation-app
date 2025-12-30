@@ -230,10 +230,38 @@ export const api = {
     }),
 
   // Создать задание
-  createAdminTask: (weekNumber: number, title: string, description?: string) =>
+  createAdminTask: (data: {
+    week_number: number
+    title: string
+    description?: string
+    goal?: 'weight_loss' | 'muscle_gain' | null
+    is_bonus?: boolean
+  }) =>
     request<any>('/admin/tasks', {
       method: 'POST',
-      body: JSON.stringify({ week_number: weekNumber, title, description }),
+      body: JSON.stringify(data),
+    }),
+
+  // Получить все задания (опционально по неделе)
+  getAdminTasks: (weekNumber?: number) =>
+    request<any[]>(`/admin/tasks${weekNumber !== undefined ? `?week=${weekNumber}` : ''}`),
+
+  // Удалить задание
+  deleteAdminTask: (taskId: string) =>
+    request<void>(`/admin/tasks/${taskId}`, {
+      method: 'DELETE',
+    }),
+
+  // Обновить задание
+  updateAdminTask: (taskId: string, data: {
+    title?: string
+    description?: string
+    goal?: 'weight_loss' | 'muscle_gain' | null
+    is_bonus?: boolean
+  }) =>
+    request<any>(`/admin/tasks/${taskId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
     }),
 
   // Синхронизация с Google Sheets
