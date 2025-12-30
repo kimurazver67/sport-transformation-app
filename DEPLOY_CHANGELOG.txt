@@ -1,9 +1,9 @@
 Последние изменения:
 
+• debug: Send error to Telegram from MeasurementsPage ErrorBoundary
 • debug: Add logging to MeasurementsPage to trace black screen issue
 • Добавлено: Add global error handler that sends errors to Telegram
 • Исправлено: Add defensive coding for measurements API responses
 • Исправлено: Add error boundary and lazy loading for WeightChart to prevent crashes
-• Исправлено: Limit course week to maximum 16 weeks (4 months course duration)
 
-30.12.2025 10:27
+30.12.2025 10:37

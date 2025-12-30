@@ -89,9 +89,11 @@ async function sendDebugLog(message: string) {
 }
 
 function MeasurementsPageContent() {
-  // DEBUG
-  console.log('[MeasurementsPage] Render start')
-  sendDebugLog('MeasurementsPage render start')
+  // DEBUG - отправляем лог сразу при рендере
+  useEffect(() => {
+    sendDebugLog('MeasurementsPage mounted')
+    return () => sendDebugLog('MeasurementsPage unmounted')
+  }, [])
 
   const {
     courseWeek,
@@ -105,7 +107,10 @@ function MeasurementsPageContent() {
     submitMeasurement,
   } = useStore()
 
-  console.log('[MeasurementsPage] Store:', { courseWeek, measurementsLen: measurements?.length })
+  // DEBUG - логируем состояние store
+  useEffect(() => {
+    sendDebugLog(`Store state: week=${courseWeek}, measurements=${measurements?.length || 0}`)
+  }, [courseWeek, measurements])
 
   const { hapticFeedback } = useTelegram()
 
