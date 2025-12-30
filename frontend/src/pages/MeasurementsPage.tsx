@@ -188,15 +188,58 @@ function MeasurementsPageContent() {
   }
 
   // Calculate progress
-  const startWeight = measurements.length > 0 && typeof measurements[0].weight === 'number'
-    ? measurements[0].weight
-    : null
-  const currentWeight = measurements.length > 0 && typeof measurements[measurements.length - 1].weight === 'number'
-    ? measurements[measurements.length - 1].weight
-    : null
+  const sortedMeasurements = [...measurements].sort((a, b) => a.week_number - b.week_number)
+  const firstMeasurement = sortedMeasurements[0]
+  const lastMeasurement = sortedMeasurements[sortedMeasurements.length - 1]
+
+  const startWeight = firstMeasurement?.weight ?? null
+  const currentWeight = lastMeasurement?.weight ?? null
   const weightChange = typeof startWeight === 'number' && typeof currentWeight === 'number'
     ? currentWeight - startWeight
     : null
+  const weightChangePercent = typeof startWeight === 'number' && typeof currentWeight === 'number' && startWeight > 0
+    ? ((currentWeight - startWeight) / startWeight) * 100
+    : null
+
+  // Calculate body measurements change (total volume change in %)
+  const calculateBodyChange = () => {
+    if (!firstMeasurement || !lastMeasurement) return null
+
+    const bodyParts = [
+      { start: firstMeasurement.chest, end: lastMeasurement.chest },
+      { start: firstMeasurement.waist, end: lastMeasurement.waist },
+      { start: firstMeasurement.hips, end: lastMeasurement.hips },
+      { start: firstMeasurement.bicep_left, end: lastMeasurement.bicep_left },
+      { start: firstMeasurement.bicep_right, end: lastMeasurement.bicep_right },
+      { start: firstMeasurement.thigh_left, end: lastMeasurement.thigh_left },
+      { start: firstMeasurement.thigh_right, end: lastMeasurement.thigh_right },
+    ]
+
+    let totalStartCm = 0
+    let totalEndCm = 0
+    let validParts = 0
+
+    bodyParts.forEach(({ start, end }) => {
+      if (typeof start === 'number' && typeof end === 'number' && start > 0) {
+        totalStartCm += start
+        totalEndCm += end
+        validParts++
+      }
+    })
+
+    if (validParts === 0 || totalStartCm === 0) return null
+
+    const totalChange = totalEndCm - totalStartCm
+    const totalChangePercent = (totalChange / totalStartCm) * 100
+
+    return {
+      changeCm: totalChange,
+      changePercent: totalChangePercent,
+      validParts,
+    }
+  }
+
+  const bodyChange = calculateBodyChange()
 
   return (
     <div className="min-h-screen pb-4 px-4 relative overflow-hidden">
@@ -234,55 +277,110 @@ function MeasurementsPageContent() {
         </h1>
       </motion.header>
 
-      {/* Weight Progress Card */}
-      {weightChange !== null && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`p-4 mb-6 border-2 relative overflow-hidden ${
-            weightChange < 0
-              ? 'border-neon-lime bg-neon-lime/5'
-              : weightChange > 0
-              ? 'border-neon-orange bg-neon-orange/5'
-              : 'border-neon-cyan bg-neon-cyan/5'
-          }`}
-          style={{
-            boxShadow: weightChange < 0
-              ? '4px 4px 0 0 #BFFF00'
-              : weightChange > 0
-              ? '4px 4px 0 0 #FF6B00'
-              : '4px 4px 0 0 #00F5FF'
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <div>
+      {/* Progress Cards */}
+      {(weightChange !== null || bodyChange) && (
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          {/* Weight Progress Card */}
+          {weightChange !== null && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`p-3 border-2 relative overflow-hidden ${
+                weightChange < 0
+                  ? 'border-neon-lime bg-neon-lime/5'
+                  : weightChange > 0
+                  ? 'border-neon-orange bg-neon-orange/5'
+                  : 'border-neon-cyan bg-neon-cyan/5'
+              }`}
+              style={{
+                boxShadow: weightChange < 0
+                  ? '4px 4px 0 0 #BFFF00'
+                  : weightChange > 0
+                  ? '4px 4px 0 0 #FF6B00'
+                  : '4px 4px 0 0 #00F5FF'
+              }}
+            >
               <div className="font-mono text-[10px] text-steel-500 uppercase tracking-widest mb-1">
-                Изменение_веса
+                Вес
               </div>
-              <div className={`font-display text-3xl font-bold ${
+              <div className={`font-display text-2xl font-bold ${
                 weightChange < 0 ? 'text-neon-lime' : weightChange > 0 ? 'text-neon-orange' : 'text-neon-cyan'
               }`}>
                 {weightChange > 0 ? '+' : ''}{weightChange.toFixed(1)} кг
               </div>
-            </div>
-            <div className="text-right">
-              <div className="font-mono text-[10px] text-steel-500 uppercase">Старт → Сейчас</div>
-              <div className="font-mono text-lg text-steel-300">
+              {weightChangePercent !== null && (
+                <div className={`font-mono text-sm ${
+                  weightChangePercent < 0 ? 'text-neon-lime' : weightChangePercent > 0 ? 'text-neon-orange' : 'text-neon-cyan'
+                }`}>
+                  {weightChangePercent > 0 ? '+' : ''}{weightChangePercent.toFixed(1)}%
+                </div>
+              )}
+              <div className="font-mono text-[10px] text-steel-500 mt-1">
                 {startWeight?.toFixed(1)} → {currentWeight?.toFixed(1)}
               </div>
-            </div>
-          </div>
 
-          {/* Progress indicator */}
-          <motion.div
-            className={`absolute bottom-0 left-0 h-1 ${
-              weightChange < 0 ? 'bg-neon-lime' : weightChange > 0 ? 'bg-neon-orange' : 'bg-neon-cyan'
-            }`}
-            initial={{ width: 0 }}
-            animate={{ width: '100%' }}
-            transition={{ duration: 1 }}
-          />
-        </motion.div>
+              {/* Progress indicator */}
+              <motion.div
+                className={`absolute bottom-0 left-0 h-1 ${
+                  weightChange < 0 ? 'bg-neon-lime' : weightChange > 0 ? 'bg-neon-orange' : 'bg-neon-cyan'
+                }`}
+                initial={{ width: 0 }}
+                animate={{ width: '100%' }}
+                transition={{ duration: 1 }}
+              />
+            </motion.div>
+          )}
+
+          {/* Body Measurements Progress Card */}
+          {bodyChange && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className={`p-3 border-2 relative overflow-hidden ${
+                bodyChange.changeCm < 0
+                  ? 'border-neon-cyan bg-neon-cyan/5'
+                  : bodyChange.changeCm > 0
+                  ? 'border-neon-magenta bg-neon-magenta/5'
+                  : 'border-void-400 bg-void-200'
+              }`}
+              style={{
+                boxShadow: bodyChange.changeCm < 0
+                  ? '4px 4px 0 0 #00F5FF'
+                  : bodyChange.changeCm > 0
+                  ? '4px 4px 0 0 #FF00FF'
+                  : '4px 4px 0 0 #333'
+              }}
+            >
+              <div className="font-mono text-[10px] text-steel-500 uppercase tracking-widest mb-1">
+                Объёмы
+              </div>
+              <div className={`font-display text-2xl font-bold ${
+                bodyChange.changeCm < 0 ? 'text-neon-cyan' : bodyChange.changeCm > 0 ? 'text-neon-magenta' : 'text-steel-300'
+              }`}>
+                {bodyChange.changeCm > 0 ? '+' : ''}{bodyChange.changeCm.toFixed(1)} см
+              </div>
+              <div className={`font-mono text-sm ${
+                bodyChange.changePercent < 0 ? 'text-neon-cyan' : bodyChange.changePercent > 0 ? 'text-neon-magenta' : 'text-steel-400'
+              }`}>
+                {bodyChange.changePercent > 0 ? '+' : ''}{bodyChange.changePercent.toFixed(1)}%
+              </div>
+              <div className="font-mono text-[10px] text-steel-500 mt-1">
+                Сумма {bodyChange.validParts} замеров
+              </div>
+
+              {/* Progress indicator */}
+              <motion.div
+                className={`absolute bottom-0 left-0 h-1 ${
+                  bodyChange.changeCm < 0 ? 'bg-neon-cyan' : bodyChange.changeCm > 0 ? 'bg-neon-magenta' : 'bg-void-400'
+                }`}
+                initial={{ width: 0 }}
+                animate={{ width: '100%' }}
+                transition={{ duration: 1 }}
+              />
+            </motion.div>
+          )}
+        </div>
       )}
 
       {/* Weight Chart */}

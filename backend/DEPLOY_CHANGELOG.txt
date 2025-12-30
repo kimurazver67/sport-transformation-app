@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Add body measurements chart
 • Исправлено: Handle Telegram popup errors gracefully
 • Добавлено: Enable Google Sheets sync button in AdminPage
 • Исправлено: Replace prompt() with modal for broadcast in AdminPage
 • Исправлено: Add VITE_API_URL for production фронтенд
-• Исправлено: Add auth headers to admin API requests
 
-30.12.2025 12:49
+30.12.2025 12:54
