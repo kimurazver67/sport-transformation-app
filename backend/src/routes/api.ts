@@ -7,6 +7,7 @@ import { taskService } from '../services/taskService';
 import { achievementService } from '../services/achievementService';
 import { getCurrentWeek, getDaysUntilStart, isCourseStarted, canSubmitMeasurement, config } from '../config';
 import { CheckinForm, MeasurementForm } from '../types';
+import { query } from '../db/postgres';
 
 const router = Router();
 
@@ -402,6 +403,82 @@ router.post('/debug/log', async (req: Request, res: Response) => {
 // Проверить статус debug режима
 router.get('/debug/status', async (_req: Request, res: Response) => {
   res.json({ success: true, debugEnabled: debugModeEnabled });
+});
+
+// DEBUG: Добавить тестовый замер для любой недели (только для тестирования)
+router.post('/debug/add-measurement', async (req: Request, res: Response) => {
+  try {
+    const { telegram_id, week_number, weight, chest, waist, hips, bicep_left, bicep_right, thigh_left, thigh_right } = req.body;
+
+    if (!telegram_id || !week_number || !weight) {
+      return res.status(400).json({ success: false, error: 'Required: telegram_id, week_number, weight' });
+    }
+
+    // Найти пользователя
+    const userResult = await query<{ id: string }>(
+      'SELECT id FROM users WHERE telegram_id = $1',
+      [telegram_id]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    const userId = userResult.rows[0].id;
+    const today = new Date().toISOString().split('T')[0];
+
+    // Проверяем существующий замер
+    const existingResult = await query<{ id: string }>(
+      'SELECT id FROM weekly_measurements WHERE user_id = $1 AND week_number = $2',
+      [userId, week_number]
+    );
+
+    let result;
+    if (existingResult.rows.length > 0) {
+      result = await query(
+        `UPDATE weekly_measurements SET
+          date = $1, weight = $2, chest = $3, waist = $4, hips = $5,
+          bicep_left = $6, bicep_right = $7, thigh_left = $8, thigh_right = $9
+        WHERE id = $10 RETURNING *`,
+        [today, weight, chest || null, waist || null, hips || null,
+         bicep_left || null, bicep_right || null, thigh_left || null, thigh_right || null,
+         existingResult.rows[0].id]
+      );
+    } else {
+      result = await query(
+        `INSERT INTO weekly_measurements
+          (user_id, week_number, date, weight, chest, waist, hips, bicep_left, bicep_right, thigh_left, thigh_right)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+        [userId, week_number, today, weight, chest || null, waist || null, hips || null,
+         bicep_left || null, bicep_right || null, thigh_left || null, thigh_right || null]
+      );
+    }
+
+    res.json({ success: true, measurement: result.rows[0] });
+  } catch (error) {
+    console.error('Debug add-measurement error:', error);
+    res.status(500).json({ success: false, error: String(error) });
+  }
+});
+
+// DEBUG: Получить все замеры пользователя
+router.get('/debug/measurements/:telegram_id', async (req: Request, res: Response) => {
+  try {
+    const { telegram_id } = req.params;
+
+    const result = await query(
+      `SELECT wm.*, u.first_name FROM weekly_measurements wm
+       JOIN users u ON wm.user_id = u.id
+       WHERE u.telegram_id = $1
+       ORDER BY wm.week_number`,
+      [telegram_id]
+    );
+
+    res.json({ success: true, measurements: result.rows });
+  } catch (error) {
+    console.error('Debug measurements error:', error);
+    res.status(500).json({ success: false, error: String(error) });
+  }
 });
 
 export default router;
