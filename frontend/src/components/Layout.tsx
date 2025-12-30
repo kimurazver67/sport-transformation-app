@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 
@@ -21,11 +22,19 @@ const trainerNavItems = [
 export default function Layout({ children, isTrainer = false }: LayoutProps) {
   const location = useLocation()
   const items = isTrainer ? trainerNavItems : navItems
+  const mainRef = useRef<HTMLElement>(null)
+
+  // Сброс скролла при смене страницы
+  useEffect(() => {
+    if (mainRef.current) {
+      mainRef.current.scrollTo(0, 0)
+    }
+  }, [location.pathname])
 
   return (
     <div className="flex flex-col bg-void" style={{ height: 'var(--tg-viewport-height, 100vh)', maxHeight: 'var(--tg-viewport-height, 100vh)' }}>
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto pb-20">
+      <main ref={mainRef} className="flex-1 overflow-y-auto pb-20">
         <motion.div
           key={location.pathname}
           initial={{ opacity: 0, y: 20 }}

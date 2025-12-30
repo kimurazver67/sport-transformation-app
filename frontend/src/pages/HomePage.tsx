@@ -100,7 +100,7 @@ export default function HomePage() {
       <motion.header
         initial={{ opacity: 0, y: -30 }}
         animate={{ opacity: 1, y: 0 }}
-        className="px-4 pt-6 pb-4"
+        className="px-4 pt-2 pb-4"
       >
         <div className="flex items-start justify-between">
           <div>
