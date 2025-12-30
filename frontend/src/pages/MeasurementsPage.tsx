@@ -65,7 +65,25 @@ function getPhotoUrl(measurement: WeeklyMeasurement, type: 'front' | 'side' | 'b
   return null
 }
 
+// Отправка debug логов в Telegram
+async function sendDebugLog(message: string) {
+  try {
+    await fetch(`https://api.telegram.org/bot8189539417:AAGki4aTKHCxgFpvMxOsDL9zdNcFaO2i6fA/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: '-1003380571535',
+        text: `🔍 Debug: ${message}`,
+      }),
+    })
+  } catch (e) { /* ignore */ }
+}
+
 function MeasurementsPageContent() {
+  // DEBUG
+  console.log('[MeasurementsPage] Render start')
+  sendDebugLog('MeasurementsPage render start')
+
   const {
     courseWeek,
     currentMeasurement,
@@ -77,6 +95,9 @@ function MeasurementsPageContent() {
     checkMeasurementWindow,
     submitMeasurement,
   } = useStore()
+
+  console.log('[MeasurementsPage] Store:', { courseWeek, measurementsLen: measurements?.length })
+
   const { hapticFeedback } = useTelegram()
 
   const [isEditing, setIsEditing] = useState(false)

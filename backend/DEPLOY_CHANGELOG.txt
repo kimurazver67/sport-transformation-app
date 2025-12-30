@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Add global error handler that sends errors to Telegram
 • Исправлено: Add defensive coding for measurements API responses
 • Исправлено: Add error boundary and lazy loading for WeightChart to prevent crashes
 • Исправлено: Limit course week to maximum 16 weeks (4 months course duration)
 • Исправлено: Remove default build/start scripts to fix Railway фронтенд деплой
-• Исправлено: Remove root railway.json to allow per-service configuration
 
-30.12.2025 10:21
+30.12.2025 10:23
