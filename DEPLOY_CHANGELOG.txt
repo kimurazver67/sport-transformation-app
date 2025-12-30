@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Reduce bottom padding in Layout from pb-20 to pb-4
 • Исправлено: Reset scroll on page навигация and reduce top padding
 • Исправлено: Update фронтенд деплой workflow with correct service name
 • Исправлено: Add goal column migration and fix menu button config
 • Исправлено: Increase нижняя навигация height and add safe area padding
-• Исправлено: Switch chart.js to static imports to fix loading issues
 
-30.12.2025 15:12
+30.12.2025 15:25

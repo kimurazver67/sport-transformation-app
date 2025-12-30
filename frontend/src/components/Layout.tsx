@@ -34,7 +34,7 @@ export default function Layout({ children, isTrainer = false }: LayoutProps) {
   return (
     <div className="flex flex-col bg-void" style={{ height: 'var(--tg-viewport-height, 100vh)', maxHeight: 'var(--tg-viewport-height, 100vh)' }}>
       {/* Main Content */}
-      <main ref={mainRef} className="flex-1 overflow-y-auto pb-4">
+      <main ref={mainRef} className="flex-1 overflow-y-auto">
         <motion.div
           key={location.pathname}
           initial={{ opacity: 0, y: 20 }}
