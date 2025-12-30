@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Add goal selection for participants before course start
 • Добавлено: Add weekly progress bonus system
 • Исправлено: Neutral color scheme for progress cards
 • Исправлено: Convert string values to numbers for progress calculations
 • Добавлено: Add debug endpoints for testing measurements
-• Добавлено: Add percentage отображение for weight and body measurements
 
-30.12.2025 13:29
+30.12.2025 13:44

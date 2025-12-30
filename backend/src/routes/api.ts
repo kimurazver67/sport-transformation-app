@@ -483,6 +483,29 @@ router.post('/debug/add-measurement', async (req: Request, res: Response) => {
   }
 });
 
+// DEBUG: Применить миграцию для goal
+router.post('/debug/migrate-goal', async (req: Request, res: Response) => {
+  try {
+    // Добавляем колонку goal если её нет
+    await query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS goal VARCHAR(20) DEFAULT NULL`);
+
+    // Проверяем существование constraint
+    const constraintResult = await query(`
+      SELECT constraint_name FROM information_schema.table_constraints
+      WHERE table_name = 'users' AND constraint_name = 'users_goal_check'
+    `);
+
+    if (constraintResult.rows.length === 0) {
+      await query(`ALTER TABLE users ADD CONSTRAINT users_goal_check CHECK (goal IN ('weight_loss', 'muscle_gain') OR goal IS NULL)`);
+    }
+
+    res.json({ success: true, message: 'Migration applied successfully' });
+  } catch (error) {
+    console.error('Migration error:', error);
+    res.status(500).json({ success: false, error: String(error) });
+  }
+});
+
 // DEBUG: Получить все замеры пользователя
 router.get('/debug/measurements/:telegram_id', async (req: Request, res: Response) => {
   try {
