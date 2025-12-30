@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { useTelegram } from '../hooks/useTelegram'
 import WeightChart from '../components/WeightChart'
+import BodyMeasurementsChart from '../components/BodyMeasurementsChart'
 import { api } from '../services/api'
 import type { MeasurementForm, WeeklyMeasurement } from '../types'
 
@@ -293,6 +294,18 @@ function MeasurementsPageContent() {
           className="mb-6"
         >
           <WeightChart measurements={measurements} />
+        </motion.div>
+      )}
+
+      {/* Body Measurements Chart */}
+      {measurements.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="mb-6"
+        >
+          <BodyMeasurementsChart measurements={measurements} />
         </motion.div>
       )}
 
