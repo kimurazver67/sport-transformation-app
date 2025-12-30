@@ -38,13 +38,15 @@ export default function CheckinForm({ onComplete }: CheckinFormProps) {
     water: todayCheckin?.water ?? undefined,
     sleep_hours: todayCheckin?.sleep_hours ?? 7,
     mood: todayCheckin?.mood ?? undefined,
+    steps: todayCheckin?.steps ?? undefined,
   })
 
-  const steps = [
+  const formSteps = [
     { key: 'workout', title: 'ТРЕНИРОВКА', icon: '💪' },
     { key: 'nutrition', title: 'ПИТАНИЕ', icon: '🥗' },
     { key: 'water', title: 'ВОДА', icon: '💧' },
     { key: 'sleep', title: 'СОН', icon: '😴' },
+    { key: 'steps', title: 'ШАГИ', icon: '👟' },
     { key: 'mood', title: 'НАСТРОЕНИЕ', icon: '🎭' },
   ]
 
@@ -67,7 +69,13 @@ export default function CheckinForm({ onComplete }: CheckinFormProps) {
   const handleSleep = (hours: number) => {
     hapticFeedback('light')
     setFormData({ ...formData, sleep_hours: hours })
-    setStep(4)
+    setStep(4) // переход к шагам
+  }
+
+  const handleSteps = (stepsCount: number | undefined) => {
+    hapticFeedback('light')
+    setFormData({ ...formData, steps: stepsCount })
+    setStep(5) // переход к настроению
   }
 
   const handleMood = async (mood: MoodLevel) => {
@@ -98,7 +106,7 @@ export default function CheckinForm({ onComplete }: CheckinFormProps) {
     <div>
       {/* Progress Bar - Brutal Style */}
       <div className="flex gap-1 mb-6">
-        {steps.map((s, i) => (
+        {formSteps.map((s, i) => (
           <motion.div
             key={s.key}
             className="flex-1 h-2 relative overflow-hidden"
@@ -125,7 +133,7 @@ export default function CheckinForm({ onComplete }: CheckinFormProps) {
       {/* Step Indicator */}
       <div className="flex items-center justify-between mb-6">
         <div className="font-mono text-xs text-steel-500 uppercase tracking-widest">
-          Шаг_{String(step + 1).padStart(2, '0')} // {steps[step]?.title}
+          Шаг_{String(step + 1).padStart(2, '0')} // {formSteps[step]?.title}
         </div>
         {step > 0 && (
           <button
@@ -339,8 +347,59 @@ export default function CheckinForm({ onComplete }: CheckinFormProps) {
           </motion.div>
         )}
 
-        {/* Step 5: Mood */}
+        {/* Step 5: Steps (шаги) */}
         {step === 4 && (
+          <motion.div
+            key="steps"
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -30 }}
+            transition={{ duration: 0.2 }}
+          >
+            <h3 className="font-display text-xl font-bold text-steel-100 mb-4 uppercase tracking-wider">
+              Шаги_за_день?
+            </h3>
+            <p className="font-mono text-xs text-steel-500 mb-4">
+              ОПЦИОНАЛЬНО — МОЖНО ПРОПУСТИТЬ
+            </p>
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              {[5000, 7500, 10000, 12000, 15000, 20000].map((stepsCount, i) => (
+                <motion.button
+                  key={stepsCount}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: i * 0.05 }}
+                  onClick={() => handleSteps(stepsCount)}
+                  className={`p-3 text-center border-2 transition-all ${
+                    formData.steps === stepsCount
+                      ? 'border-neon-cyan bg-neon-cyan/10'
+                      : 'border-void-400 bg-void-200 hover:border-neon-cyan'
+                  }`}
+                  style={{
+                    boxShadow: formData.steps === stepsCount ? '3px 3px 0 0 #00E5FF' : 'none'
+                  }}
+                >
+                  <span className="font-display text-lg font-bold text-steel-100">
+                    {stepsCount >= 1000 ? `${stepsCount / 1000}K` : stepsCount}
+                  </span>
+                  <span className="font-mono text-[9px] text-steel-500 block">ШАГОВ</span>
+                </motion.button>
+              ))}
+            </div>
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              onClick={() => handleSteps(undefined)}
+              className="w-full p-3 text-center border-2 border-void-400 bg-void-200 hover:border-steel-500 transition-all"
+            >
+              <span className="font-mono text-xs text-steel-400">ПРОПУСТИТЬ →</span>
+            </motion.button>
+          </motion.div>
+        )}
+
+        {/* Step 6: Mood */}
+        {step === 5 && (
           <motion.div
             key="mood"
             initial={{ opacity: 0, x: 30 }}

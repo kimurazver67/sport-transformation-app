@@ -1,9 +1,9 @@
 Последние изменения:
 
-• Исправлено: Reduce bottom padding in Layout from pb-20 to pb-4
-• Исправлено: Reset scroll on page навигация and reduce top padding
-• Исправлено: Update фронтенд деплой workflow with correct service name
-• Исправлено: Add goal column migration and fix menu button config
-• Исправлено: Increase нижняя навигация height and add safe area padding
+• Добавлено: Add goal-based leaderboards (🔥/💪)
+• Добавлено: Add mindfulness diary and impulse tracker
+• Добавлено: Add goal-based task filtering and weekly concepts
+• Добавлено: Expand onboarding with height, age, and target weight
+• Добавлено: Add steps tracking to daily checkin
 
-30.12.2025 15:25
+30.12.2025 16:51

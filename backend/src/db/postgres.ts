@@ -109,6 +109,27 @@ export async function runMigrations(): Promise<void> {
       `);
     }
 
+    // Миграция 006: Шаги в чекине + расширение онбординга
+    await query(`
+      ALTER TABLE daily_checkins
+      ADD COLUMN IF NOT EXISTS steps INTEGER CHECK (steps >= 0 AND steps <= 100000)
+    `);
+
+    await query(`
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS height INTEGER CHECK (height >= 100 AND height <= 250)
+    `);
+
+    await query(`
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS age INTEGER CHECK (age >= 14 AND age <= 100)
+    `);
+
+    await query(`
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS target_weight DECIMAL(5,2) CHECK (target_weight > 0 AND target_weight < 500)
+    `);
+
     console.log('✅ Миграции выполнены');
   } catch (error) {
     console.error('❌ Ошибка миграции:', error);

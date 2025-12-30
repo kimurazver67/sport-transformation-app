@@ -30,8 +30,9 @@ export const checkinService = {
             water = $4,
             water_liters = $5,
             sleep_hours = $6,
-            mood = $7
-          WHERE id = $8
+            mood = $7,
+            steps = $8
+          WHERE id = $9
           RETURNING *`,
           [
             data.workout,
@@ -41,6 +42,7 @@ export const checkinService = {
             data.water_liters || null,
             data.sleep_hours,
             data.mood,
+            data.steps || null,
             existing.id,
           ]
         );
@@ -50,8 +52,8 @@ export const checkinService = {
         // Создаём новый
         const insertResult = await query<DailyCheckin>(
           `INSERT INTO daily_checkins
-            (user_id, date, workout, workout_type, nutrition, water, water_liters, sleep_hours, mood)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            (user_id, date, workout, workout_type, nutrition, water, water_liters, sleep_hours, mood, steps)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
           RETURNING *`,
           [
             userId,
@@ -63,6 +65,7 @@ export const checkinService = {
             data.water_liters || null,
             data.sleep_hours,
             data.mood,
+            data.steps || null,
           ]
         );
 
@@ -128,6 +131,7 @@ export const checkinService = {
     nutritionDays: number;
     avgSleep: number;
     avgMood: number;
+    avgSteps: number;
   }> {
     const result = await query<DailyCheckin>(
       'SELECT * FROM daily_checkins WHERE user_id = $1',
@@ -144,6 +148,7 @@ export const checkinService = {
         nutritionDays: 0,
         avgSleep: 0,
         avgMood: 0,
+        avgSteps: 0,
       };
     }
 
@@ -152,12 +157,19 @@ export const checkinService = {
     const avgSleep = checkins.reduce((sum, c) => sum + c.sleep_hours, 0) / total;
     const avgMood = checkins.reduce((sum, c) => sum + c.mood, 0) / total;
 
+    // Считаем средние шаги только по чекинам где есть шаги
+    const checkinsWithSteps = checkins.filter(c => c.steps != null && c.steps > 0);
+    const avgSteps = checkinsWithSteps.length > 0
+      ? checkinsWithSteps.reduce((sum, c) => sum + (c.steps || 0), 0) / checkinsWithSteps.length
+      : 0;
+
     return {
       totalCheckins: total,
       workoutDays,
       nutritionDays,
       avgSleep: Math.round(avgSleep * 10) / 10,
       avgMood: Math.round(avgMood * 10) / 10,
+      avgSteps: Math.round(avgSteps),
     };
   },
 };

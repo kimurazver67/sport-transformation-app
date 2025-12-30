@@ -133,6 +133,52 @@ export const userService = {
     return result.rows[0] || null;
   },
 
+  // Обновить данные онбординга
+  async updateOnboardingData(
+    userId: string,
+    data: {
+      goal?: UserGoal;
+      height?: number;
+      age?: number;
+      target_weight?: number;
+    }
+  ): Promise<User | null> {
+    const updates: string[] = [];
+    const values: unknown[] = [];
+    let paramIndex = 1;
+
+    if (data.goal !== undefined) {
+      updates.push(`goal = $${paramIndex++}`);
+      values.push(data.goal);
+    }
+    if (data.height !== undefined) {
+      updates.push(`height = $${paramIndex++}`);
+      values.push(data.height);
+    }
+    if (data.age !== undefined) {
+      updates.push(`age = $${paramIndex++}`);
+      values.push(data.age);
+    }
+    if (data.target_weight !== undefined) {
+      updates.push(`target_weight = $${paramIndex++}`);
+      values.push(data.target_weight);
+    }
+
+    if (updates.length === 0) {
+      return this.findById(userId);
+    }
+
+    updates.push('updated_at = NOW()');
+    values.push(userId);
+
+    const result = await query<User>(
+      `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
+      values
+    );
+
+    return result.rows[0] || null;
+  },
+
   // Получить участников без установленной цели
   async getWithoutGoal(): Promise<User[]> {
     const result = await query<User>(

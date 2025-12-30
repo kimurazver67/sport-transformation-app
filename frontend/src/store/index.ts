@@ -38,6 +38,7 @@ interface Store {
   error: string | null
   fetchUser: (telegramId: number) => Promise<void>
   setUserGoal: (goal: UserGoal) => Promise<void>
+  updateOnboarding: (data: { goal?: UserGoal; height?: number; age?: number; target_weight?: number }) => Promise<void>
 
   // Чекины
   todayCheckin: DailyCheckin | null
@@ -121,6 +122,19 @@ export const useStore = create<Store>((set, get) => ({
       set({ user: updatedUser })
     } catch (error) {
       console.error('Failed to set user goal:', error)
+      throw error
+    }
+  },
+
+  updateOnboarding: async (data) => {
+    const { user } = get()
+    if (!user) return
+
+    try {
+      const updatedUser = await api.updateOnboarding(user.id, data)
+      set({ user: updatedUser })
+    } catch (error) {
+      console.error('Failed to update onboarding:', error)
       throw error
     }
   },

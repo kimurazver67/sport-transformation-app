@@ -28,6 +28,9 @@ export interface User {
   role: UserRole;
   goal?: UserGoal;
   start_weight?: number;
+  target_weight?: number;
+  height?: number;
+  age?: number;
   created_at: string;
   updated_at: string;
 }
@@ -44,6 +47,7 @@ export interface DailyCheckin {
   water_liters?: number;
   sleep_hours: number;
   mood: MoodLevel;
+  steps?: number;
   created_at: string;
 }
 
@@ -74,6 +78,18 @@ export interface Task {
   week_number: number;
   title: string;
   description?: string;
+  goal?: UserGoal; // null = для всех
+  is_bonus?: boolean;
+  created_at: string;
+}
+
+// ===== КОНЦЕПЦИИ НЕДЕЛИ =====
+export interface WeeklyConcept {
+  id: string;
+  week_number: number;
+  title: string;
+  content: string;
+  goal?: UserGoal;
   created_at: string;
 }
 
@@ -83,6 +99,35 @@ export interface TaskCompletion {
   user_id: string;
   task_id: string;
   completed_at: string;
+}
+
+// ===== ДНЕВНИК ОСОЗНАННОСТИ =====
+export interface MindfulnessEntry {
+  id: string;
+  user_id: string;
+  date: string;
+  gratitude?: string;
+  wins?: string;
+  challenges?: string;
+  lessons?: string;
+  mood_note?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ===== ТРЕКЕР ИМПУЛЬСОВ =====
+export type ImpulseTrigger = 'stress' | 'boredom' | 'social' | 'emotional' | 'habitual';
+export type ImpulseAction = 'resisted' | 'gave_in' | 'alternative';
+
+export interface ImpulseLog {
+  id: string;
+  user_id: string;
+  logged_at: string;
+  trigger_type: ImpulseTrigger;
+  intensity: number;
+  action_taken: ImpulseAction;
+  notes?: string;
+  created_at: string;
 }
 
 // ===== ДОСТИЖЕНИЯ =====
@@ -176,6 +221,7 @@ export interface CheckinForm {
   water_liters?: number;
   sleep_hours: number;
   mood: MoodLevel;
+  steps?: number;
 }
 
 export interface MeasurementForm {

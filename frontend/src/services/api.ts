@@ -67,6 +67,18 @@ export const api = {
       body: JSON.stringify({ goal }),
     }),
 
+  // Обновить данные онбординга
+  updateOnboarding: (userId: string, data: {
+    goal?: UserGoal
+    height?: number
+    age?: number
+    target_weight?: number
+  }) =>
+    request<User>(`/api/user/${userId}/onboarding`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
   // Чекины
   getTodayCheckin: (userId: string) =>
     request<DailyCheckin | null>(`/api/checkin/today/${userId}`),
@@ -133,6 +145,13 @@ export const api = {
 
   getWeeklyLeaderboard: (limit = 20) =>
     request<LeaderboardEntry[]>(`/api/leaderboard/weekly?limit=${limit}`),
+
+  // Рейтинг по цели (🔥/💪)
+  getLeaderboardByGoal: (goal: 'weight_loss' | 'muscle_gain', limit = 20) =>
+    request<LeaderboardEntry[]>(`/api/leaderboard/goal/${goal}?limit=${limit}`),
+
+  getWeeklyLeaderboardByGoal: (goal: 'weight_loss' | 'muscle_gain', limit = 20) =>
+    request<LeaderboardEntry[]>(`/api/leaderboard/weekly/goal/${goal}?limit=${limit}`),
 
   // Достижения
   getAchievements: (userId: string) =>

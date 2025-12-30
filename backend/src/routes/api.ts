@@ -5,6 +5,7 @@ import { measurementService } from '../services/measurementService';
 import { statsService } from '../services/statsService';
 import { taskService } from '../services/taskService';
 import { achievementService } from '../services/achievementService';
+import { mindfulnessService } from '../services/mindfulnessService';
 import { getCurrentWeek, getDaysUntilStart, isCourseStarted, canSubmitMeasurement, config } from '../config';
 import { CheckinForm, MeasurementForm } from '../types';
 import { query } from '../db/postgres';
@@ -48,6 +49,43 @@ router.post('/user/:userId/goal', async (req: Request, res: Response) => {
     res.json({ success: true, data: user });
   } catch (error) {
     console.error('Set user goal error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Обновить данные онбординга (цель + рост + возраст + целевой вес)
+router.post('/user/:userId/onboarding', async (req: Request, res: Response) => {
+  try {
+    const { goal, height, age, target_weight } = req.body;
+
+    // Валидация
+    if (goal && !['weight_loss', 'muscle_gain'].includes(goal)) {
+      return res.status(400).json({ success: false, error: 'Invalid goal' });
+    }
+    if (height !== undefined && (height < 100 || height > 250)) {
+      return res.status(400).json({ success: false, error: 'Height must be 100-250 cm' });
+    }
+    if (age !== undefined && (age < 14 || age > 100)) {
+      return res.status(400).json({ success: false, error: 'Age must be 14-100' });
+    }
+    if (target_weight !== undefined && (target_weight <= 0 || target_weight >= 500)) {
+      return res.status(400).json({ success: false, error: 'Target weight must be positive and less than 500 kg' });
+    }
+
+    const user = await userService.updateOnboardingData(req.params.userId, {
+      goal,
+      height,
+      age,
+      target_weight,
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    res.json({ success: true, data: user });
+  } catch (error) {
+    console.error('Update onboarding error:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
@@ -218,6 +256,38 @@ router.get('/leaderboard/weekly', async (req: Request, res: Response) => {
   }
 });
 
+// Рейтинг по цели (🔥 weight_loss / 💪 muscle_gain)
+router.get('/leaderboard/goal/:goal', async (req: Request, res: Response) => {
+  try {
+    const goal = req.params.goal as 'weight_loss' | 'muscle_gain';
+    if (!['weight_loss', 'muscle_gain'].includes(goal)) {
+      return res.status(400).json({ success: false, error: 'Invalid goal' });
+    }
+    const limit = parseInt(req.query.limit as string) || 20;
+    const leaderboard = await statsService.getLeaderboardByGoal(goal, limit);
+    res.json({ success: true, data: leaderboard });
+  } catch (error) {
+    console.error('Get leaderboard by goal error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Недельный рейтинг по цели
+router.get('/leaderboard/weekly/goal/:goal', async (req: Request, res: Response) => {
+  try {
+    const goal = req.params.goal as 'weight_loss' | 'muscle_gain';
+    if (!['weight_loss', 'muscle_gain'].includes(goal)) {
+      return res.status(400).json({ success: false, error: 'Invalid goal' });
+    }
+    const limit = parseInt(req.query.limit as string) || 20;
+    const leaderboard = await statsService.getWeeklyLeaderboardByGoal(goal, limit);
+    res.json({ success: true, data: leaderboard });
+  } catch (error) {
+    console.error('Get weekly leaderboard by goal error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 // ===== ЗАДАНИЯ =====
 
 // Задания текущей недели
@@ -231,11 +301,16 @@ router.get('/tasks', async (req: Request, res: Response) => {
   }
 });
 
-// Задания с прогрессом для пользователя
+// Задания с прогрессом для пользователя (с фильтрацией по цели)
 router.get('/tasks/:userId', async (req: Request, res: Response) => {
   try {
     const weekNumber = req.query.week ? parseInt(req.query.week as string) : undefined;
-    const tasks = await taskService.getTasksWithProgress(req.params.userId, weekNumber);
+
+    // Получаем цель пользователя для фильтрации заданий
+    const user = await userService.findById(req.params.userId);
+    const userGoal = user?.goal;
+
+    const tasks = await taskService.getTasksWithProgress(req.params.userId, weekNumber, userGoal);
     res.json({ success: true, data: tasks });
   } catch (error) {
     console.error('Get tasks with progress error:', error);
@@ -268,6 +343,25 @@ router.delete('/tasks/:taskId/complete/:userId', async (req: Request, res: Respo
   }
 });
 
+// ===== КОНЦЕПЦИИ НЕДЕЛИ =====
+
+// Получить концепции недели для пользователя
+router.get('/concepts/:userId', async (req: Request, res: Response) => {
+  try {
+    const weekNumber = req.query.week ? parseInt(req.query.week as string) : getCurrentWeek();
+
+    // Получаем цель пользователя для фильтрации
+    const user = await userService.findById(req.params.userId);
+    const userGoal = user?.goal;
+
+    const concepts = await taskService.getConceptsForWeek(weekNumber, userGoal);
+    res.json({ success: true, data: concepts });
+  } catch (error) {
+    console.error('Get concepts error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 // ===== ДОСТИЖЕНИЯ =====
 
 // Достижения пользователя
@@ -277,6 +371,107 @@ router.get('/achievements/:userId', async (req: Request, res: Response) => {
     res.json({ success: true, data: achievements });
   } catch (error) {
     console.error('Get achievements error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// ===== ДНЕВНИК ОСОЗНАННОСТИ =====
+
+// Получить запись за сегодня
+router.get('/mindfulness/today/:userId', async (req: Request, res: Response) => {
+  try {
+    const entry = await mindfulnessService.getTodayEntry(req.params.userId);
+    res.json({ success: true, data: entry });
+  } catch (error) {
+    console.error('Get mindfulness entry error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Получить последние записи
+router.get('/mindfulness/:userId', async (req: Request, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 7;
+    const entries = await mindfulnessService.getRecentEntries(req.params.userId, limit);
+    res.json({ success: true, data: entries });
+  } catch (error) {
+    console.error('Get mindfulness entries error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Создать/обновить запись за сегодня
+router.post('/mindfulness/:userId', async (req: Request, res: Response) => {
+  try {
+    const entry = await mindfulnessService.createOrUpdateEntry(req.params.userId, req.body);
+    res.json({ success: true, data: entry });
+  } catch (error) {
+    console.error('Save mindfulness entry error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// ===== ТРЕКЕР ИМПУЛЬСОВ =====
+
+// Получить последние импульсы
+router.get('/impulses/:userId', async (req: Request, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 10;
+    const impulses = await mindfulnessService.getRecentImpulses(req.params.userId, limit);
+    res.json({ success: true, data: impulses });
+  } catch (error) {
+    console.error('Get impulses error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Статистика импульсов
+router.get('/impulses/:userId/stats', async (req: Request, res: Response) => {
+  try {
+    const stats = await mindfulnessService.getImpulseStats(req.params.userId);
+    res.json({ success: true, data: stats });
+  } catch (error) {
+    console.error('Get impulse stats error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Залогировать импульс
+router.post('/impulses/:userId', async (req: Request, res: Response) => {
+  try {
+    const { trigger_type, intensity, action_taken, notes } = req.body;
+
+    // Валидация
+    if (!['stress', 'boredom', 'social', 'emotional', 'habitual'].includes(trigger_type)) {
+      return res.status(400).json({ success: false, error: 'Invalid trigger_type' });
+    }
+    if (!['resisted', 'gave_in', 'alternative'].includes(action_taken)) {
+      return res.status(400).json({ success: false, error: 'Invalid action_taken' });
+    }
+    if (intensity < 1 || intensity > 10) {
+      return res.status(400).json({ success: false, error: 'Intensity must be 1-10' });
+    }
+
+    const impulse = await mindfulnessService.logImpulse(req.params.userId, {
+      trigger_type,
+      intensity,
+      action_taken,
+      notes,
+    });
+    res.json({ success: true, data: impulse });
+  } catch (error) {
+    console.error('Log impulse error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Удалить импульс
+router.delete('/impulses/:userId/:impulseId', async (req: Request, res: Response) => {
+  try {
+    await mindfulnessService.deleteImpulse(req.params.userId, req.params.impulseId);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Delete impulse error:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
