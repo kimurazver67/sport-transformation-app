@@ -360,10 +360,26 @@ router.get('/photo/:fileId/proxy', async (req: Request, res: Response) => {
 // ===== DEBUG LOGGING =====
 import { adminNotifier } from '../services/adminNotifierService';
 
+// Глобальное состояние debug режима (экспортируем для бота)
+export let debugModeEnabled = false;
+
+export function setDebugMode(enabled: boolean): void {
+  debugModeEnabled = enabled;
+}
+
+export function getDebugMode(): boolean {
+  return debugModeEnabled;
+}
+
 router.post('/debug/log', async (req: Request, res: Response) => {
   try {
+    // Если debug отключен - просто возвращаем success без отправки
+    if (!debugModeEnabled) {
+      return res.json({ success: true, debugEnabled: false });
+    }
+
     const { message, data } = req.body;
-    const logMessage = `🔍 <b>Frontend Debug</b>\n\n📝 ${message}\n\n<pre>${JSON.stringify(data, null, 2)}</pre>`;
+    const logMessage = `🔍 <b>Frontend Debug</b>\n\n📝 ${message}\n${data ? `\n<pre>${JSON.stringify(data, null, 2)}</pre>` : ''}`;
 
     // Отправляем в телеграм через fetch
     await fetch(`https://api.telegram.org/bot${config.bot.token}/sendMessage`, {
@@ -376,11 +392,16 @@ router.post('/debug/log', async (req: Request, res: Response) => {
       }),
     });
 
-    res.json({ success: true });
+    res.json({ success: true, debugEnabled: true });
   } catch (error) {
     console.error('Debug log error:', error);
     res.status(500).json({ success: false, error: 'Failed to send debug log' });
   }
+});
+
+// Проверить статус debug режима
+router.get('/debug/status', async (_req: Request, res: Response) => {
+  res.json({ success: true, debugEnabled: debugModeEnabled });
 });
 
 export default router;

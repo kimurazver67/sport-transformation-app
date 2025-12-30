@@ -10,6 +10,7 @@ import { achievementService } from '../services/achievementService';
 import { adminNotifier } from '../services/adminNotifierService';
 import { User, WorkoutType, MoodLevel, CheckinForm } from '../types';
 import { query } from '../db/postgres';
+import { setDebugMode, getDebugMode } from '../routes/api';
 
 // Расширяем контекст
 interface BotContext extends Context {
@@ -194,6 +195,92 @@ bot.command('chatid', async (ctx) => {
     `💬 Название: ${chatTitle}\n\n` +
     `Скопируйте Chat ID и добавьте в переменные Railway:\n` +
     `\`ADMIN_CHAT_ID=${chatId}\``,
+    { parse_mode: 'Markdown' }
+  );
+});
+
+// ===== КОМАНДА /debug - управление debug логами (только для тренера) =====
+bot.command('debug', async (ctx) => {
+  const user = ctx.user;
+
+  // Проверяем права (только тренер)
+  if (!user || user.role !== 'trainer') {
+    return ctx.reply('❌ Эта команда доступна только тренеру.');
+  }
+
+  const args = ctx.message.text.split(' ').slice(1);
+  const action = args[0]?.toLowerCase();
+
+  if (action === 'on') {
+    setDebugMode(true);
+    await ctx.reply(
+      '✅ *Debug режим включён*\n\n' +
+      'Теперь вы будете получать debug логи от фронтенда.\n' +
+      'Используйте `/debug off` чтобы отключить.',
+      { parse_mode: 'Markdown' }
+    );
+  } else if (action === 'off') {
+    setDebugMode(false);
+    await ctx.reply(
+      '🔇 *Debug режим отключён*\n\n' +
+      'Debug логи от фронтенда не будут отправляться.\n' +
+      'Используйте `/debug on` чтобы включить.',
+      { parse_mode: 'Markdown' }
+    );
+  } else {
+    // Показываем текущий статус
+    const isEnabled = getDebugMode();
+    const statusEmoji = isEnabled ? '✅' : '🔇';
+    const statusText = isEnabled ? 'включён' : 'отключён';
+
+    const keyboard = Markup.inlineKeyboard([
+      isEnabled
+        ? [Markup.button.callback('🔇 Отключить', 'debug_off')]
+        : [Markup.button.callback('✅ Включить', 'debug_on')],
+    ]);
+
+    await ctx.reply(
+      `🔧 *Debug режим: ${statusEmoji} ${statusText}*\n\n` +
+      'Команды:\n' +
+      '• `/debug on` - включить логи\n' +
+      '• `/debug off` - отключить логи\n\n' +
+      'Когда включён, вы будете получать debug сообщения от фронтенда в этот чат.',
+      { parse_mode: 'Markdown', ...keyboard }
+    );
+  }
+});
+
+// Callbacks для кнопок debug
+bot.action('debug_on', async (ctx) => {
+  const user = ctx.user;
+  if (!user || user.role !== 'trainer') {
+    await ctx.answerCbQuery('❌ Только для тренера');
+    return;
+  }
+
+  setDebugMode(true);
+  await ctx.answerCbQuery('✅ Debug включён');
+  await ctx.editMessageText(
+    '✅ *Debug режим включён*\n\n' +
+    'Теперь вы будете получать debug логи от фронтенда.\n' +
+    'Используйте `/debug off` чтобы отключить.',
+    { parse_mode: 'Markdown' }
+  );
+});
+
+bot.action('debug_off', async (ctx) => {
+  const user = ctx.user;
+  if (!user || user.role !== 'trainer') {
+    await ctx.answerCbQuery('❌ Только для тренера');
+    return;
+  }
+
+  setDebugMode(false);
+  await ctx.answerCbQuery('🔇 Debug отключён');
+  await ctx.editMessageText(
+    '🔇 *Debug режим отключён*\n\n' +
+    'Debug логи от фронтенда не будут отправляться.\n' +
+    'Используйте `/debug on` чтобы включить.',
     { parse_mode: 'Markdown' }
   );
 });
