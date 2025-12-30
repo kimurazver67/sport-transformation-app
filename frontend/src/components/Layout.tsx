@@ -25,7 +25,7 @@ export default function Layout({ children, isTrainer = false }: LayoutProps) {
   return (
     <div className="flex flex-col bg-void" style={{ height: 'var(--tg-viewport-height, 100vh)', maxHeight: 'var(--tg-viewport-height, 100vh)' }}>
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto pb-20">
         <motion.div
           key={location.pathname}
           initial={{ opacity: 0, y: 20 }}
@@ -41,7 +41,7 @@ export default function Layout({ children, isTrainer = false }: LayoutProps) {
         {/* Glowing line */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-neon-lime/50 to-transparent" />
 
-        <div className="flex justify-around items-center h-16 px-2">
+        <div className="flex justify-around items-center h-20 px-2 pb-safe">
           {items.map((item, index) => {
             const isActive = location.pathname === item.path
 

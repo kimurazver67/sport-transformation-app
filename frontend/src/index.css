@@ -84,6 +84,10 @@ body::after {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 8px);
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
