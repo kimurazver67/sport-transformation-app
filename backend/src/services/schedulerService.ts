@@ -17,7 +17,18 @@ class SchedulerService {
     this.jobs.push(
       new CronJob(
         '0 20 * * *', // 20:00 каждый день
-        () => this.sendDailyCheckinReminder(),
+        () => this.sendDailyCheckinReminder(20),
+        null,
+        true,
+        'Europe/Moscow'
+      )
+    );
+
+    // Второе напоминание о чекине в 22:00 (более настойчивое)
+    this.jobs.push(
+      new CronJob(
+        '0 22 * * *', // 22:00 каждый день
+        () => this.sendDailyCheckinReminder(22),
         null,
         true,
         'Europe/Moscow'
@@ -119,14 +130,27 @@ class SchedulerService {
     console.log('🛑 Планировщик остановлен');
   }
 
-  // Напоминание о чекине (20:00)
-  private async sendDailyCheckinReminder() {
-    console.log('📬 Отправка напоминаний о чекине...');
+  // Напоминание о чекине (20:00 и 22:00)
+  private async sendDailyCheckinReminder(hour: number) {
+    console.log(`📬 [${hour}:00] Отправка напоминаний о чекине...`);
 
     try {
       const usersWithoutCheckin = await userService.getWithoutCheckinToday();
 
-      const message = `⏰ *Напоминание о чекине*
+      // Разный текст в зависимости от времени
+      const message = hour >= 22
+        ? `🚨 *Последний шанс на чекин!*
+
+До конца дня осталось совсем немного.
+
+Не пропусти чекин сегодня:
+✅ Тренировка
+🥗 Питание
+💧 Вода
+😴 Сон
+
+Открой приложение и отметь за 30 секунд! ⚡`
+        : `⏰ *Напоминание о чекине*
 
 Не забудь отметить сегодняшний день:
 ✅ Тренировка
@@ -143,7 +167,7 @@ class SchedulerService {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
 
-      console.log(`✅ Отправлено напоминаний: ${sent}/${usersWithoutCheckin.length}`);
+      console.log(`✅ [${hour}:00] Отправлено напоминаний: ${sent}/${usersWithoutCheckin.length}`);
     } catch (error) {
       console.error('Ошибка при отправке напоминаний о чекине:', error);
     }
