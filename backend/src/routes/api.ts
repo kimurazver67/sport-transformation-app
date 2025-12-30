@@ -52,6 +52,43 @@ router.post('/user/:userId/goal', async (req: Request, res: Response) => {
   }
 });
 
+// Обновить данные онбординга (цель + рост + возраст + целевой вес)
+router.post('/user/:userId/onboarding', async (req: Request, res: Response) => {
+  try {
+    const { goal, height, age, target_weight } = req.body;
+
+    // Валидация
+    if (goal && !['weight_loss', 'muscle_gain'].includes(goal)) {
+      return res.status(400).json({ success: false, error: 'Invalid goal' });
+    }
+    if (height !== undefined && (height < 100 || height > 250)) {
+      return res.status(400).json({ success: false, error: 'Height must be 100-250 cm' });
+    }
+    if (age !== undefined && (age < 14 || age > 100)) {
+      return res.status(400).json({ success: false, error: 'Age must be 14-100' });
+    }
+    if (target_weight !== undefined && (target_weight <= 0 || target_weight >= 500)) {
+      return res.status(400).json({ success: false, error: 'Target weight must be positive and less than 500 kg' });
+    }
+
+    const user = await userService.updateOnboardingData(req.params.userId, {
+      goal,
+      height,
+      age,
+      target_weight,
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    res.json({ success: true, data: user });
+  } catch (error) {
+    console.error('Update onboarding error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 // ===== ЧЕКИНЫ =====
 
 // Получить чекин за сегодня

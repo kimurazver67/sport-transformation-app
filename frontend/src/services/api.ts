@@ -67,6 +67,18 @@ export const api = {
       body: JSON.stringify({ goal }),
     }),
 
+  // Обновить данные онбординга
+  updateOnboarding: (userId: string, data: {
+    goal?: UserGoal
+    height?: number
+    age?: number
+    target_weight?: number
+  }) =>
+    request<User>(`/api/user/${userId}/onboarding`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
   // Чекины
   getTodayCheckin: (userId: string) =>
     request<DailyCheckin | null>(`/api/checkin/today/${userId}`),

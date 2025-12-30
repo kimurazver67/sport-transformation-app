@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useStore } from '../store'
 import { useTelegram } from '../hooks/useTelegram'
 import CheckinForm from '../components/CheckinForm'
-import GoalSelector from '../components/GoalSelector'
+import OnboardingFlow from '../components/OnboardingFlow'
 
 // Animated counter component
 function AnimatedCounter({ value, duration = 1500 }: { value: number; duration?: number }) {
@@ -200,10 +200,10 @@ export default function HomePage() {
         </div>
       </motion.section>
 
-      {/* Goal Selection - показываем до старта курса если цель не выбрана */}
+      {/* Onboarding - показываем до старта курса если цель не выбрана */}
       {!isCourseStarted && !user.goal && user.role === 'participant' && (
         <section className="px-4 mb-6">
-          <GoalSelector />
+          <OnboardingFlow />
         </section>
       )}
 
