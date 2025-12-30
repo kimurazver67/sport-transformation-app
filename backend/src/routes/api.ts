@@ -256,6 +256,38 @@ router.get('/leaderboard/weekly', async (req: Request, res: Response) => {
   }
 });
 
+// Рейтинг по цели (🔥 weight_loss / 💪 muscle_gain)
+router.get('/leaderboard/goal/:goal', async (req: Request, res: Response) => {
+  try {
+    const goal = req.params.goal as 'weight_loss' | 'muscle_gain';
+    if (!['weight_loss', 'muscle_gain'].includes(goal)) {
+      return res.status(400).json({ success: false, error: 'Invalid goal' });
+    }
+    const limit = parseInt(req.query.limit as string) || 20;
+    const leaderboard = await statsService.getLeaderboardByGoal(goal, limit);
+    res.json({ success: true, data: leaderboard });
+  } catch (error) {
+    console.error('Get leaderboard by goal error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Недельный рейтинг по цели
+router.get('/leaderboard/weekly/goal/:goal', async (req: Request, res: Response) => {
+  try {
+    const goal = req.params.goal as 'weight_loss' | 'muscle_gain';
+    if (!['weight_loss', 'muscle_gain'].includes(goal)) {
+      return res.status(400).json({ success: false, error: 'Invalid goal' });
+    }
+    const limit = parseInt(req.query.limit as string) || 20;
+    const leaderboard = await statsService.getWeeklyLeaderboardByGoal(goal, limit);
+    res.json({ success: true, data: leaderboard });
+  } catch (error) {
+    console.error('Get weekly leaderboard by goal error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 // ===== ЗАДАНИЯ =====
 
 // Задания текущей недели

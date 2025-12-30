@@ -1,5 +1,5 @@
 import { query } from '../db/postgres';
-import { UserStats, LeaderboardEntry, POINTS } from '../types';
+import { UserStats, LeaderboardEntry, POINTS, UserGoal } from '../types';
 
 interface UserStatsRow {
   user_id: string;
@@ -173,6 +173,70 @@ export const statsService = {
       weekly_points: row.weekly_points,
       current_streak: row.current_streak,
       rank: row.rank_weekly,
+    }));
+  },
+
+  // Получить рейтинг по цели (🔥 weight_loss / 💪 muscle_gain)
+  async getLeaderboardByGoal(goal: UserGoal, limit = 20): Promise<LeaderboardEntry[]> {
+    const result = await query<LeaderboardRow & { goal?: UserGoal }>(
+      `SELECT l.*, u.goal
+       FROM leaderboard l
+       JOIN users u ON l.id = u.id
+       WHERE u.goal = $1
+       ORDER BY l.total_points DESC
+       LIMIT $2`,
+      [goal, limit]
+    );
+
+    return result.rows.map((row, index) => ({
+      user_id: row.id,
+      user: {
+        id: row.id,
+        telegram_id: row.telegram_id,
+        username: row.username || undefined,
+        first_name: row.first_name,
+        last_name: row.last_name || undefined,
+        role: 'participant' as const,
+        goal: row.goal,
+        created_at: '',
+        updated_at: '',
+      },
+      total_points: row.total_points,
+      weekly_points: row.weekly_points,
+      current_streak: row.current_streak,
+      rank: index + 1, // Пересчитываем ранг внутри цели
+    }));
+  },
+
+  // Получить недельный рейтинг по цели
+  async getWeeklyLeaderboardByGoal(goal: UserGoal, limit = 20): Promise<LeaderboardEntry[]> {
+    const result = await query<LeaderboardRow & { goal?: UserGoal }>(
+      `SELECT l.*, u.goal
+       FROM leaderboard l
+       JOIN users u ON l.id = u.id
+       WHERE u.goal = $1
+       ORDER BY l.weekly_points DESC
+       LIMIT $2`,
+      [goal, limit]
+    );
+
+    return result.rows.map((row, index) => ({
+      user_id: row.id,
+      user: {
+        id: row.id,
+        telegram_id: row.telegram_id,
+        username: row.username || undefined,
+        first_name: row.first_name,
+        last_name: row.last_name || undefined,
+        role: 'participant' as const,
+        goal: row.goal,
+        created_at: '',
+        updated_at: '',
+      },
+      total_points: row.total_points,
+      weekly_points: row.weekly_points,
+      current_streak: row.current_streak,
+      rank: index + 1,
     }));
   },
 };

@@ -146,6 +146,13 @@ export const api = {
   getWeeklyLeaderboard: (limit = 20) =>
     request<LeaderboardEntry[]>(`/api/leaderboard/weekly?limit=${limit}`),
 
+  // Рейтинг по цели (🔥/💪)
+  getLeaderboardByGoal: (goal: 'weight_loss' | 'muscle_gain', limit = 20) =>
+    request<LeaderboardEntry[]>(`/api/leaderboard/goal/${goal}?limit=${limit}`),
+
+  getWeeklyLeaderboardByGoal: (goal: 'weight_loss' | 'muscle_gain', limit = 20) =>
+    request<LeaderboardEntry[]>(`/api/leaderboard/weekly/goal/${goal}?limit=${limit}`),
+
   // Достижения
   getAchievements: (userId: string) =>
     request<Achievement[]>(`/api/achievements/${userId}`),
