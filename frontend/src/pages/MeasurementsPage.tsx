@@ -90,7 +90,10 @@ function MeasurementsPageContent() {
   // DEBUG - отправляем лог сразу при рендере
   useEffect(() => {
     sendDebugLog('MeasurementsPage mounted')
-    return () => sendDebugLog('MeasurementsPage unmounted')
+    return () => {
+      // Fire and forget - не ждём результата
+      void sendDebugLog('MeasurementsPage unmounted')
+    }
   }, [])
 
   const {
