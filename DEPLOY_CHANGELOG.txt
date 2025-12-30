@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Enable Google Sheets sync button in AdminPage
 • Исправлено: Replace prompt() with modal for broadcast in AdminPage
 • Исправлено: Add VITE_API_URL for production фронтенд
 • Исправлено: Add auth headers to admin API requests
 • Добавлено: Add second checkin reminder at 22:00
-• Добавлено: Add hourly measurement reminders with liar detection
 
-30.12.2025 12:31
+30.12.2025 12:47

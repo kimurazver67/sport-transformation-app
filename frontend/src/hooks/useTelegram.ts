@@ -142,7 +142,13 @@ export function useTelegram() {
         resolve(window.confirm(message))
         return
       }
-      webApp.showConfirm(message, resolve)
+      try {
+        webApp.showConfirm(message, resolve)
+      } catch (e) {
+        // Popup already opened or other error - fallback to native confirm
+        console.warn('Telegram showConfirm failed:', e)
+        resolve(window.confirm(message))
+      }
     })
   }, [webApp])
 
@@ -153,7 +159,14 @@ export function useTelegram() {
         resolve()
         return
       }
-      webApp.showAlert(message, resolve)
+      try {
+        webApp.showAlert(message, resolve)
+      } catch (e) {
+        // Popup already opened or other error - fallback to native alert
+        console.warn('Telegram showAlert failed:', e)
+        window.alert(message)
+        resolve()
+      }
     })
   }, [webApp])
 
