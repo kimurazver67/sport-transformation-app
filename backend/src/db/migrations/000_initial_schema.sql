@@ -100,7 +100,8 @@ CREATE INDEX IF NOT EXISTS idx_tasks_week ON tasks(week_number);
 CREATE INDEX IF NOT EXISTS idx_achievements_user ON achievements(user_id);
 
 -- ===== VIEW для рейтинга =====
-CREATE OR REPLACE VIEW leaderboard AS
+DROP VIEW IF EXISTS leaderboard;
+CREATE VIEW leaderboard AS
 SELECT
   u.id,
   u.telegram_id,

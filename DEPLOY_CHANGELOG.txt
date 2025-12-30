@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Merge branch 'feature/course-improvements'
+• Исправлено: Drop leaderboard view before recreating
+• Merge pull request #1 from kimurazver67/feature/course-improvements
 • Добавлено: Add automatic migrations on деплой
 • Добавлено: Add goal-based leaderboards (🔥/💪)
-• Добавлено: Add mindfulness diary and impulse tracker
-• Добавлено: Add goal-based task filtering and weekly concepts
-• Добавлено: Expand onboarding with height, age, and target weight
 
-30.12.2025 16:59
+30.12.2025 17:02

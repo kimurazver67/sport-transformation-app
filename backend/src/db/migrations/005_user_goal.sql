@@ -4,9 +4,16 @@
 ALTER TABLE users
 ADD COLUMN IF NOT EXISTS goal VARCHAR(20) DEFAULT NULL;
 
--- Добавляем constraint для валидации значений
-ALTER TABLE users
-ADD CONSTRAINT users_goal_check CHECK (goal IN ('weight_loss', 'muscle_gain') OR goal IS NULL);
+-- Добавляем constraint для валидации значений (если еще нет)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'users_goal_check'
+    ) THEN
+        ALTER TABLE users
+        ADD CONSTRAINT users_goal_check CHECK (goal IN ('weight_loss', 'muscle_gain') OR goal IS NULL);
+    END IF;
+END $$;
 
 -- Комментарий
 COMMENT ON COLUMN users.goal IS 'Цель участника: weight_loss (похудение) или muscle_gain (набор массы)';
