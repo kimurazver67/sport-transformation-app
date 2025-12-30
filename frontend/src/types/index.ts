@@ -28,6 +28,9 @@ export interface User {
   role: UserRole;
   goal?: UserGoal;
   start_weight?: number;
+  target_weight?: number;
+  height?: number;
+  age?: number;
   created_at: string;
   updated_at: string;
 }
@@ -44,6 +47,7 @@ export interface DailyCheckin {
   water_liters?: number;
   sleep_hours: number;
   mood: MoodLevel;
+  steps?: number;
   created_at: string;
 }
 
@@ -176,6 +180,7 @@ export interface CheckinForm {
   water_liters?: number;
   sleep_hours: number;
   mood: MoodLevel;
+  steps?: number;
 }
 
 export interface MeasurementForm {

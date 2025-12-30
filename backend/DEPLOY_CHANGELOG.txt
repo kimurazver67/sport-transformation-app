@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Remove bottom padding from main content area
 • Исправлено: Reduce bottom padding in Layout from pb-20 to pb-4
 • Исправлено: Reset scroll on page навигация and reduce top padding
 • Исправлено: Update фронтенд деплой workflow with correct service name
 • Исправлено: Add goal column migration and fix menu button config
-• Исправлено: Increase нижняя навигация height and add safe area padding
 
-30.12.2025 15:25
+30.12.2025 15:27
