@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useTelegram } from '../hooks/useTelegram'
 import { useStore } from '../store'
+import { api } from '../services/api'
 
 interface ParticipantData {
   user: {
@@ -31,8 +32,6 @@ interface DashboardData {
   course_week: number
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
-
 export default function AdminPage() {
   const { hapticFeedback, showAlert, showConfirm } = useTelegram()
   const { courseWeek } = useStore()
@@ -40,6 +39,7 @@ export default function AdminPage() {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null)
   const [participants, setParticipants] = useState<ParticipantData[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'dashboard' | 'participants' | 'tasks'>('dashboard')
 
   // Форма нового задания
@@ -52,18 +52,17 @@ export default function AdminPage() {
 
   const fetchData = async () => {
     try {
-      const [dashRes, partRes] = await Promise.all([
-        fetch(`${API_URL}/admin/dashboard`),
-        fetch(`${API_URL}/admin/participants`),
+      setError(null)
+      const [dashData, partData] = await Promise.all([
+        api.getAdminDashboard(),
+        api.getAdminParticipants(),
       ])
 
-      const dashData = await dashRes.json()
-      const partData = await partRes.json()
-
-      if (dashData.success) setDashboard(dashData.data)
-      if (partData.success) setParticipants(partData.data)
-    } catch (error) {
-      console.error('Failed to fetch admin data:', error)
+      setDashboard(dashData)
+      setParticipants(partData)
+    } catch (err) {
+      console.error('Failed to fetch admin data:', err)
+      setError(err instanceof Error ? err.message : 'Ошибка загрузки данных')
     } finally {
       setIsLoading(false)
     }
@@ -74,19 +73,10 @@ export default function AdminPage() {
     if (!confirmed) return
 
     try {
-      const res = await fetch(`${API_URL}/admin/remind/${userId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      })
-
-      const data = await res.json()
-      if (data.success) {
-        hapticFeedback('success')
-        showAlert('Напоминание отправлено!')
-      } else {
-        throw new Error(data.error)
-      }
-    } catch (error) {
+      await api.sendAdminReminder(userId)
+      hapticFeedback('success')
+      showAlert('Напоминание отправлено!')
+    } catch (err) {
       hapticFeedback('error')
       showAlert('Ошибка при отправке')
     }
@@ -100,18 +90,10 @@ export default function AdminPage() {
     if (!confirmed) return
 
     try {
-      const res = await fetch(`${API_URL}/admin/broadcast`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message, role: 'participant' }),
-      })
-
-      const data = await res.json()
-      if (data.success) {
-        hapticFeedback('success')
-        showAlert(`Отправлено: ${data.data.sent}, ошибок: ${data.data.failed}`)
-      }
-    } catch (error) {
+      const result = await api.sendAdminBroadcast(message, 'participant')
+      hapticFeedback('success')
+      showAlert(`Отправлено: ${result.sent}, ошибок: ${result.failed}`)
+    } catch (err) {
       hapticFeedback('error')
       showAlert('Ошибка при рассылке')
     }
@@ -122,22 +104,11 @@ export default function AdminPage() {
 
     setIsCreatingTask(true)
     try {
-      const res = await fetch(`${API_URL}/admin/tasks`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          week_number: courseWeek,
-          title: newTaskTitle,
-        }),
-      })
-
-      const data = await res.json()
-      if (data.success) {
-        hapticFeedback('success')
-        setNewTaskTitle('')
-        showAlert('Задание создано!')
-      }
-    } catch (error) {
+      await api.createAdminTask(courseWeek, newTaskTitle)
+      hapticFeedback('success')
+      setNewTaskTitle('')
+      showAlert('Задание создано!')
+    } catch (err) {
       hapticFeedback('error')
       showAlert('Ошибка при создании')
     } finally {
@@ -148,16 +119,10 @@ export default function AdminPage() {
   const syncSheets = async () => {
     hapticFeedback('light')
     try {
-      const res = await fetch(`${API_URL}/admin/sync-sheets`, {
-        method: 'POST',
-      })
-
-      const data = await res.json()
-      if (data.success) {
-        hapticFeedback('success')
-        showAlert('Синхронизация завершена!')
-      }
-    } catch (error) {
+      await api.syncAdminSheets()
+      hapticFeedback('success')
+      showAlert('Синхронизация завершена!')
+    } catch (err) {
       hapticFeedback('error')
       showAlert('Ошибка синхронизации')
     }
@@ -171,6 +136,23 @@ export default function AdminPage() {
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
           className="w-12 h-12 border-4 border-neon-lime border-t-transparent rounded-full"
         />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4">
+        <div className="bg-void-200 border-2 border-red-500 p-6 max-w-sm w-full" style={{ boxShadow: '6px 6px 0 0 #EF4444' }}>
+          <div className="font-mono text-sm text-red-400 uppercase mb-2">Ошибка доступа</div>
+          <p className="font-mono text-steel-300 text-sm mb-4">{error}</p>
+          <button
+            onClick={fetchData}
+            className="btn-brutal w-full"
+          >
+            Повторить
+          </button>
+        </div>
       </div>
     )
   }

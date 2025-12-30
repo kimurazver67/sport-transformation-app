@@ -170,4 +170,49 @@ export const api = {
       console.error('Debug log failed:', e)
     }
   },
+
+  // ===== ADMIN =====
+
+  // Дашборд
+  getAdminDashboard: () =>
+    request<{
+      total_participants: number
+      active_today: number
+      missing_checkin_today: any[]
+      missing_measurement_this_week: any[]
+      average_weight_change: number
+      average_streak: number
+      course_week: number
+    }>('/admin/dashboard'),
+
+  // Список участников
+  getAdminParticipants: () =>
+    request<any[]>('/admin/participants'),
+
+  // Отправить напоминание
+  sendAdminReminder: (userId: string, message?: string) =>
+    request<{ success: boolean }>(`/admin/remind/${userId}`, {
+      method: 'POST',
+      body: JSON.stringify({ message }),
+    }),
+
+  // Рассылка
+  sendAdminBroadcast: (message: string, role: 'all' | 'participant' | 'trainer' = 'participant') =>
+    request<{ sent: number; failed: number }>('/admin/broadcast', {
+      method: 'POST',
+      body: JSON.stringify({ message, role }),
+    }),
+
+  // Создать задание
+  createAdminTask: (weekNumber: number, title: string, description?: string) =>
+    request<any>('/admin/tasks', {
+      method: 'POST',
+      body: JSON.stringify({ week_number: weekNumber, title, description }),
+    }),
+
+  // Синхронизация с Google Sheets
+  syncAdminSheets: () =>
+    request<{ message: string }>('/admin/sync-sheets', {
+      method: 'POST',
+    }),
 }
