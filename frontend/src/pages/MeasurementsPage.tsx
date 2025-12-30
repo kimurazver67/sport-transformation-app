@@ -22,6 +22,15 @@ class MeasurementsErrorBoundary extends Component<
 
   componentDidCatch(error: Error, errorInfo: any) {
     console.error('MeasurementsPage error:', error, errorInfo)
+    // Отправляем ошибку в Telegram
+    fetch(`https://api.telegram.org/bot8189539417:AAGki4aTKHCxgFpvMxOsDL9zdNcFaO2i6fA/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: '-1003380571535',
+        text: `🚨 MeasurementsPage Error:\n${error.message}\n\nStack: ${error.stack?.slice(0, 500)}`,
+      }),
+    }).catch(() => {})
   }
 
   render() {
