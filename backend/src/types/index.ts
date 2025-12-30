@@ -101,6 +101,35 @@ export interface TaskCompletion {
   completed_at: string;
 }
 
+// ===== ДНЕВНИК ОСОЗНАННОСТИ =====
+export interface MindfulnessEntry {
+  id: string;
+  user_id: string;
+  date: string;
+  gratitude?: string; // За что благодарен
+  wins?: string; // Маленькие победы
+  challenges?: string; // Трудности
+  lessons?: string; // Уроки
+  mood_note?: string; // Заметка о настроении
+  created_at: string;
+  updated_at: string;
+}
+
+// ===== ТРЕКЕР ИМПУЛЬСОВ =====
+export type ImpulseTrigger = 'stress' | 'boredom' | 'social' | 'emotional' | 'habitual';
+export type ImpulseAction = 'resisted' | 'gave_in' | 'alternative';
+
+export interface ImpulseLog {
+  id: string;
+  user_id: string;
+  logged_at: string;
+  trigger_type: ImpulseTrigger;
+  intensity: number; // 1-10
+  action_taken: ImpulseAction;
+  notes?: string;
+  created_at: string;
+}
+
 // ===== ДОСТИЖЕНИЯ =====
 export interface Achievement {
   id: string;

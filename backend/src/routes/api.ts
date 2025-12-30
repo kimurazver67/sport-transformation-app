@@ -5,6 +5,7 @@ import { measurementService } from '../services/measurementService';
 import { statsService } from '../services/statsService';
 import { taskService } from '../services/taskService';
 import { achievementService } from '../services/achievementService';
+import { mindfulnessService } from '../services/mindfulnessService';
 import { getCurrentWeek, getDaysUntilStart, isCourseStarted, canSubmitMeasurement, config } from '../config';
 import { CheckinForm, MeasurementForm } from '../types';
 import { query } from '../db/postgres';
@@ -338,6 +339,107 @@ router.get('/achievements/:userId', async (req: Request, res: Response) => {
     res.json({ success: true, data: achievements });
   } catch (error) {
     console.error('Get achievements error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// ===== ДНЕВНИК ОСОЗНАННОСТИ =====
+
+// Получить запись за сегодня
+router.get('/mindfulness/today/:userId', async (req: Request, res: Response) => {
+  try {
+    const entry = await mindfulnessService.getTodayEntry(req.params.userId);
+    res.json({ success: true, data: entry });
+  } catch (error) {
+    console.error('Get mindfulness entry error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Получить последние записи
+router.get('/mindfulness/:userId', async (req: Request, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 7;
+    const entries = await mindfulnessService.getRecentEntries(req.params.userId, limit);
+    res.json({ success: true, data: entries });
+  } catch (error) {
+    console.error('Get mindfulness entries error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Создать/обновить запись за сегодня
+router.post('/mindfulness/:userId', async (req: Request, res: Response) => {
+  try {
+    const entry = await mindfulnessService.createOrUpdateEntry(req.params.userId, req.body);
+    res.json({ success: true, data: entry });
+  } catch (error) {
+    console.error('Save mindfulness entry error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// ===== ТРЕКЕР ИМПУЛЬСОВ =====
+
+// Получить последние импульсы
+router.get('/impulses/:userId', async (req: Request, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 10;
+    const impulses = await mindfulnessService.getRecentImpulses(req.params.userId, limit);
+    res.json({ success: true, data: impulses });
+  } catch (error) {
+    console.error('Get impulses error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Статистика импульсов
+router.get('/impulses/:userId/stats', async (req: Request, res: Response) => {
+  try {
+    const stats = await mindfulnessService.getImpulseStats(req.params.userId);
+    res.json({ success: true, data: stats });
+  } catch (error) {
+    console.error('Get impulse stats error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Залогировать импульс
+router.post('/impulses/:userId', async (req: Request, res: Response) => {
+  try {
+    const { trigger_type, intensity, action_taken, notes } = req.body;
+
+    // Валидация
+    if (!['stress', 'boredom', 'social', 'emotional', 'habitual'].includes(trigger_type)) {
+      return res.status(400).json({ success: false, error: 'Invalid trigger_type' });
+    }
+    if (!['resisted', 'gave_in', 'alternative'].includes(action_taken)) {
+      return res.status(400).json({ success: false, error: 'Invalid action_taken' });
+    }
+    if (intensity < 1 || intensity > 10) {
+      return res.status(400).json({ success: false, error: 'Intensity must be 1-10' });
+    }
+
+    const impulse = await mindfulnessService.logImpulse(req.params.userId, {
+      trigger_type,
+      intensity,
+      action_taken,
+      notes,
+    });
+    res.json({ success: true, data: impulse });
+  } catch (error) {
+    console.error('Log impulse error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Удалить импульс
+router.delete('/impulses/:userId/:impulseId', async (req: Request, res: Response) => {
+  try {
+    await mindfulnessService.deleteImpulse(req.params.userId, req.params.impulseId);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Delete impulse error:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
