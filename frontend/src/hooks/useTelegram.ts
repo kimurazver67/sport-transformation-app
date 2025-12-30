@@ -87,23 +87,43 @@ export function useTelegram() {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    const tg = window.Telegram?.WebApp
+    const initTelegram = () => {
+      const tg = window.Telegram?.WebApp
 
-    if (tg) {
-      setWebApp(tg)
-      setUser(tg.initDataUnsafe.user || null)
-      setReady(true)
-    } else {
-      // Для локальной разработки без Telegram
-      console.warn('Telegram WebApp not available, using mock data')
-      setUser({
-        id: 123456789,
-        first_name: 'Test',
-        last_name: 'User',
-        username: 'testuser',
-      })
-      setReady(true)
+      if (tg) {
+        setWebApp(tg)
+        setUser(tg.initDataUnsafe.user || null)
+        setReady(true)
+        return true
+      }
+      return false
     }
+
+    // Попробуем сразу
+    if (initTelegram()) return
+
+    // Если не получилось - ждём загрузки скрипта
+    let attempts = 0
+    const maxAttempts = 50 // 5 секунд максимум
+    const interval = setInterval(() => {
+      attempts++
+      if (initTelegram() || attempts >= maxAttempts) {
+        clearInterval(interval)
+        if (attempts >= maxAttempts && !window.Telegram?.WebApp) {
+          // Для локальной разработки без Telegram
+          console.warn('Telegram WebApp not available after timeout, using mock data')
+          setUser({
+            id: 123456789,
+            first_name: 'Test',
+            last_name: 'User',
+            username: 'testuser',
+          })
+          setReady(true)
+        }
+      }
+    }, 100)
+
+    return () => clearInterval(interval)
   }, [])
 
   const hapticFeedback = useCallback((type: 'success' | 'warning' | 'error' | 'light' | 'medium' | 'heavy') => {

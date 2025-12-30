@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Handle null/undefined weight values in MeasurementsPage
 • Исправлено: Fix TypeScript error in useEffect cleanup function
 • Исправлено: Add watchPatterns to фронтенд railway.json for auto-деплой
 • Исправлено: Route debug logs through бэкенд API
 • debug: Add route logging to App.tsx
-• debug: Add mount/unmount and store state logging
 
-30.12.2025 11:17
+30.12.2025 11:20
