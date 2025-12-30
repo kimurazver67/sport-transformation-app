@@ -57,6 +57,7 @@ export default function MindfulnessPage() {
   const [todayEntry, setTodayEntry] = useState<MindfulnessEntry | null>(null)
   const [recentEntries, setRecentEntries] = useState<MindfulnessEntry[]>([])
   const [isSavingDiary, setIsSavingDiary] = useState(false)
+  const [diaryLocked, setDiaryLocked] = useState(false)
 
   // Impulse state
   const [showImpulseModal, setShowImpulseModal] = useState(false)
@@ -87,13 +88,18 @@ export default function MindfulnessPage() {
 
       if (today) {
         setTodayEntry(today)
+        // Если есть запись на сегодня, блокируем форму
+        setDiaryLocked(true)
+        // НЕ заполняем форму - оставляем пустой
         setDiaryForm({
-          gratitude: today.gratitude || '',
-          wins: today.wins || '',
-          challenges: today.challenges || '',
-          lessons: today.lessons || '',
-          mood_note: today.mood_note || '',
+          gratitude: '',
+          wins: '',
+          challenges: '',
+          lessons: '',
+          mood_note: '',
         })
+      } else {
+        setDiaryLocked(false)
       }
 
       setRecentEntries(recent)
@@ -108,9 +114,22 @@ export default function MindfulnessPage() {
 
     setIsSavingDiary(true)
     try {
-      await api.saveMindfulness(user.id, diaryForm)
+      const saved = await api.saveMindfulness(user.id, diaryForm)
       hapticFeedback('success')
-      showAlert('Запись сохранена!')
+      showAlert('Запись сохранена! Увидимся завтра в 21:00 🌙')
+
+      // Очищаем форму и блокируем
+      setDiaryForm({
+        gratitude: '',
+        wins: '',
+        challenges: '',
+        lessons: '',
+        mood_note: '',
+      })
+      setTodayEntry(saved)
+      setDiaryLocked(true)
+
+      // Обновляем список недавних записей
       fetchData()
     } catch (err) {
       hapticFeedback('error')
@@ -206,95 +225,152 @@ export default function MindfulnessPage() {
           animate={{ opacity: 1 }}
           className="space-y-4"
         >
-          {/* Today's Entry */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-void-200 border-2 border-neon-magenta p-4"
-            style={{ boxShadow: '6px 6px 0 0 #FF00FF' }}
-          >
-            <div className="font-mono text-xs text-steel-500 uppercase tracking-widest mb-4">
-              Запись на сегодня {todayEntry ? '(редактирование)' : '(новая)'}
-            </div>
-
-            {/* Gratitude */}
-            <div className="mb-4">
-              <label className="flex items-center gap-2 font-mono text-xs text-steel-400 uppercase mb-2">
-                <span>🙏</span> За что благодарен сегодня?
-              </label>
-              <textarea
-                value={diaryForm.gratitude}
-                onChange={(e) => setDiaryForm({ ...diaryForm, gratitude: e.target.value })}
-                placeholder="Напиши 1-3 вещи..."
-                rows={2}
-                className="input-brutal w-full resize-none text-sm"
-              />
-            </div>
-
-            {/* Wins */}
-            <div className="mb-4">
-              <label className="flex items-center gap-2 font-mono text-xs text-steel-400 uppercase mb-2">
-                <span>🏆</span> Маленькие победы дня
-              </label>
-              <textarea
-                value={diaryForm.wins}
-                onChange={(e) => setDiaryForm({ ...diaryForm, wins: e.target.value })}
-                placeholder="Чем гордишься сегодня?"
-                rows={2}
-                className="input-brutal w-full resize-none text-sm"
-              />
-            </div>
-
-            {/* Challenges */}
-            <div className="mb-4">
-              <label className="flex items-center gap-2 font-mono text-xs text-steel-400 uppercase mb-2">
-                <span>💪</span> С чем было сложно?
-              </label>
-              <textarea
-                value={diaryForm.challenges}
-                onChange={(e) => setDiaryForm({ ...diaryForm, challenges: e.target.value })}
-                placeholder="Какие трудности преодолел?"
-                rows={2}
-                className="input-brutal w-full resize-none text-sm"
-              />
-            </div>
-
-            {/* Lessons */}
-            <div className="mb-4">
-              <label className="flex items-center gap-2 font-mono text-xs text-steel-400 uppercase mb-2">
-                <span>💡</span> Что понял/узнал?
-              </label>
-              <textarea
-                value={diaryForm.lessons}
-                onChange={(e) => setDiaryForm({ ...diaryForm, lessons: e.target.value })}
-                placeholder="Инсайты и уроки дня..."
-                rows={2}
-                className="input-brutal w-full resize-none text-sm"
-              />
-            </div>
-
-            {/* Mood Note */}
-            <div className="mb-4">
-              <label className="flex items-center gap-2 font-mono text-xs text-steel-400 uppercase mb-2">
-                <span>🎭</span> Заметка о настроении
-              </label>
-              <input
-                type="text"
-                value={diaryForm.mood_note}
-                onChange={(e) => setDiaryForm({ ...diaryForm, mood_note: e.target.value })}
-                placeholder="Как себя чувствуешь?"
-                className="input-brutal w-full text-sm"
-              />
-            </div>
-
-            <button
-              onClick={saveDiary}
-              disabled={isSavingDiary || !hasDiaryContent}
-              className="btn-brutal w-full disabled:opacity-50"
+          {/* Locked State - запись уже сделана */}
+          {diaryLocked && todayEntry ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-void-200 border-2 border-neon-lime p-6 text-center"
+              style={{ boxShadow: '6px 6px 0 0 #BFFF00' }}
             >
-              {isSavingDiary ? 'Сохранение...' : todayEntry ? 'Обновить запись' : 'Сохранить запись'}
-            </button>
-          </motion.div>
+              <div className="text-6xl mb-4">✅</div>
+              <h2 className="font-display text-2xl font-bold text-neon-lime uppercase mb-2">
+                Запись сделана!
+              </h2>
+              <p className="font-mono text-sm text-steel-400 mb-4">
+                Сегодняшняя рефлексия сохранена.
+                <br />
+                Увидимся завтра в 21:00
+              </p>
+
+              {/* Показываем краткое содержание записи */}
+              <div className="mt-6 text-left border-t border-void-400 pt-4 space-y-2">
+                <div className="font-mono text-xs text-steel-500 uppercase tracking-widest mb-3">
+                  Сегодня ты написал:
+                </div>
+                {todayEntry.gratitude && (
+                  <div className="flex items-start gap-2">
+                    <span>🙏</span>
+                    <p className="font-mono text-xs text-steel-400 line-clamp-2">{todayEntry.gratitude}</p>
+                  </div>
+                )}
+                {todayEntry.wins && (
+                  <div className="flex items-start gap-2">
+                    <span>🏆</span>
+                    <p className="font-mono text-xs text-steel-400 line-clamp-2">{todayEntry.wins}</p>
+                  </div>
+                )}
+                {todayEntry.challenges && (
+                  <div className="flex items-start gap-2">
+                    <span>💪</span>
+                    <p className="font-mono text-xs text-steel-400 line-clamp-2">{todayEntry.challenges}</p>
+                  </div>
+                )}
+                {todayEntry.lessons && (
+                  <div className="flex items-start gap-2">
+                    <span>💡</span>
+                    <p className="font-mono text-xs text-steel-400 line-clamp-2">{todayEntry.lessons}</p>
+                  </div>
+                )}
+                {todayEntry.mood_note && (
+                  <div className="flex items-start gap-2">
+                    <span>🎭</span>
+                    <p className="font-mono text-xs text-steel-400">{todayEntry.mood_note}</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          ) : (
+            /* Today's Entry Form */
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-void-200 border-2 border-neon-magenta p-4"
+              style={{ boxShadow: '6px 6px 0 0 #FF00FF' }}
+            >
+              <div className="font-mono text-xs text-steel-500 uppercase tracking-widest mb-4">
+                Вечерняя рефлексия
+              </div>
+
+              {/* Gratitude */}
+              <div className="mb-4">
+                <label className="flex items-center gap-2 font-mono text-xs text-steel-400 uppercase mb-2">
+                  <span>🙏</span> За что благодарен сегодня?
+                </label>
+                <textarea
+                  value={diaryForm.gratitude}
+                  onChange={(e) => setDiaryForm({ ...diaryForm, gratitude: e.target.value })}
+                  placeholder="Напиши 1-3 вещи..."
+                  rows={2}
+                  className="input-brutal w-full resize-none text-sm"
+                />
+              </div>
+
+              {/* Wins */}
+              <div className="mb-4">
+                <label className="flex items-center gap-2 font-mono text-xs text-steel-400 uppercase mb-2">
+                  <span>🏆</span> Маленькие победы дня
+                </label>
+                <textarea
+                  value={diaryForm.wins}
+                  onChange={(e) => setDiaryForm({ ...diaryForm, wins: e.target.value })}
+                  placeholder="Чем гордишься сегодня?"
+                  rows={2}
+                  className="input-brutal w-full resize-none text-sm"
+                />
+              </div>
+
+              {/* Challenges */}
+              <div className="mb-4">
+                <label className="flex items-center gap-2 font-mono text-xs text-steel-400 uppercase mb-2">
+                  <span>💪</span> С чем было сложно?
+                </label>
+                <textarea
+                  value={diaryForm.challenges}
+                  onChange={(e) => setDiaryForm({ ...diaryForm, challenges: e.target.value })}
+                  placeholder="Какие трудности преодолел?"
+                  rows={2}
+                  className="input-brutal w-full resize-none text-sm"
+                />
+              </div>
+
+              {/* Lessons */}
+              <div className="mb-4">
+                <label className="flex items-center gap-2 font-mono text-xs text-steel-400 uppercase mb-2">
+                  <span>💡</span> Что понял/узнал?
+                </label>
+                <textarea
+                  value={diaryForm.lessons}
+                  onChange={(e) => setDiaryForm({ ...diaryForm, lessons: e.target.value })}
+                  placeholder="Инсайты и уроки дня..."
+                  rows={2}
+                  className="input-brutal w-full resize-none text-sm"
+                />
+              </div>
+
+              {/* Mood Note */}
+              <div className="mb-4">
+                <label className="flex items-center gap-2 font-mono text-xs text-steel-400 uppercase mb-2">
+                  <span>🎭</span> Заметка о настроении
+                </label>
+                <input
+                  type="text"
+                  value={diaryForm.mood_note}
+                  onChange={(e) => setDiaryForm({ ...diaryForm, mood_note: e.target.value })}
+                  placeholder="Как себя чувствуешь?"
+                  className="input-brutal w-full text-sm"
+                />
+              </div>
+
+              <button
+                onClick={saveDiary}
+                disabled={isSavingDiary || !hasDiaryContent}
+                className="btn-brutal w-full disabled:opacity-50"
+              >
+                {isSavingDiary ? 'Сохранение...' : 'Сохранить запись'}
+              </button>
+            </motion.div>
+          )}
 
           {/* Recent Entries */}
           {recentEntries.length > 0 && (
