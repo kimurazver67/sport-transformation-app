@@ -422,4 +422,5 @@ export const adminNotifier = {
   newUser: notifyNewUser,
   checkin: notifyCheckin,
   achievement: notifyAchievement,
+  sendToAdmin: sendToAdmin,
 };

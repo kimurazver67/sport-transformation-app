@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Neutral color scheme for progress cards
 • Исправлено: Convert string values to numbers for progress calculations
 • Добавлено: Add debug endpoints for testing measurements
 • Добавлено: Add percentage отображение for weight and body measurements
 • Добавлено: Add body measurements chart
-• Исправлено: Handle Telegram popup errors gracefully
 
-30.12.2025 13:17
+30.12.2025 13:22

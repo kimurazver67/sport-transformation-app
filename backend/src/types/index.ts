@@ -121,7 +121,20 @@ export const POINTS = {
   STREAK_BONUS_7: 5,
   STREAK_BONUS_14: 10,
   STREAK_BONUS_30: 20,
+  // Бонусы за еженедельный прогресс (по проценту изменения)
+  PROGRESS_MINIMAL: 10,      // 0.5-1% изменения
+  PROGRESS_GOOD: 25,         // 1-2% изменения
+  PROGRESS_EXCELLENT: 50,    // 2-3% изменения
+  PROGRESS_OUTSTANDING: 100, // >3% изменения
 } as const;
+
+// ===== ГРАДАЦИЯ ПРОГРЕССА =====
+export const PROGRESS_TIERS = [
+  { minPercent: 3.0, points: 100, label: 'Невероятный прогресс!', emoji: '🔥' },
+  { minPercent: 2.0, points: 50, label: 'Отличный прогресс!', emoji: '⭐' },
+  { minPercent: 1.0, points: 25, label: 'Хороший прогресс!', emoji: '💪' },
+  { minPercent: 0.5, points: 10, label: 'Есть прогресс!', emoji: '✨' },
+] as const;
 
 // ===== ДОСТИЖЕНИЯ КОНФИГ =====
 export const ACHIEVEMENTS_CONFIG: Record<AchievementType, {

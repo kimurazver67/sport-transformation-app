@@ -5,6 +5,7 @@ import { statsService } from '../services/statsService';
 import { measurementService } from '../services/measurementService';
 import { checkinService } from '../services/checkinService';
 import { achievementService } from '../services/achievementService';
+import { progressBonusService } from '../services/progressBonusService';
 import { broadcastMessage, sendReminder } from '../bot';
 import { getCurrentWeek } from '../config';
 import { googleSheetsService } from '../services/googleSheetsService';
@@ -234,6 +235,54 @@ router.post('/sync-sheets', async (req: Request, res: Response) => {
 router.get('/sheets-url', (req: Request, res: Response) => {
   const url = googleSheetsService.getSpreadsheetUrl();
   res.json({ success: true, data: { url } });
+});
+
+// ===== БОНУСЫ ЗА ПРОГРЕСС =====
+
+// Запустить начисление бонусов за прогресс вручную
+router.post('/award-progress-bonuses', async (req: Request, res: Response) => {
+  try {
+    const weekNumber = req.body.week || getCurrentWeek();
+    const result = await progressBonusService.awardProgressBonuses(weekNumber);
+
+    res.json({
+      success: true,
+      data: {
+        week: weekNumber,
+        awarded: result.awarded,
+        totalPoints: result.totalPoints,
+        details: result.details,
+      },
+    });
+  } catch (error) {
+    console.error('Award progress bonuses error:', error);
+    res.status(500).json({ success: false, error: 'Failed to award progress bonuses' });
+  }
+});
+
+// Просмотр прогресса за неделю (без начисления)
+router.get('/weekly-progress/:week?', async (req: Request, res: Response) => {
+  try {
+    const weekNumber = parseInt(req.params.week || '') || getCurrentWeek();
+    const progressList = await progressBonusService.calculateWeeklyProgress(weekNumber);
+
+    // Добавляем уровень бонуса для каждого
+    const withTiers = progressList.map(p => ({
+      ...p,
+      tier: progressBonusService.getProgressTier(p.totalProgressPercent),
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        week: weekNumber,
+        participants: withTiers.sort((a, b) => b.totalProgressPercent - a.totalProgressPercent),
+      },
+    });
+  } catch (error) {
+    console.error('Get weekly progress error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get weekly progress' });
+  }
 });
 
 export default router;

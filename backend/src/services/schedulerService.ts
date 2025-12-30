@@ -4,8 +4,10 @@ import { statsService } from './statsService';
 import { achievementService } from './achievementService';
 import { googleSheetsService } from './googleSheetsService';
 import { measurementService } from './measurementService';
+import { progressBonusService } from './progressBonusService';
 import { sendReminder, broadcastMessage, sendMeasurementReminder } from '../bot';
 import { getCurrentWeek, isMeasurementDay, isCourseStarted } from '../config';
+import { adminNotifier } from './adminNotifierService';
 
 class SchedulerService {
   private jobs: CronJob[] = [];
@@ -82,6 +84,17 @@ class SchedulerService {
       new CronJob(
         '5 10 * * 0', // 10:05 каждое воскресенье
         () => this.checkMeasurementLiars(),
+        null,
+        true,
+        'Europe/Moscow'
+      )
+    );
+
+    // Воскресенье 12:00 - начисление бонусов за еженедельный прогресс
+    this.jobs.push(
+      new CronJob(
+        '0 12 * * 0', // 12:00 каждое воскресенье
+        () => this.awardWeeklyProgressBonuses(),
         null,
         true,
         'Europe/Moscow'
@@ -279,6 +292,40 @@ class SchedulerService {
       console.log('✅ Недельные очки сброшены');
     } catch (error) {
       console.error('Ошибка при еженедельном сбросе:', error);
+    }
+  }
+
+  // Начисление бонусов за еженедельный прогресс (воскресенье 12:00)
+  private async awardWeeklyProgressBonuses() {
+    if (!isCourseStarted()) {
+      console.log('⏭️ Курс не начался — пропускаем начисление бонусов за прогресс');
+      return;
+    }
+
+    console.log('🏆 Начисление бонусов за еженедельный прогресс...');
+
+    try {
+      const currentWeek = getCurrentWeek();
+      const result = await progressBonusService.awardProgressBonuses(currentWeek);
+
+      console.log(`✅ Бонусы за прогресс начислены: ${result.awarded} участников, ${result.totalPoints} очков`);
+
+      // Отправляем отчёт тренеру
+      if (result.awarded > 0) {
+        const detailsText = result.details
+          .sort((a, b) => b.percent - a.percent)
+          .map((d, i) => `${i + 1}. ${d.name}: ${d.percent.toFixed(1)}% → +${d.points} очков (${d.tier})`)
+          .join('\n');
+
+        await adminNotifier.sendToAdmin(
+          `🏆 *Бонусы за прогресс недели ${currentWeek}*\n\n` +
+          `Награждено: ${result.awarded} участников\n` +
+          `Всего очков: ${result.totalPoints}\n\n` +
+          `📊 *Детали:*\n${detailsText}`
+        );
+      }
+    } catch (error) {
+      console.error('Ошибка при начислении бонусов за прогресс:', error);
     }
   }
 
