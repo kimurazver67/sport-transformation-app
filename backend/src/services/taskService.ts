@@ -1,16 +1,22 @@
 import { query } from '../db/postgres';
-import { Task, TaskCompletion, POINTS } from '../types';
+import { Task, TaskCompletion, WeeklyConcept, POINTS, UserGoal } from '../types';
 import { getCurrentWeek } from '../config';
 import { statsService } from './statsService';
 
 export const taskService = {
   // Создать задание (только тренер)
-  async create(weekNumber: number, title: string, description?: string): Promise<Task> {
+  async create(
+    weekNumber: number,
+    title: string,
+    description?: string,
+    goal?: UserGoal,
+    isBonus?: boolean
+  ): Promise<Task> {
     const result = await query<Task>(
-      `INSERT INTO tasks (week_number, title, description)
-       VALUES ($1, $2, $3)
+      `INSERT INTO tasks (week_number, title, description, goal, is_bonus)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [weekNumber, title, description || null]
+      [weekNumber, title, description || null, goal || null, isBonus || false]
     );
 
     if (!result.rows[0]) {
@@ -28,17 +34,47 @@ export const taskService = {
   // Получить задания по неделе
   async getByWeek(weekNumber: number): Promise<Task[]> {
     const result = await query<Task>(
-      'SELECT * FROM tasks WHERE week_number = $1 ORDER BY created_at ASC',
+      'SELECT * FROM tasks WHERE week_number = $1 ORDER BY is_bonus ASC, created_at ASC',
       [weekNumber]
     );
 
     return result.rows;
   },
 
+  // Получить задания по неделе, отфильтрованные по цели пользователя
+  async getByWeekForGoal(weekNumber: number, userGoal?: UserGoal): Promise<Task[]> {
+    // Если цель не указана, возвращаем только общие задания
+    if (!userGoal) {
+      const result = await query<Task>(
+        'SELECT * FROM tasks WHERE week_number = $1 AND goal IS NULL ORDER BY is_bonus ASC, created_at ASC',
+        [weekNumber]
+      );
+      return result.rows;
+    }
+
+    // Возвращаем задания без цели + задания для указанной цели
+    const result = await query<Task>(
+      `SELECT * FROM tasks
+       WHERE week_number = $1 AND (goal IS NULL OR goal = $2)
+       ORDER BY is_bonus ASC, created_at ASC`,
+      [weekNumber, userGoal]
+    );
+
+    return result.rows;
+  },
+
   // Получить задания с прогрессом выполнения для пользователя
-  async getTasksWithProgress(userId: string, weekNumber?: number): Promise<(Task & { completed: boolean })[]> {
+  async getTasksWithProgress(
+    userId: string,
+    weekNumber?: number,
+    userGoal?: UserGoal
+  ): Promise<(Task & { completed: boolean })[]> {
     const week = weekNumber || getCurrentWeek();
-    const tasks = await this.getByWeek(week);
+
+    // Если указана цель, фильтруем по ней
+    const tasks = userGoal
+      ? await this.getByWeekForGoal(week, userGoal)
+      : await this.getByWeek(week);
 
     // Получаем выполненные задания
     const completionsResult = await query<{ task_id: string }>(
@@ -66,6 +102,12 @@ export const taskService = {
       throw new Error('Task already completed');
     }
 
+    // Проверяем, является ли задание бонусным
+    const taskResult = await query<{ is_bonus: boolean }>(
+      'SELECT is_bonus FROM tasks WHERE id = $1',
+      [taskId]
+    );
+
     const insertResult = await query<TaskCompletion>(
       `INSERT INTO task_completions (user_id, task_id)
        VALUES ($1, $2)
@@ -77,8 +119,10 @@ export const taskService = {
       throw new Error('Failed to complete task');
     }
 
-    // Начисляем очки
-    await statsService.addPoints(userId, POINTS.TASK_COMPLETED);
+    // Начисляем очки (бонусные задания дают больше)
+    const isBonus = taskResult.rows[0]?.is_bonus;
+    const points = isBonus ? POINTS.TASK_COMPLETED * 2 : POINTS.TASK_COMPLETED;
+    await statsService.addPoints(userId, points);
 
     return insertResult.rows[0];
   },
@@ -100,6 +144,8 @@ export const taskService = {
   async getCompletionStats(weekNumber?: number): Promise<{
     taskId: string;
     title: string;
+    goal?: UserGoal;
+    isBonus?: boolean;
     completedCount: number;
     totalParticipants: number;
   }[]> {
@@ -124,11 +170,59 @@ export const taskService = {
       result.push({
         taskId: task.id,
         title: task.title,
+        goal: task.goal,
+        isBonus: task.is_bonus,
         completedCount,
         totalParticipants: participantCount,
       });
     }
 
     return result;
+  },
+
+  // ===== КОНЦЕПЦИИ НЕДЕЛИ =====
+
+  // Создать концепцию недели
+  async createConcept(
+    weekNumber: number,
+    title: string,
+    content: string,
+    goal?: UserGoal
+  ): Promise<WeeklyConcept> {
+    const result = await query<WeeklyConcept>(
+      `INSERT INTO weekly_concepts (week_number, title, content, goal)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [weekNumber, title, content, goal || null]
+    );
+
+    if (!result.rows[0]) {
+      throw new Error('Failed to create concept');
+    }
+    return result.rows[0];
+  },
+
+  // Получить концепции недели для пользователя
+  async getConceptsForWeek(weekNumber: number, userGoal?: UserGoal): Promise<WeeklyConcept[]> {
+    if (!userGoal) {
+      const result = await query<WeeklyConcept>(
+        'SELECT * FROM weekly_concepts WHERE week_number = $1 AND goal IS NULL ORDER BY created_at ASC',
+        [weekNumber]
+      );
+      return result.rows;
+    }
+
+    const result = await query<WeeklyConcept>(
+      `SELECT * FROM weekly_concepts
+       WHERE week_number = $1 AND (goal IS NULL OR goal = $2)
+       ORDER BY created_at ASC`,
+      [weekNumber, userGoal]
+    );
+    return result.rows;
+  },
+
+  // Удалить концепцию
+  async deleteConcept(conceptId: string): Promise<void> {
+    await query('DELETE FROM weekly_concepts WHERE id = $1', [conceptId]);
   },
 };

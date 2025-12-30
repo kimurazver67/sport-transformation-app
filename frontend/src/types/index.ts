@@ -78,6 +78,18 @@ export interface Task {
   week_number: number;
   title: string;
   description?: string;
+  goal?: UserGoal; // null = для всех
+  is_bonus?: boolean;
+  created_at: string;
+}
+
+// ===== КОНЦЕПЦИИ НЕДЕЛИ =====
+export interface WeeklyConcept {
+  id: string;
+  week_number: number;
+  title: string;
+  content: string;
+  goal?: UserGoal;
   created_at: string;
 }
 

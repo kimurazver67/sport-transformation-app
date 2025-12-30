@@ -268,11 +268,16 @@ router.get('/tasks', async (req: Request, res: Response) => {
   }
 });
 
-// Задания с прогрессом для пользователя
+// Задания с прогрессом для пользователя (с фильтрацией по цели)
 router.get('/tasks/:userId', async (req: Request, res: Response) => {
   try {
     const weekNumber = req.query.week ? parseInt(req.query.week as string) : undefined;
-    const tasks = await taskService.getTasksWithProgress(req.params.userId, weekNumber);
+
+    // Получаем цель пользователя для фильтрации заданий
+    const user = await userService.findById(req.params.userId);
+    const userGoal = user?.goal;
+
+    const tasks = await taskService.getTasksWithProgress(req.params.userId, weekNumber, userGoal);
     res.json({ success: true, data: tasks });
   } catch (error) {
     console.error('Get tasks with progress error:', error);
@@ -301,6 +306,25 @@ router.delete('/tasks/:taskId/complete/:userId', async (req: Request, res: Respo
     res.json({ success: true });
   } catch (error) {
     console.error('Uncomplete task error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// ===== КОНЦЕПЦИИ НЕДЕЛИ =====
+
+// Получить концепции недели для пользователя
+router.get('/concepts/:userId', async (req: Request, res: Response) => {
+  try {
+    const weekNumber = req.query.week ? parseInt(req.query.week as string) : getCurrentWeek();
+
+    // Получаем цель пользователя для фильтрации
+    const user = await userService.findById(req.params.userId);
+    const userGoal = user?.goal;
+
+    const concepts = await taskService.getConceptsForWeek(weekNumber, userGoal);
+    res.json({ success: true, data: concepts });
+  } catch (error) {
+    console.error('Get concepts error:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
