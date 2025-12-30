@@ -334,6 +334,89 @@ bot.command('app', async (ctx) => {
   await ctx.reply('Нажми кнопку, чтобы открыть приложение:', keyboard);
 });
 
+// ===== КОМАНДА /deleteuser - удалить пользователя (только для тренера) =====
+bot.command('deleteuser', async (ctx) => {
+  const user = ctx.user;
+
+  // Проверяем права (только тренер)
+  if (!user || user.role !== 'trainer') {
+    return ctx.reply('❌ Эта команда доступна только тренеру.');
+  }
+
+  const args = ctx.message.text.split(' ').slice(1);
+  const targetTelegramId = args[0];
+
+  if (!targetTelegramId) {
+    // Показываем список участников
+    const participantsResult = await query<{ telegram_id: number; first_name: string; username: string | null }>(
+      `SELECT telegram_id, first_name, username FROM users WHERE role = 'participant' ORDER BY first_name`
+    );
+
+    if (participantsResult.rows.length === 0) {
+      return ctx.reply('📋 Нет участников для удаления.');
+    }
+
+    let list = '📋 *Список участников:*\n\n';
+    for (const p of participantsResult.rows) {
+      const username = p.username ? `(@${p.username})` : '';
+      list += `• ${p.first_name} ${username}\n  ID: \`${p.telegram_id}\`\n\n`;
+    }
+
+    list += '💡 Чтобы удалить:\n`/deleteuser <telegram_id>`';
+
+    return ctx.reply(list, { parse_mode: 'Markdown' });
+  }
+
+  // Парсим telegram_id
+  const telegramId = parseInt(targetTelegramId);
+  if (isNaN(telegramId)) {
+    return ctx.reply('❌ Неверный формат telegram_id. Используй число.');
+  }
+
+  // Проверяем, не пытается ли тренер удалить себя
+  if (telegramId === ctx.from!.id) {
+    return ctx.reply('❌ Нельзя удалить самого себя!');
+  }
+
+  // Ищем пользователя
+  const targetUser = await userService.findByTelegramId(telegramId);
+  if (!targetUser) {
+    return ctx.reply(`❌ Пользователь с telegram_id ${telegramId} не найден.`);
+  }
+
+  // Нельзя удалять других тренеров
+  if (targetUser.role === 'trainer') {
+    return ctx.reply('❌ Нельзя удалить тренера.');
+  }
+
+  // Удаляем пользователя (CASCADE удалит все связанные данные)
+  try {
+    await query('DELETE FROM users WHERE telegram_id = $1', [telegramId]);
+
+    await ctx.reply(
+      `✅ *Пользователь удалён*\n\n` +
+      `👤 ${targetUser.first_name}${targetUser.username ? ` (@${targetUser.username})` : ''}\n` +
+      `🆔 Telegram ID: ${telegramId}\n\n` +
+      `Все данные пользователя удалены:\n` +
+      `• Чекины\n` +
+      `• Замеры\n` +
+      `• Статистика\n` +
+      `• Достижения\n` +
+      `• Выполненные задания\n` +
+      `• Записи дневника\n` +
+      `• Логи импульсов`,
+      { parse_mode: 'Markdown' }
+    );
+
+    // Уведомляем админа
+    await adminNotifier.sendToAdmin(`⚠️ <b>Пользователь удалён</b>\n\n👤 ${targetUser.first_name} (${telegramId})\n🗑 Удалён тренером`);
+
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    await ctx.reply('❌ Ошибка при удалении пользователя.');
+  }
+});
+
 // ===== БЫСТРЫЙ ЧЕКИН =====
 async function startCheckinFlow(ctx: BotContext) {
   // Проверяем, есть ли уже чекин сегодня
