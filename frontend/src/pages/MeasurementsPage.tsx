@@ -187,9 +187,15 @@ function MeasurementsPageContent() {
   }
 
   // Calculate progress
-  const startWeight = measurements.length > 0 ? measurements[0].weight : null
-  const currentWeight = measurements.length > 0 ? measurements[measurements.length - 1].weight : null
-  const weightChange = startWeight && currentWeight ? currentWeight - startWeight : null
+  const startWeight = measurements.length > 0 && typeof measurements[0].weight === 'number'
+    ? measurements[0].weight
+    : null
+  const currentWeight = measurements.length > 0 && typeof measurements[measurements.length - 1].weight === 'number'
+    ? measurements[measurements.length - 1].weight
+    : null
+  const weightChange = typeof startWeight === 'number' && typeof currentWeight === 'number'
+    ? currentWeight - startWeight
+    : null
 
   return (
     <div className="min-h-screen pb-4 px-4 relative overflow-hidden">
