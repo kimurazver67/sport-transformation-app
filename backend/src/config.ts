@@ -73,6 +73,9 @@ export const config = {
   },
 };
 
+// Максимальная длительность курса (4 месяца = 16 недель)
+export const MAX_COURSE_WEEKS = 16;
+
 // Вычисление текущей недели курса
 export function getCurrentWeek(): number {
   const now = new Date();
@@ -80,7 +83,9 @@ export function getCurrentWeek(): number {
   const diffTime = now.getTime() - start.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
   if (diffDays < 0) return 0; // Курс ещё не начался
-  return Math.floor(diffDays / 7) + 1;
+  const week = Math.floor(diffDays / 7) + 1;
+  // Ограничиваем максимум 16 неделями (курс 4 месяца)
+  return Math.min(week, MAX_COURSE_WEEKS);
 }
 
 // Дней до старта курса (если курс не начался)

@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Remove default build/start scripts to fix Railway фронтенд деплой
 • Исправлено: Remove root railway.json to allow per-service configuration
 • Исправлено: Remove debug logging from MeasurementsPage
 • Обслуживание: force rebuild
 • Исправлено: bot.launch() hanging forever in Telegraf v4.16+
-• Исправлено: Заменить showAlert на toast для страницы замеров
 
-30.12.2025 09:41
+30.12.2025 09:47
