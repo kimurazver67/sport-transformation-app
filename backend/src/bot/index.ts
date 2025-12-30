@@ -1020,6 +1020,20 @@ export async function startBot(): Promise<void> {
 
       console.log('🤖 Telegram бот запущен');
 
+      // Устанавливаем Menu Button для открытия Mini App
+      try {
+        await bot.telegram.setChatMenuButton({
+          menuButton: {
+            type: 'web_app',
+            text: 'Открыть',
+            web_app: { url: config.app.webappUrl },
+          },
+        });
+        console.log('🔘 Menu Button установлена');
+      } catch (menuErr) {
+        console.error('Failed to set menu button:', menuErr);
+      }
+
       // Уведомляем о запуске
       await adminNotifier.startup();
       return; // Успешно запустились

@@ -90,6 +90,25 @@ export async function runMigrations(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_measurement_claims_week ON measurement_claims(week_number)
     `);
 
+    // Добавляем колонку goal для хранения цели участника (005_user_goal.sql)
+    await query(`
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS goal VARCHAR(20) DEFAULT NULL
+    `);
+
+    // Проверяем есть ли уже constraint
+    const constraintExists = await query(`
+      SELECT 1 FROM information_schema.table_constraints
+      WHERE table_name = 'users' AND constraint_name = 'users_goal_check'
+    `);
+
+    if (constraintExists.rowCount === 0) {
+      await query(`
+        ALTER TABLE users
+        ADD CONSTRAINT users_goal_check CHECK (goal IN ('weight_loss', 'muscle_gain') OR goal IS NULL)
+      `);
+    }
+
     console.log('✅ Миграции выполнены');
   } catch (error) {
     console.error('❌ Ошибка миграции:', error);
