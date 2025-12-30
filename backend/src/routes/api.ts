@@ -506,6 +506,29 @@ router.post('/debug/migrate-goal', async (req: Request, res: Response) => {
   }
 });
 
+// DEBUG: Изменить роль и сбросить цель (для тестирования)
+router.post('/debug/set-role/:telegram_id', async (req: Request, res: Response) => {
+  try {
+    const { telegram_id } = req.params;
+    const { role, goal } = req.body;
+
+    const result = await query(
+      `UPDATE users SET role = COALESCE($1, role), goal = $2, updated_at = NOW()
+       WHERE telegram_id = $3 RETURNING *`,
+      [role, goal, telegram_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    res.json({ success: true, user: result.rows[0] });
+  } catch (error) {
+    console.error('Debug set-role error:', error);
+    res.status(500).json({ success: false, error: String(error) });
+  }
+});
+
 // DEBUG: Получить все замеры пользователя
 router.get('/debug/measurements/:telegram_id', async (req: Request, res: Response) => {
   try {
