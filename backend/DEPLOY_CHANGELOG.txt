@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Lock diary form after submission until next day 21:00
 • Добавлено: Add Mindfulness page (diary + impulse tracker)
 • Добавлено: Add full task management UI for admin
 • Добавлено: Allow week parameter in /api/tasks endpoint
 • Добавлено: Add all 16 weeks of course tasks
-• Исправлено: Drop RLS policies before recreating
 
-30.12.2025 18:14
+30.12.2025 18:26

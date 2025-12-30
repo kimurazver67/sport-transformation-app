@@ -381,7 +381,7 @@ router.get('/achievements/:userId', async (req: Request, res: Response) => {
 // ===== ДНЕВНИК ОСОЗНАННОСТИ =====
 
 // Получить запись за сегодня
-router.get('/mindfulness/today/:userId', async (req: Request, res: Response) => {
+router.get('/mindfulness/:userId/today', async (req: Request, res: Response) => {
   try {
     const entry = await mindfulnessService.getTodayEntry(req.params.userId);
     res.json({ success: true, data: entry });
@@ -392,7 +392,7 @@ router.get('/mindfulness/today/:userId', async (req: Request, res: Response) => 
 });
 
 // Получить последние записи
-router.get('/mindfulness/:userId', async (req: Request, res: Response) => {
+router.get('/mindfulness/:userId/recent', async (req: Request, res: Response) => {
   try {
     const limit = parseInt(req.query.limit as string) || 7;
     const entries = await mindfulnessService.getRecentEntries(req.params.userId, limit);
@@ -417,7 +417,7 @@ router.post('/mindfulness/:userId', async (req: Request, res: Response) => {
 // ===== ТРЕКЕР ИМПУЛЬСОВ =====
 
 // Получить последние импульсы
-router.get('/impulses/:userId', async (req: Request, res: Response) => {
+router.get('/impulses/:userId/recent', async (req: Request, res: Response) => {
   try {
     const limit = parseInt(req.query.limit as string) || 10;
     const impulses = await mindfulnessService.getRecentImpulses(req.params.userId, limit);
