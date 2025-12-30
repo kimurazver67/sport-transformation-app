@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Redesign AdminPage with brutalist style
 • Добавлено: Add /setrole command for first trainer setup
 • Добавлено: Add /debug command to toggle фронтенд logging
 • Исправлено: Wait for Telegram WebApp SDK to load before initializing
 • Исправлено: Handle null/undefined weight values in MeasurementsPage
-• Исправлено: Fix TypeScript error in useEffect cleanup function
 
-30.12.2025 11:31
+30.12.2025 11:39

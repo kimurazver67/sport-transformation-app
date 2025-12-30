@@ -188,4 +188,55 @@ export const measurementService = {
       values
     );
   },
+
+  // Получить замер по пользователю и неделе
+  async getByUserAndWeek(userId: string, weekNumber: number): Promise<WeeklyMeasurement | null> {
+    const result = await query<WeeklyMeasurement>(
+      'SELECT * FROM weekly_measurements WHERE user_id = $1 AND week_number = $2',
+      [userId, weekNumber]
+    );
+
+    return result.rows[0] || null;
+  },
+
+  // Отметить что пользователь "обещал" что внёс замеры
+  async markAsClaimed(userId: string, weekNumber: number): Promise<void> {
+    // Проверяем, есть ли уже запись в таблице claimed
+    const existing = await query(
+      'SELECT 1 FROM measurement_claims WHERE user_id = $1 AND week_number = $2',
+      [userId, weekNumber]
+    );
+
+    if (existing.rows.length === 0) {
+      await query(
+        'INSERT INTO measurement_claims (user_id, week_number, claimed_at) VALUES ($1, $2, NOW())',
+        [userId, weekNumber]
+      );
+    }
+  },
+
+  // Получить пользователей которые обещали внести замеры но не внесли
+  async getLiars(weekNumber: number): Promise<Array<{ telegram_id: number; first_name: string }>> {
+    const result = await query<{ telegram_id: number; first_name: string }>(
+      `SELECT u.telegram_id, u.first_name
+       FROM measurement_claims mc
+       JOIN users u ON u.id = mc.user_id
+       WHERE mc.week_number = $1
+       AND NOT EXISTS (
+         SELECT 1 FROM weekly_measurements wm
+         WHERE wm.user_id = mc.user_id AND wm.week_number = $1
+       )`,
+      [weekNumber]
+    );
+
+    return result.rows;
+  },
+
+  // Сбросить флаги claimed после проверки
+  async resetClaimedFlags(weekNumber: number): Promise<void> {
+    await query(
+      'DELETE FROM measurement_claims WHERE week_number = $1',
+      [weekNumber]
+    );
+  },
 };

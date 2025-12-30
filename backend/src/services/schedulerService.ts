@@ -3,8 +3,9 @@ import { userService } from './userService';
 import { statsService } from './statsService';
 import { achievementService } from './achievementService';
 import { googleSheetsService } from './googleSheetsService';
-import { sendReminder, broadcastMessage } from '../bot';
-import { getCurrentWeek, isMeasurementDay } from '../config';
+import { measurementService } from './measurementService';
+import { sendReminder, broadcastMessage, sendMeasurementReminder } from '../bot';
+import { getCurrentWeek, isMeasurementDay, isCourseStarted } from '../config';
 
 class SchedulerService {
   private jobs: CronJob[] = [];
@@ -23,11 +24,53 @@ class SchedulerService {
       )
     );
 
-    // Воскресенье 10:00 - напоминание о замерах
+    // Воскресенье - ежечасные напоминания о замерах (6:00, 7:00, 8:00, 9:00)
+    // Напоминания только в окне замеров
     this.jobs.push(
       new CronJob(
-        '0 10 * * 0', // 10:00 каждое воскресенье
-        () => this.sendMeasurementReminder(),
+        '0 6 * * 0', // 6:00 каждое воскресенье
+        () => this.sendMeasurementReminderHourly(6),
+        null,
+        true,
+        'Europe/Moscow'
+      )
+    );
+
+    this.jobs.push(
+      new CronJob(
+        '0 7 * * 0', // 7:00 каждое воскресенье
+        () => this.sendMeasurementReminderHourly(7),
+        null,
+        true,
+        'Europe/Moscow'
+      )
+    );
+
+    this.jobs.push(
+      new CronJob(
+        '0 8 * * 0', // 8:00 каждое воскресенье
+        () => this.sendMeasurementReminderHourly(8),
+        null,
+        true,
+        'Europe/Moscow'
+      )
+    );
+
+    this.jobs.push(
+      new CronJob(
+        '0 9 * * 0', // 9:00 каждое воскресенье
+        () => this.sendMeasurementReminderHourly(9),
+        null,
+        true,
+        'Europe/Moscow'
+      )
+    );
+
+    // Воскресенье 10:05 - проверка кто не внёс замеры и нажал "Внёс"
+    this.jobs.push(
+      new CronJob(
+        '5 10 * * 0', // 10:05 каждое воскресенье
+        () => this.checkMeasurementLiars(),
         null,
         true,
         'Europe/Moscow'
@@ -106,36 +149,72 @@ class SchedulerService {
     }
   }
 
-  // Напоминание о замерах (воскресенье 10:00)
-  private async sendMeasurementReminder() {
-    console.log('📬 Отправка напоминаний о замерах...');
+  // Ежечасные напоминания о замерах (воскресенье 6:00-9:00)
+  private async sendMeasurementReminderHourly(hour: number) {
+    // Если курс ещё не начался — не отправляем
+    if (!isCourseStarted()) {
+      console.log(`⏭️ Курс не начался — пропускаем напоминание о замерах`);
+      return;
+    }
+
+    console.log(`📬 [${hour}:00] Отправка напоминаний о замерах...`);
 
     try {
       const weekNumber = getCurrentWeek();
       const usersWithoutMeasurement = await userService.getWithoutMeasurementThisWeek(weekNumber);
 
-      const message = `📏 *Пора внести замеры недели ${weekNumber}!*
-
-Сегодня воскресенье — день взвешивания и обхватов.
-
-Что нужно записать:
-⚖️ Вес
-📐 Обхваты (грудь, талия, бёдра, бицепсы, бёдра)
-📸 3 фото прогресса (фронт, бок, спина)
-
-Открой приложение и внеси данные!`;
+      const hoursLeft = 10 - hour;
+      const urgency = hour >= 9 ? '🚨 ПОСЛЕДНИЙ ЧАС!' : hour >= 8 ? '⚠️ Осталось мало времени!' : '';
 
       let sent = 0;
       for (const user of usersWithoutMeasurement) {
-        const success = await sendReminder(user.telegram_id, message);
+        const success = await sendMeasurementReminder(user.telegram_id, weekNumber, hoursLeft, urgency);
         if (success) sent++;
         await new Promise(resolve => setTimeout(resolve, 100));
       }
 
-      console.log(`✅ Отправлено напоминаний о замерах: ${sent}/${usersWithoutMeasurement.length}`);
+      console.log(`✅ [${hour}:00] Отправлено напоминаний: ${sent}/${usersWithoutMeasurement.length}`);
     } catch (error) {
       console.error('Ошибка при отправке напоминаний о замерах:', error);
     }
+  }
+
+  // Проверка кто нажал "Внёс" но не внёс замеры
+  private async checkMeasurementLiars() {
+    // Если курс ещё не начался — не проверяем
+    if (!isCourseStarted()) return;
+
+    console.log('🔍 Проверка кто не внёс замеры после обещания...');
+
+    try {
+      const weekNumber = getCurrentWeek();
+      const liars = await measurementService.getLiars(weekNumber);
+
+      for (const user of liars) {
+        const message = `😤 *${user.first_name}, ты обманул!*
+
+Ты нажал "Внёс замеры", но на самом деле данных нет.
+
+Окно замеров закрылось, но я даю тебе *ещё один шанс*.
+
+⚠️ Внеси замеры прямо сейчас, иначе неделя будет без прогресса!`;
+
+        await sendMeasurementReminder(user.telegram_id, weekNumber, 0, '🚨 ПОСЛЕДНИЙ ШАНС!');
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      // Сбрасываем флаги "claimed" у тех, кто так и не внёс
+      await measurementService.resetClaimedFlags(weekNumber);
+
+      console.log(`✅ Проверено обманщиков: ${liars.length}`);
+    } catch (error) {
+      console.error('Ошибка при проверке обманщиков:', error);
+    }
+  }
+
+  // Старый метод для совместимости (можно удалить)
+  private async sendMeasurementReminder() {
+    await this.sendMeasurementReminderHourly(10);
   }
 
   // Уведомление о новых заданиях (понедельник 12:00)

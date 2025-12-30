@@ -7,7 +7,7 @@ import { telegramAuthMiddleware, trainerOnly } from './middleware/auth';
 import { adminNotifier, initAdminNotifier } from './services/adminNotifierService';
 import apiRoutes from './routes/api';
 import adminRoutes from './routes/admin';
-import { testConnection, closePool } from './db/postgres';
+import { testConnection, closePool, runMigrations } from './db/postgres';
 import { testRedisConnection, closeRedis } from './db/redis';
 
 const app = express();
@@ -66,6 +66,10 @@ async function start() {
     if (!pgConnected) {
       throw new Error('Failed to connect to PostgreSQL');
     }
+
+    // Запускаем миграции
+    console.log('[Startup] Running migrations...');
+    await runMigrations();
 
     // Проверяем подключение к Redis (опционально)
     console.log('[Startup] Testing Redis connection...');

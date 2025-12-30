@@ -70,6 +70,32 @@ export async function testConnection(): Promise<boolean> {
   }
 }
 
+// Автоматические миграции при старте
+export async function runMigrations(): Promise<void> {
+  console.log('🔄 Запуск миграций...');
+
+  try {
+    // Таблица measurement_claims для отслеживания "обещаний"
+    await query(`
+      CREATE TABLE IF NOT EXISTS measurement_claims (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        week_number INTEGER NOT NULL,
+        claimed_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(user_id, week_number)
+      )
+    `);
+
+    await query(`
+      CREATE INDEX IF NOT EXISTS idx_measurement_claims_week ON measurement_claims(week_number)
+    `);
+
+    console.log('✅ Миграции выполнены');
+  } catch (error) {
+    console.error('❌ Ошибка миграции:', error);
+  }
+}
+
 // Graceful shutdown
 export async function closePool(): Promise<void> {
   await pool.end();

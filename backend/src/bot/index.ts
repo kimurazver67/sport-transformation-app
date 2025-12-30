@@ -887,6 +887,78 @@ export async function sendReminder(telegramId: number, message: string): Promise
   }
 }
 
+// ===== НАПОМИНАНИЕ О ЗАМЕРАХ С КНОПКОЙ "ВНЁС" =====
+export async function sendMeasurementReminder(
+  telegramId: number,
+  weekNumber: number,
+  hoursLeft: number,
+  urgency: string
+): Promise<boolean> {
+  try {
+    const timeText = hoursLeft > 0
+      ? `⏰ Осталось ${hoursLeft} ${hoursLeft === 1 ? 'час' : 'часа'}`
+      : '⏰ Последний шанс!';
+
+    const message = `📏 *Напоминание о замерах (неделя ${weekNumber})*
+
+${urgency ? `${urgency}\n\n` : ''}${timeText}
+
+Что нужно внести:
+⚖️ Вес
+📐 Обхваты (грудь, талия, бёдра)
+📸 3 фото прогресса
+
+Внеси данные в приложении или нажми кнопку если уже внёс!`;
+
+    await bot.telegram.sendMessage(telegramId, message, {
+      parse_mode: 'Markdown',
+      ...Markup.inlineKeyboard([
+        [Markup.button.webApp('📱 Внести замеры', config.app.webappUrl + '?page=measurements')],
+        [Markup.button.callback('✅ Уже внёс замеры', `measurement_claimed_${weekNumber}`)],
+      ]),
+    });
+    return true;
+  } catch (error) {
+    console.error(`Failed to send measurement reminder to ${telegramId}:`, error);
+    return false;
+  }
+}
+
+// Обработка кнопки "Уже внёс замеры"
+bot.action(/measurement_claimed_(\d+)/, async (ctx) => {
+  const weekNumber = parseInt(ctx.match[1]);
+  const user = ctx.user;
+
+  if (!user) {
+    await ctx.answerCbQuery('❌ Ошибка');
+    return;
+  }
+
+  await ctx.answerCbQuery('✅ Отмечено!');
+
+  // Проверяем, действительно ли есть замер
+  const measurement = await measurementService.getByUserAndWeek(user.id, weekNumber);
+
+  if (measurement) {
+    // Замер есть — молодец!
+    await ctx.editMessageText(
+      `✅ *Отлично, ${user.first_name}!*\n\n` +
+      `Замеры недели ${weekNumber} получены. Так держать! 💪`,
+      { parse_mode: 'Markdown' }
+    );
+  } else {
+    // Замера нет — запоминаем что он "обещал"
+    await measurementService.markAsClaimed(user.id, weekNumber);
+
+    await ctx.editMessageText(
+      `👀 *Принято, ${user.first_name}!*\n\n` +
+      `Я проверю после закрытия окна замеров.\n` +
+      `Если данных не будет — напомню ещё раз! 😉`,
+      { parse_mode: 'Markdown' }
+    );
+  }
+});
+
 // ===== МАССОВАЯ РАССЫЛКА =====
 export async function broadcastMessage(message: string, role: 'all' | 'participant' | 'trainer' = 'all'): Promise<{ sent: number; failed: number }> {
   let result;
