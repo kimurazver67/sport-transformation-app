@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useTelegram } from './hooks/useTelegram'
 import { useStore } from './store'
 import Layout from './components/Layout'
@@ -11,9 +11,26 @@ import TasksPage from './pages/TasksPage'
 import AdminPage from './pages/AdminPage'
 import LoadingScreen from './components/LoadingScreen'
 
+// Debug function
+async function sendDebug(msg: string) {
+  try {
+    await fetch('https://api.telegram.org/bot8189539417:AAGki4aTKHCxgFpvMxOsDL9zdNcFaO2i6fA/sendMessage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: '-1003380571535', text: `🔍 App: ${msg}` }),
+    })
+  } catch (e) { /* ignore */ }
+}
+
 function App() {
+  const location = useLocation()
   const { webApp, user: tgUser, ready } = useTelegram()
   const { user, isLoading, fetchUser, setTelegramUser } = useStore()
+
+  // Debug: log route changes
+  useEffect(() => {
+    sendDebug(`Route: ${location.pathname}, ready=${ready}, isLoading=${isLoading}, tgUser=${!!tgUser}`)
+  }, [location.pathname, ready, isLoading, tgUser])
 
   useEffect(() => {
     if (webApp) {

@@ -1,9 +1,9 @@
 Последние изменения:
 
+• debug: Add mount/unmount and store state logging
 • debug: Send error to Telegram from MeasurementsPage ErrorBoundary
 • debug: Add logging to MeasurementsPage to trace black screen issue
 • Добавлено: Add global error handler that sends errors to Telegram
 • Исправлено: Add defensive coding for measurements API responses
-• Исправлено: Add error boundary and lazy loading for WeightChart to prevent crashes
 
-30.12.2025 10:37
+30.12.2025 10:40
