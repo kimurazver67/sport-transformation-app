@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Add debug endpoint for role/goal testing
 • Исправлено: Add migration endpoint for goal column
 • Добавлено: Add goal selection for participants before course start
 • Добавлено: Add weekly progress bonus system
 • Исправлено: Neutral color scheme for progress cards
-• Исправлено: Convert string values to numbers for progress calculations
 
-30.12.2025 13:45
+30.12.2025 13:51

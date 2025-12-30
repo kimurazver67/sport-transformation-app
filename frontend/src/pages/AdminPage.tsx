@@ -10,6 +10,7 @@ interface ParticipantData {
     telegram_id: number
     first_name: string
     last_name?: string
+    goal?: 'weight_loss' | 'muscle_gain' | null
   }
   stats: {
     total_points: number
@@ -386,9 +387,19 @@ export default function AdminPage() {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-display font-bold text-steel-100">
-                    {p.user.first_name} {p.user.last_name}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-display font-bold text-steel-100">
+                      {p.user.first_name} {p.user.last_name}
+                    </p>
+                    {p.user.goal && (
+                      <span title={p.user.goal === 'weight_loss' ? 'Похудение' : 'Набор массы'}>
+                        {p.user.goal === 'weight_loss' ? '🔥' : '💪'}
+                      </span>
+                    )}
+                    {!p.user.goal && (
+                      <span className="text-xs text-steel-500" title="Цель не выбрана">❓</span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-3 mt-2">
                     <span className="font-mono text-xs text-steel-500">
                       <span className="text-neon-lime">{p.stats?.total_points || 0}</span> pts
