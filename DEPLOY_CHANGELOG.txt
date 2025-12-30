@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Add /debug command to toggle фронтенд logging
 • Исправлено: Wait for Telegram WebApp SDK to load before initializing
 • Исправлено: Handle null/undefined weight values in MeasurementsPage
 • Исправлено: Fix TypeScript error in useEffect cleanup function
 • Исправлено: Add watchPatterns to фронтенд railway.json for auto-деплой
-• Исправлено: Route debug logs through бэкенд API
 
-30.12.2025 11:22
+30.12.2025 11:27

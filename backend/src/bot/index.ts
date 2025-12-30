@@ -199,6 +199,47 @@ bot.command('chatid', async (ctx) => {
   );
 });
 
+// ===== КОМАНДА /setrole - установить роль (одноразовая для первого тренера) =====
+bot.command('setrole', async (ctx) => {
+  const args = ctx.message.text.split(' ').slice(1);
+  const targetRole = args[0]?.toLowerCase();
+
+  if (targetRole !== 'trainer') {
+    return ctx.reply('Использование: /setrole trainer');
+  }
+
+  // Проверяем, есть ли уже тренеры
+  const trainersResult = await query<{ count: string }>(
+    "SELECT COUNT(*) as count FROM users WHERE role = 'trainer'"
+  );
+  const trainersCount = parseInt(trainersResult.rows[0]?.count || '0');
+
+  // Если тренеров нет - разрешаем стать первым
+  // Если есть - только тренер может назначать других
+  if (trainersCount > 0 && ctx.user?.role !== 'trainer') {
+    return ctx.reply('❌ Тренер уже есть. Только тренер может назначать других тренеров.');
+  }
+
+  // Назначаем роль
+  await query(
+    'UPDATE users SET role = $1 WHERE telegram_id = $2',
+    ['trainer', ctx.from!.id]
+  );
+
+  // Обновляем ctx.user
+  if (ctx.user) {
+    ctx.user.role = 'trainer';
+  }
+
+  await ctx.reply(
+    '✅ *Вы назначены тренером!*\n\n' +
+    'Теперь вам доступны команды:\n' +
+    '• `/debug` - управление debug логами\n' +
+    '• Админ-панель в приложении',
+    { parse_mode: 'Markdown' }
+  );
+});
+
 // ===== КОМАНДА /debug - управление debug логами (только для тренера) =====
 bot.command('debug', async (ctx) => {
   const user = ctx.user;
