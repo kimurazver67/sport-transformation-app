@@ -290,10 +290,13 @@ router.get('/leaderboard/weekly/goal/:goal', async (req: Request, res: Response)
 
 // ===== ЗАДАНИЯ =====
 
-// Задания текущей недели
+// Задания текущей недели (или по параметру week)
 router.get('/tasks', async (req: Request, res: Response) => {
   try {
-    const tasks = await taskService.getCurrentWeekTasks();
+    const weekNumber = req.query.week ? parseInt(req.query.week as string) : undefined;
+    const tasks = weekNumber !== undefined
+      ? await taskService.getByWeek(weekNumber)
+      : await taskService.getCurrentWeekTasks();
     res.json({ success: true, data: tasks });
   } catch (error) {
     console.error('Get tasks error:', error);

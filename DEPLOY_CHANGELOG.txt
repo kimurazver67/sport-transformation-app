@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Add all 16 weeks of course tasks
 • Исправлено: Drop RLS policies before recreating
 • Исправлено: Make migrations idempotent
 • Merge branch 'feature/course-improvements'
 • Исправлено: Drop leaderboard view before recreating
-• Merge pull request #1 from kimurazver67/feature/course-improvements
 
-30.12.2025 17:13
+30.12.2025 17:26
