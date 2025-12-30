@@ -27,7 +27,7 @@ jobs:
       - name: Build
         working-directory: frontend
         env:
-          VITE_API_URL: https://sport-transformation-production.up.railway.app
+          VITE_API_URL: https://sport-transformation-app-production.up.railway.app
         run: npm run build
 
       - name: Create package.json for Railway
@@ -54,7 +54,7 @@ jobs:
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
-        run: railway up --service frontend
+        run: railway up --service keen-alignment
 
       - name: Notify Telegram on Failure
         if: failure()

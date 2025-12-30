@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Add goal column migration and fix menu button config
 • Исправлено: Increase нижняя навигация height and add safe area padding
 • Исправлено: Switch chart.js to static imports to fix loading issues
 • Добавлено: Show participant goal in admin panel
 • Исправлено: Add debug endpoint for role/goal testing
-• Исправлено: Add migration endpoint for goal column
 
-30.12.2025 14:35
+30.12.2025 14:46
