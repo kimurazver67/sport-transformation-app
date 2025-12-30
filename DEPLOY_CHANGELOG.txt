@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Add VITE_API_URL for production фронтенд
 • Исправлено: Add auth headers to admin API requests
 • Добавлено: Add second checkin reminder at 22:00
 • Добавлено: Add hourly measurement reminders with liar detection
 • Добавлено: Redesign AdminPage with brutalist style
-• Добавлено: Add /setrole command for first trainer setup
 
-30.12.2025 12:14
+30.12.2025 12:23

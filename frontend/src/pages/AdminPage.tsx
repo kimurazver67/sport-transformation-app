@@ -46,6 +46,11 @@ export default function AdminPage() {
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [isCreatingTask, setIsCreatingTask] = useState(false)
 
+  // Модалка рассылки
+  const [showBroadcastModal, setShowBroadcastModal] = useState(false)
+  const [broadcastMessage, setBroadcastMessage] = useState('')
+  const [isSendingBroadcast, setIsSendingBroadcast] = useState(false)
+
   useEffect(() => {
     fetchData()
   }, [])
@@ -82,20 +87,30 @@ export default function AdminPage() {
     }
   }
 
+  const openBroadcastModal = () => {
+    setBroadcastMessage('')
+    setShowBroadcastModal(true)
+    hapticFeedback('light')
+  }
+
   const sendBroadcast = async () => {
-    const message = prompt('Введите сообщение для рассылки:')
-    if (!message) return
+    if (!broadcastMessage.trim()) return
 
     const confirmed = await showConfirm('Отправить сообщение всем участникам?')
     if (!confirmed) return
 
+    setIsSendingBroadcast(true)
     try {
-      const result = await api.sendAdminBroadcast(message, 'participant')
+      const result = await api.sendAdminBroadcast(broadcastMessage, 'participant')
       hapticFeedback('success')
       showAlert(`Отправлено: ${result.sent}, ошибок: ${result.failed}`)
+      setShowBroadcastModal(false)
+      setBroadcastMessage('')
     } catch (err) {
       hapticFeedback('error')
       showAlert('Ошибка при рассылке')
+    } finally {
+      setIsSendingBroadcast(false)
     }
   }
 
@@ -338,7 +353,7 @@ export default function AdminPage() {
             className="grid grid-cols-2 gap-3"
           >
             <button
-              onClick={sendBroadcast}
+              onClick={openBroadcastModal}
               className="btn-brutal-outline text-sm"
             >
               📢 Рассылка
@@ -454,6 +469,52 @@ export default function AdminPage() {
           >
             Задания отображаются у участников после создания.
           </motion.p>
+        </motion.div>
+      )}
+
+      {/* Broadcast Modal */}
+      {showBroadcastModal && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-void/80 flex items-center justify-center p-4 z-50"
+          onClick={() => setShowBroadcastModal(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-void-200 border-2 border-neon-lime p-6 w-full max-w-sm"
+            style={{ boxShadow: '8px 8px 0 0 #BFFF00' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="font-mono text-xs text-steel-500 uppercase tracking-widest mb-3">
+              Рассылка всем участникам
+            </div>
+            <textarea
+              value={broadcastMessage}
+              onChange={(e) => setBroadcastMessage(e.target.value)}
+              placeholder="Введите сообщение..."
+              rows={4}
+              className="input-brutal w-full resize-none mb-4"
+              autoFocus
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowBroadcastModal(false)}
+                className="btn-brutal-outline flex-1"
+                disabled={isSendingBroadcast}
+              >
+                Отмена
+              </button>
+              <button
+                onClick={sendBroadcast}
+                className="btn-brutal flex-1"
+                disabled={isSendingBroadcast || !broadcastMessage.trim()}
+              >
+                {isSendingBroadcast ? '...' : 'Отправить'}
+              </button>
+            </div>
+          </motion.div>
         </motion.div>
       )}
     </div>
