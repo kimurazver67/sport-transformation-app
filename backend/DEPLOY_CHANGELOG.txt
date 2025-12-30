@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Add debug endpoints for testing measurements
 • Добавлено: Add percentage отображение for weight and body measurements
 • Добавлено: Add body measurements chart
 • Исправлено: Handle Telegram popup errors gracefully
 • Добавлено: Enable Google Sheets sync button in AdminPage
-• Исправлено: Replace prompt() with modal for broadcast in AdminPage
 
-30.12.2025 12:56
+30.12.2025 13:06

@@ -192,12 +192,13 @@ function MeasurementsPageContent() {
   const firstMeasurement = sortedMeasurements[0]
   const lastMeasurement = sortedMeasurements[sortedMeasurements.length - 1]
 
-  const startWeight = firstMeasurement?.weight ?? null
-  const currentWeight = lastMeasurement?.weight ?? null
-  const weightChange = typeof startWeight === 'number' && typeof currentWeight === 'number'
+  // Convert to numbers (API returns strings)
+  const startWeight = firstMeasurement?.weight != null ? Number(firstMeasurement.weight) : null
+  const currentWeight = lastMeasurement?.weight != null ? Number(lastMeasurement.weight) : null
+  const weightChange = startWeight != null && currentWeight != null && !isNaN(startWeight) && !isNaN(currentWeight)
     ? currentWeight - startWeight
     : null
-  const weightChangePercent = typeof startWeight === 'number' && typeof currentWeight === 'number' && startWeight > 0
+  const weightChangePercent = startWeight != null && currentWeight != null && startWeight > 0 && !isNaN(startWeight) && !isNaN(currentWeight)
     ? ((currentWeight - startWeight) / startWeight) * 100
     : null
 
@@ -205,14 +206,15 @@ function MeasurementsPageContent() {
   const calculateBodyChange = () => {
     if (!firstMeasurement || !lastMeasurement) return null
 
+    // Convert to numbers (API returns strings)
     const bodyParts = [
-      { start: firstMeasurement.chest, end: lastMeasurement.chest },
-      { start: firstMeasurement.waist, end: lastMeasurement.waist },
-      { start: firstMeasurement.hips, end: lastMeasurement.hips },
-      { start: firstMeasurement.bicep_left, end: lastMeasurement.bicep_left },
-      { start: firstMeasurement.bicep_right, end: lastMeasurement.bicep_right },
-      { start: firstMeasurement.thigh_left, end: lastMeasurement.thigh_left },
-      { start: firstMeasurement.thigh_right, end: lastMeasurement.thigh_right },
+      { start: Number(firstMeasurement.chest), end: Number(lastMeasurement.chest) },
+      { start: Number(firstMeasurement.waist), end: Number(lastMeasurement.waist) },
+      { start: Number(firstMeasurement.hips), end: Number(lastMeasurement.hips) },
+      { start: Number(firstMeasurement.bicep_left), end: Number(lastMeasurement.bicep_left) },
+      { start: Number(firstMeasurement.bicep_right), end: Number(lastMeasurement.bicep_right) },
+      { start: Number(firstMeasurement.thigh_left), end: Number(lastMeasurement.thigh_left) },
+      { start: Number(firstMeasurement.thigh_right), end: Number(lastMeasurement.thigh_right) },
     ]
 
     let totalStartCm = 0
@@ -220,7 +222,7 @@ function MeasurementsPageContent() {
     let validParts = 0
 
     bodyParts.forEach(({ start, end }) => {
-      if (typeof start === 'number' && typeof end === 'number' && start > 0) {
+      if (!isNaN(start) && !isNaN(end) && start > 0 && end > 0) {
         totalStartCm += start
         totalEndCm += end
         validParts++
