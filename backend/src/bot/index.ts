@@ -344,9 +344,9 @@ bot.command('deleteuser', async (ctx) => {
   }
 
   const args = ctx.message.text.split(' ').slice(1);
-  const targetTelegramId = args[0];
+  const targetIdentifier = args[0];
 
-  if (!targetTelegramId) {
+  if (!targetIdentifier) {
     // Показываем список участников
     const participantsResult = await query<{ telegram_id: number; first_name: string; username: string | null }>(
       `SELECT telegram_id, first_name, username FROM users WHERE role = 'participant' ORDER BY first_name`
@@ -362,26 +362,41 @@ bot.command('deleteuser', async (ctx) => {
       list += `• ${p.first_name} ${username}\n  ID: \`${p.telegram_id}\`\n\n`;
     }
 
-    list += '💡 Чтобы удалить:\n`/deleteuser <telegram_id>`';
+    list += '💡 Чтобы удалить:\n`/deleteuser <telegram_id или @username>`';
 
     return ctx.reply(list, { parse_mode: 'Markdown' });
   }
 
-  // Парсим telegram_id
-  const telegramId = parseInt(targetTelegramId);
-  if (isNaN(telegramId)) {
-    return ctx.reply('❌ Неверный формат telegram_id. Используй число.');
+  // Ищем пользователя по telegram_id или username
+  let targetUser: User | null = null;
+  let telegramId: number | null = null;
+
+  if (targetIdentifier.startsWith('@')) {
+    // Поиск по username
+    const username = targetIdentifier.slice(1); // убираем @
+    const result = await query<User>(
+      'SELECT * FROM users WHERE LOWER(username) = LOWER($1)',
+      [username]
+    );
+    targetUser = result.rows[0] || null;
+    if (targetUser) {
+      telegramId = targetUser.telegram_id;
+    }
+  } else {
+    // Поиск по telegram_id
+    telegramId = parseInt(targetIdentifier);
+    if (isNaN(telegramId)) {
+      return ctx.reply('❌ Неверный формат. Используй telegram_id (число) или @username.');
+    }
+    targetUser = await userService.findByTelegramId(telegramId);
   }
 
   // Проверяем, не пытается ли тренер удалить себя
-  if (telegramId === ctx.from!.id) {
+  if (telegramId && telegramId === ctx.from!.id) {
     return ctx.reply('❌ Нельзя удалить самого себя!');
   }
-
-  // Ищем пользователя
-  const targetUser = await userService.findByTelegramId(telegramId);
   if (!targetUser) {
-    return ctx.reply(`❌ Пользователь с telegram_id ${telegramId} не найден.`);
+    return ctx.reply(`❌ Пользователь "${targetIdentifier}" не найден.`);
   }
 
   // Нельзя удалять других тренеров
