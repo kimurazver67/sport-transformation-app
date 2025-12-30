@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Replace prompt() with modal for broadcast in AdminPage
 • Исправлено: Add VITE_API_URL for production фронтенд
 • Исправлено: Add auth headers to admin API requests
 • Добавлено: Add second checkin reminder at 22:00
 • Добавлено: Add hourly measurement reminders with liar detection
-• Добавлено: Redesign AdminPage with brutalist style
 
-30.12.2025 12:23
+30.12.2025 12:31
