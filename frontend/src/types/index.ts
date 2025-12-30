@@ -1,6 +1,9 @@
 // ===== РОЛИ ПОЛЬЗОВАТЕЛЕЙ =====
 export type UserRole = 'participant' | 'trainer';
 
+// ===== ЦЕЛИ УЧАСТНИКА =====
+export type UserGoal = 'weight_loss' | 'muscle_gain';
+
 // ===== ТИПЫ ТРЕНИРОВОК =====
 export type WorkoutType = 'strength' | 'cardio' | 'rest';
 
@@ -23,6 +26,7 @@ export interface User {
   first_name: string;
   last_name?: string;
   role: UserRole;
+  goal?: UserGoal;
   start_weight?: number;
   created_at: string;
   updated_at: string;

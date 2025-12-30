@@ -1,5 +1,6 @@
 import type {
   User,
+  UserGoal,
   DailyCheckin,
   WeeklyMeasurement,
   UserStats,
@@ -59,6 +60,12 @@ export const api = {
   // Пользователь
   getUser: (telegramId: number) =>
     request<User>(`/api/user/${telegramId}`),
+
+  setUserGoal: (userId: string, goal: UserGoal) =>
+    request<User>(`/api/user/${userId}/goal`, {
+      method: 'POST',
+      body: JSON.stringify({ goal }),
+    }),
 
   // Чекины
   getTodayCheckin: (userId: string) =>

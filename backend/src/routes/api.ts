@@ -30,6 +30,28 @@ router.get('/user/:telegramId', async (req: Request, res: Response) => {
   }
 });
 
+// Установить цель участника
+router.post('/user/:userId/goal', async (req: Request, res: Response) => {
+  try {
+    const { goal } = req.body;
+
+    if (!goal || !['weight_loss', 'muscle_gain'].includes(goal)) {
+      return res.status(400).json({ success: false, error: 'Invalid goal. Must be weight_loss or muscle_gain' });
+    }
+
+    const user = await userService.setGoal(req.params.userId, goal);
+
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    res.json({ success: true, data: user });
+  } catch (error) {
+    console.error('Set user goal error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 // ===== ЧЕКИНЫ =====
 
 // Получить чекин за сегодня

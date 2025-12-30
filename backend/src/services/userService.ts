@@ -1,5 +1,5 @@
 import { query } from '../db/postgres';
-import { User, UserRole } from '../types';
+import { User, UserRole, UserGoal } from '../types';
 import { config } from '../config';
 
 export interface CreateUserData {
@@ -118,6 +118,25 @@ export const userService = {
          WHERE wm.user_id = u.id AND wm.week_number = $1
        )`,
       [weekNumber]
+    );
+
+    return result.rows;
+  },
+
+  // Установить цель участника
+  async setGoal(userId: string, goal: UserGoal): Promise<User | null> {
+    const result = await query<User>(
+      `UPDATE users SET goal = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
+      [goal, userId]
+    );
+
+    return result.rows[0] || null;
+  },
+
+  // Получить участников без установленной цели
+  async getWithoutGoal(): Promise<User[]> {
+    const result = await query<User>(
+      `SELECT * FROM users WHERE role = 'participant' AND goal IS NULL`
     );
 
     return result.rows;

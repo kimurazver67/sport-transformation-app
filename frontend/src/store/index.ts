@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { api } from '../services/api'
 import type {
   User,
+  UserGoal,
   DailyCheckin,
   WeeklyMeasurement,
   UserStats,
@@ -36,6 +37,7 @@ interface Store {
   isLoading: boolean
   error: string | null
   fetchUser: (telegramId: number) => Promise<void>
+  setUserGoal: (goal: UserGoal) => Promise<void>
 
   // Чекины
   todayCheckin: DailyCheckin | null
@@ -107,6 +109,19 @@ export const useStore = create<Store>((set, get) => ({
     } catch (error) {
       console.error('Failed to fetch user:', error)
       set({ error: 'Не удалось загрузить данные', isLoading: false })
+    }
+  },
+
+  setUserGoal: async (goal: UserGoal) => {
+    const { user } = get()
+    if (!user) return
+
+    try {
+      const updatedUser = await api.setUserGoal(user.id, goal)
+      set({ user: updatedUser })
+    } catch (error) {
+      console.error('Failed to set user goal:', error)
+      throw error
     }
   },
 
