@@ -175,6 +175,58 @@ export const api = {
   getCourseWeek: () =>
     request<{ week: number; isStarted: boolean; daysUntilStart: number }>(`/api/course/week`),
 
+  // ===== ДНЕВНИК ОСОЗНАННОСТИ =====
+
+  // Получить запись за сегодня
+  getTodayMindfulness: (userId: string) =>
+    request<any>(`/api/mindfulness/${userId}/today`),
+
+  // Получить последние записи
+  getRecentMindfulness: (userId: string, limit = 7) =>
+    request<any[]>(`/api/mindfulness/${userId}/recent?limit=${limit}`),
+
+  // Создать/обновить запись
+  saveMindfulness: (userId: string, data: {
+    gratitude?: string
+    wins?: string
+    challenges?: string
+    lessons?: string
+    mood_note?: string
+  }) =>
+    request<any>(`/api/mindfulness/${userId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // ===== ТРЕКЕР ИМПУЛЬСОВ =====
+
+  // Залогировать импульс
+  logImpulse: (userId: string, data: {
+    trigger_type: 'stress' | 'boredom' | 'social' | 'emotional' | 'habitual'
+    intensity: number
+    action_taken: 'resisted' | 'gave_in' | 'alternative'
+    notes?: string
+  }) =>
+    request<any>(`/api/impulses/${userId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Получить статистику импульсов
+  getImpulseStats: (userId: string, days = 7) =>
+    request<{
+      total: number
+      resisted: number
+      gave_in: number
+      alternative: number
+      by_trigger: Record<string, number>
+      resistance_rate: number
+    }>(`/api/impulses/${userId}/stats?days=${days}`),
+
+  // Получить последние импульсы
+  getRecentImpulses: (userId: string, limit = 10) =>
+    request<any[]>(`/api/impulses/${userId}/recent?limit=${limit}`),
+
   // Фото
   // Получить URL фото по file_id (использует прокси, чтобы не светить токен бота)
   getPhotoUrl: (fileId: string): string => {

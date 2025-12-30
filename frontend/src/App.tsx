@@ -8,6 +8,7 @@ import MeasurementsPage from './pages/MeasurementsPage'
 import LeaderboardPage from './pages/LeaderboardPage'
 import ProfilePage from './pages/ProfilePage'
 import TasksPage from './pages/TasksPage'
+import MindfulnessPage from './pages/MindfulnessPage'
 import AdminPage from './pages/AdminPage'
 import LoadingScreen from './components/LoadingScreen'
 
@@ -82,6 +83,7 @@ function App() {
         <Route path="/leaderboard" element={<LeaderboardPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/tasks" element={<TasksPage />} />
+        <Route path="/mindfulness" element={<MindfulnessPage />} />
         {isTrainer && <Route path="/admin" element={<AdminPage />} />}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
