@@ -216,6 +216,14 @@ ALTER TABLE achievements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_stats ENABLE ROW LEVEL SECURITY;
 
 -- Политики для service_role (полный доступ для backend)
+DROP POLICY IF EXISTS "Service role full access" ON users;
+DROP POLICY IF EXISTS "Service role full access" ON daily_checkins;
+DROP POLICY IF EXISTS "Service role full access" ON weekly_measurements;
+DROP POLICY IF EXISTS "Service role full access" ON tasks;
+DROP POLICY IF EXISTS "Service role full access" ON task_completions;
+DROP POLICY IF EXISTS "Service role full access" ON achievements;
+DROP POLICY IF EXISTS "Service role full access" ON user_stats;
+
 CREATE POLICY "Service role full access" ON users FOR ALL USING (true);
 CREATE POLICY "Service role full access" ON daily_checkins FOR ALL USING (true);
 CREATE POLICY "Service role full access" ON weekly_measurements FOR ALL USING (true);

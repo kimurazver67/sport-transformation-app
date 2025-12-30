@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Make migrations idempotent
 • Merge branch 'feature/course-improvements'
 • Исправлено: Drop leaderboard view before recreating
 • Merge pull request #1 from kimurazver67/feature/course-improvements
 • Добавлено: Add automatic migrations on деплой
-• Добавлено: Add goal-based leaderboards (🔥/💪)
 
-30.12.2025 17:02
+30.12.2025 17:06
