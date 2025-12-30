@@ -1,10 +1,57 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Component, ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { useTelegram } from '../hooks/useTelegram'
 import WeightChart from '../components/WeightChart'
 import { api } from '../services/api'
 import type { MeasurementForm, WeeklyMeasurement } from '../types'
+
+// Error Boundary для отлова ошибок рендеринга
+class MeasurementsErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.error('MeasurementsPage error:', error, errorInfo)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex items-center justify-center p-4">
+          <div className="border-2 border-neon-orange bg-void-200 p-6 max-w-md">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-2xl">⚠️</span>
+              <h2 className="font-display font-bold text-neon-orange uppercase">
+                Ошибка_загрузки
+              </h2>
+            </div>
+            <p className="font-mono text-sm text-steel-400 mb-4">
+              Произошла ошибка при загрузке страницы замеров.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full py-2 bg-neon-lime text-void-100 font-mono font-bold uppercase text-sm"
+            >
+              Перезагрузить
+            </button>
+          </div>
+        </div>
+      )
+    }
+
+    return this.props.children
+  }
+}
 
 // Хелпер для получения URL фото через Telegram file_id
 function getPhotoUrl(measurement: WeeklyMeasurement, type: 'front' | 'side' | 'back'): string | null {
@@ -18,7 +65,7 @@ function getPhotoUrl(measurement: WeeklyMeasurement, type: 'front' | 'side' | 'b
   return null
 }
 
-export default function MeasurementsPage() {
+function MeasurementsPageContent() {
   const {
     courseWeek,
     currentMeasurement,
@@ -504,5 +551,14 @@ export default function MeasurementsPage() {
         </div>
       </motion.div>
     </div>
+  )
+}
+
+// Экспортируем с Error Boundary
+export default function MeasurementsPage() {
+  return (
+    <MeasurementsErrorBoundary>
+      <MeasurementsPageContent />
+    </MeasurementsErrorBoundary>
   )
 }

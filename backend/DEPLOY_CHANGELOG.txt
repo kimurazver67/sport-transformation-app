@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Limit course week to maximum 16 weeks (4 months course duration)
 • Исправлено: Remove default build/start scripts to fix Railway фронтенд деплой
 • Исправлено: Remove root railway.json to allow per-service configuration
 • Исправлено: Remove debug logging from MeasurementsPage
 • Обслуживание: force rebuild
-• Исправлено: bot.launch() hanging forever in Telegraf v4.16+
 
-30.12.2025 09:47
+30.12.2025 10:08
