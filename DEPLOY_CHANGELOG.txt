@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Convert string values to numbers for progress calculations
 • Добавлено: Add debug endpoints for testing measurements
 • Добавлено: Add percentage отображение for weight and body measurements
 • Добавлено: Add body measurements chart
 • Исправлено: Handle Telegram popup errors gracefully
-• Добавлено: Enable Google Sheets sync button in AdminPage
 
-30.12.2025 13:06
+30.12.2025 13:17

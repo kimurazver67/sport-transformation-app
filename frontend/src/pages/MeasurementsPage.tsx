@@ -287,33 +287,17 @@ function MeasurementsPageContent() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`p-3 border-2 relative overflow-hidden ${
-                weightChange < 0
-                  ? 'border-neon-lime bg-neon-lime/5'
-                  : weightChange > 0
-                  ? 'border-neon-orange bg-neon-orange/5'
-                  : 'border-neon-cyan bg-neon-cyan/5'
-              }`}
-              style={{
-                boxShadow: weightChange < 0
-                  ? '4px 4px 0 0 #BFFF00'
-                  : weightChange > 0
-                  ? '4px 4px 0 0 #FF6B00'
-                  : '4px 4px 0 0 #00F5FF'
-              }}
+              className="p-3 border-2 border-neon-lime bg-neon-lime/5 relative overflow-hidden"
+              style={{ boxShadow: '4px 4px 0 0 #BFFF00' }}
             >
               <div className="font-mono text-[10px] text-steel-500 uppercase tracking-widest mb-1">
                 Вес
               </div>
-              <div className={`font-display text-2xl font-bold ${
-                weightChange < 0 ? 'text-neon-lime' : weightChange > 0 ? 'text-neon-orange' : 'text-neon-cyan'
-              }`}>
+              <div className="font-display text-2xl font-bold text-neon-lime">
                 {weightChange > 0 ? '+' : ''}{weightChange.toFixed(1)} кг
               </div>
               {weightChangePercent !== null && (
-                <div className={`font-mono text-sm ${
-                  weightChangePercent < 0 ? 'text-neon-lime' : weightChangePercent > 0 ? 'text-neon-orange' : 'text-neon-cyan'
-                }`}>
+                <div className="font-mono text-sm text-neon-lime/80">
                   {weightChangePercent > 0 ? '+' : ''}{weightChangePercent.toFixed(1)}%
                 </div>
               )}
@@ -323,9 +307,7 @@ function MeasurementsPageContent() {
 
               {/* Progress indicator */}
               <motion.div
-                className={`absolute bottom-0 left-0 h-1 ${
-                  weightChange < 0 ? 'bg-neon-lime' : weightChange > 0 ? 'bg-neon-orange' : 'bg-neon-cyan'
-                }`}
+                className="absolute bottom-0 left-0 h-1 bg-neon-lime"
                 initial={{ width: 0 }}
                 animate={{ width: '100%' }}
                 transition={{ duration: 1 }}
@@ -339,32 +321,16 @@ function MeasurementsPageContent() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.05 }}
-              className={`p-3 border-2 relative overflow-hidden ${
-                bodyChange.changeCm < 0
-                  ? 'border-neon-cyan bg-neon-cyan/5'
-                  : bodyChange.changeCm > 0
-                  ? 'border-neon-magenta bg-neon-magenta/5'
-                  : 'border-void-400 bg-void-200'
-              }`}
-              style={{
-                boxShadow: bodyChange.changeCm < 0
-                  ? '4px 4px 0 0 #00F5FF'
-                  : bodyChange.changeCm > 0
-                  ? '4px 4px 0 0 #FF00FF'
-                  : '4px 4px 0 0 #333'
-              }}
+              className="p-3 border-2 border-neon-cyan bg-neon-cyan/5 relative overflow-hidden"
+              style={{ boxShadow: '4px 4px 0 0 #00F5FF' }}
             >
               <div className="font-mono text-[10px] text-steel-500 uppercase tracking-widest mb-1">
                 Объёмы
               </div>
-              <div className={`font-display text-2xl font-bold ${
-                bodyChange.changeCm < 0 ? 'text-neon-cyan' : bodyChange.changeCm > 0 ? 'text-neon-magenta' : 'text-steel-300'
-              }`}>
+              <div className="font-display text-2xl font-bold text-neon-cyan">
                 {bodyChange.changeCm > 0 ? '+' : ''}{bodyChange.changeCm.toFixed(1)} см
               </div>
-              <div className={`font-mono text-sm ${
-                bodyChange.changePercent < 0 ? 'text-neon-cyan' : bodyChange.changePercent > 0 ? 'text-neon-magenta' : 'text-steel-400'
-              }`}>
+              <div className="font-mono text-sm text-neon-cyan/80">
                 {bodyChange.changePercent > 0 ? '+' : ''}{bodyChange.changePercent.toFixed(1)}%
               </div>
               <div className="font-mono text-[10px] text-steel-500 mt-1">
@@ -373,9 +339,7 @@ function MeasurementsPageContent() {
 
               {/* Progress indicator */}
               <motion.div
-                className={`absolute bottom-0 left-0 h-1 ${
-                  bodyChange.changeCm < 0 ? 'bg-neon-cyan' : bodyChange.changeCm > 0 ? 'bg-neon-magenta' : 'bg-void-400'
-                }`}
+                className="absolute bottom-0 left-0 h-1 bg-neon-cyan"
                 initial={{ width: 0 }}
                 animate={{ width: '100%' }}
                 transition={{ duration: 1 }}
