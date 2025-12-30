@@ -185,7 +185,8 @@ CREATE TRIGGER create_user_stats_trigger
 -- =============================================
 -- VIEW: leaderboard (Рейтинг участников)
 -- =============================================
-CREATE OR REPLACE VIEW leaderboard AS
+DROP VIEW IF EXISTS leaderboard;
+CREATE VIEW leaderboard AS
 SELECT
     u.id,
     u.telegram_id,

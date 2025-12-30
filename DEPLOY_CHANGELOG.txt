@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Add automatic migrations on деплой
 • Добавлено: Add goal-based leaderboards (🔥/💪)
 • Добавлено: Add mindfulness diary and impulse tracker
 • Добавлено: Add goal-based task filtering and weekly concepts
 • Добавлено: Expand onboarding with height, age, and target weight
-• Добавлено: Add steps tracking to daily checkin
 
-30.12.2025 16:51
+30.12.2025 16:59
