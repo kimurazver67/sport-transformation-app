@@ -158,9 +158,10 @@ export const useStore = create<Store>((set, get) => ({
 
     try {
       const measurement = await api.getCurrentMeasurement(user.id)
-      set({ currentMeasurement: measurement })
+      set({ currentMeasurement: measurement || null })
     } catch (error) {
       console.error('Failed to fetch current measurement:', error)
+      set({ currentMeasurement: null })
     }
   },
 
@@ -170,9 +171,11 @@ export const useStore = create<Store>((set, get) => ({
 
     try {
       const measurements = await api.getMeasurements(user.id)
-      set({ measurements })
+      // Защита от некорректных данных
+      set({ measurements: Array.isArray(measurements) ? measurements : [] })
     } catch (error) {
       console.error('Failed to fetch measurements:', error)
+      set({ measurements: [] })
     }
   },
 
