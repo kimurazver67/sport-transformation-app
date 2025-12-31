@@ -493,93 +493,105 @@ bot.command('deleteuser', async (ctx) => {
     return ctx.reply('❌ Эта команда доступна только тренеру.');
   }
 
-  const args = ctx.message.text.split(' ').slice(1);
-  const targetIdentifier = args[0];
+  // Показываем список участников с кнопками
+  const participantsResult = await query<{ telegram_id: number; first_name: string; username: string | null }>(
+    `SELECT telegram_id, first_name, username FROM users WHERE role = 'participant' ORDER BY first_name`
+  );
 
-  if (!targetIdentifier) {
-    // Показываем список участников
-    const participantsResult = await query<{ telegram_id: number; first_name: string; username: string | null }>(
-      `SELECT telegram_id, first_name, username FROM users WHERE role = 'participant' ORDER BY first_name`
-    );
-
-    if (participantsResult.rows.length === 0) {
-      return ctx.reply('📋 Нет участников для удаления.');
-    }
-
-    let list = '📋 *Список участников:*\n\n';
-    for (const p of participantsResult.rows) {
-      const username = p.username ? `(@${p.username})` : '';
-      list += `• ${p.first_name} ${username}\n  ID: \`${p.telegram_id}\`\n\n`;
-    }
-
-    list += '💡 Чтобы удалить:\n`/deleteuser <telegram_id или @username>`';
-
-    return ctx.reply(list, { parse_mode: 'Markdown' });
+  if (participantsResult.rows.length === 0) {
+    return ctx.reply('📋 Нет участников для удаления.');
   }
 
-  // Ищем пользователя по telegram_id или username
-  let targetUser: User | null = null;
-  let telegramId: number | null = null;
+  // Создаём кнопки для каждого участника (по 2 в ряд)
+  const buttons = participantsResult.rows.map(p => {
+    const label = p.username ? `${p.first_name} (@${p.username})` : p.first_name;
+    return Markup.button.callback(`🗑 ${label}`, `delete_user_${p.telegram_id}`);
+  });
 
-  if (targetIdentifier.startsWith('@')) {
-    // Поиск по username
-    const username = targetIdentifier.slice(1); // убираем @
-    const result = await query<User>(
-      'SELECT * FROM users WHERE LOWER(username) = LOWER($1)',
-      [username]
-    );
-    targetUser = result.rows[0] || null;
-    if (targetUser) {
-      telegramId = targetUser.telegram_id;
-    }
-  } else {
-    // Поиск по telegram_id
-    telegramId = parseInt(targetIdentifier);
-    if (isNaN(telegramId)) {
-      return ctx.reply('❌ Неверный формат. Используй telegram_id (число) или @username.');
-    }
-    targetUser = await userService.findByTelegramId(telegramId);
+  // Группируем по 1 кнопке в ряд (чтобы влезли длинные имена)
+  const keyboard = Markup.inlineKeyboard(buttons.map(btn => [btn]));
+
+  await ctx.reply('📋 Выбери участника для удаления:', keyboard);
+});
+
+// Callback для удаления пользователя
+bot.action(/^delete_user_(\d+)$/, async (ctx) => {
+  const user = ctx.user;
+
+  // Проверяем права
+  if (!user || user.role !== 'trainer') {
+    await ctx.answerCbQuery('❌ Только для тренера');
+    return;
   }
 
-  // Проверяем, не пытается ли тренер удалить себя
-  if (telegramId && telegramId === ctx.from!.id) {
-    return ctx.reply('❌ Нельзя удалить самого себя!');
-  }
+  const telegramId = parseInt(ctx.match[1]);
+  const targetUser = await userService.findByTelegramId(telegramId);
+
   if (!targetUser) {
-    return ctx.reply(`❌ Пользователь "${targetIdentifier}" не найден.`);
+    await ctx.answerCbQuery('❌ Пользователь не найден');
+    return;
   }
 
-  // Нельзя удалять других тренеров
-  if (targetUser.role === 'trainer') {
-    return ctx.reply('❌ Нельзя удалить тренера.');
+  // Показываем подтверждение
+  const confirmKeyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('✅ Да, удалить', `confirm_delete_${telegramId}`)],
+    [Markup.button.callback('❌ Отмена', 'cancel_delete')],
+  ]);
+
+  await ctx.editMessageText(
+    `⚠️ Удалить пользователя?\n\n` +
+    `👤 ${targetUser.first_name}${targetUser.username ? ` (@${targetUser.username})` : ''}\n` +
+    `🆔 ID: ${telegramId}\n\n` +
+    `Будут удалены все данные: чекины, замеры, достижения и т.д.`,
+    confirmKeyboard
+  );
+});
+
+// Подтверждение удаления
+bot.action(/^confirm_delete_(\d+)$/, async (ctx) => {
+  const user = ctx.user;
+
+  if (!user || user.role !== 'trainer') {
+    await ctx.answerCbQuery('❌ Только для тренера');
+    return;
   }
 
-  // Удаляем пользователя (CASCADE удалит все связанные данные)
+  const telegramId = parseInt(ctx.match[1]);
+  const targetUser = await userService.findByTelegramId(telegramId);
+
+  if (!targetUser) {
+    await ctx.answerCbQuery('❌ Пользователь не найден');
+    return;
+  }
+
   try {
     await query('DELETE FROM users WHERE telegram_id = $1', [telegramId]);
 
-    await ctx.reply(
-      `✅ *Пользователь удалён*\n\n` +
+    await ctx.editMessageText(
+      `✅ Пользователь удалён\n\n` +
       `👤 ${targetUser.first_name}${targetUser.username ? ` (@${targetUser.username})` : ''}\n` +
-      `🆔 Telegram ID: ${telegramId}\n\n` +
-      `Все данные пользователя удалены:\n` +
-      `• Чекины\n` +
-      `• Замеры\n` +
-      `• Статистика\n` +
-      `• Достижения\n` +
-      `• Выполненные задания\n` +
-      `• Записи дневника\n` +
-      `• Логи импульсов`,
-      { parse_mode: 'Markdown' }
+      `🆔 ID: ${telegramId}`
     );
 
+    await ctx.answerCbQuery('✅ Удалено');
+
     // Уведомляем админа
-    await adminNotifier.sendToAdmin(`⚠️ <b>Пользователь удалён</b>\n\n👤 ${targetUser.first_name} (${telegramId})\n🗑 Удалён тренером`);
+    await adminNotifier.sendToAdmin(
+      `⚠️ <b>Пользователь удалён</b>\n\n` +
+      `👤 ${targetUser.first_name} (${telegramId})\n` +
+      `🗑 Удалён тренером`
+    );
 
   } catch (error) {
     console.error('Error deleting user:', error);
-    await ctx.reply('❌ Ошибка при удалении пользователя.');
+    await ctx.answerCbQuery('❌ Ошибка');
   }
+});
+
+// Отмена удаления
+bot.action('cancel_delete', async (ctx) => {
+  await ctx.answerCbQuery('Отменено');
+  await ctx.editMessageText('❌ Удаление отменено.');
 });
 
 // ===== БЫСТРЫЙ ЧЕКИН =====
