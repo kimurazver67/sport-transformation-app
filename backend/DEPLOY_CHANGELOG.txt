@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Display avatar in profile and leaderboard
 • Исправлено: Correct bot username for avatar upload
 • Исправлено: Remove Dockerfile, use Nixpacks for фронтенд
 • Исправлено: Handle middleware errors in group chats
 • Исправлено: Use NIXPACKS for фронтенд деплой instead of Dockerfile
-• Исправлено: TypeScript error for openTelegramLink
 
-31.12.2025 11:42
+31.12.2025 11:50

@@ -159,11 +159,17 @@ bot.command('help', async (ctx) => {
     helpText += `/chatid — Узнать ID чата\n`;
   }
 
-  const keyboard = Markup.inlineKeyboard([
-    [Markup.button.webApp('📱 Открыть приложение', config.app.webappUrl)],
-  ]);
+  // В группах нельзя использовать WebApp кнопку
+  const isPrivateChat = ctx.chat?.type === 'private';
 
-  await ctx.reply(helpText, { parse_mode: 'Markdown', ...keyboard });
+  if (isPrivateChat) {
+    const keyboard = Markup.inlineKeyboard([
+      [Markup.button.webApp('📱 Открыть приложение', config.app.webappUrl)],
+    ]);
+    await ctx.reply(helpText, { parse_mode: 'Markdown', ...keyboard });
+  } else {
+    await ctx.reply(helpText, { parse_mode: 'Markdown' });
+  }
 });
 
 // ===== КОМАНДА /checkin =====
