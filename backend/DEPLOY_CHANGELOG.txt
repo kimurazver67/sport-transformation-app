@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Interactive user deletion with buttons
 • Исправлено: Don't show WebApp button in group chats for /help
 • Добавлено: Display avatar in profile and leaderboard
 • Исправлено: Correct bot username for avatar upload
 • Исправлено: Remove Dockerfile, use Nixpacks for фронтенд
-• Исправлено: Handle middleware errors in group chats
 
-31.12.2025 12:02
+31.12.2025 12:12

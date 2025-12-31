@@ -16,6 +16,7 @@ interface LeaderboardRow {
   username: string | null;
   first_name: string;
   last_name: string | null;
+  avatar_file_id: string | null;
   total_points: number;
   weekly_points: number;
   current_streak: number;
@@ -127,7 +128,11 @@ export const statsService = {
   // Получить рейтинг
   async getLeaderboard(limit = 20): Promise<LeaderboardEntry[]> {
     const result = await query<LeaderboardRow>(
-      'SELECT * FROM leaderboard LIMIT $1',
+      `SELECT l.*, u.avatar_file_id
+       FROM leaderboard l
+       JOIN users u ON l.id = u.id
+       ORDER BY l.total_points DESC
+       LIMIT $1`,
       [limit]
     );
 
@@ -139,6 +144,7 @@ export const statsService = {
         username: row.username || undefined,
         first_name: row.first_name,
         last_name: row.last_name || undefined,
+        avatar_file_id: row.avatar_file_id || undefined,
         role: 'participant' as const,
         created_at: '',
         updated_at: '',
@@ -153,7 +159,11 @@ export const statsService = {
   // Получить недельный рейтинг
   async getWeeklyLeaderboard(limit = 20): Promise<LeaderboardEntry[]> {
     const result = await query<LeaderboardRow>(
-      'SELECT * FROM leaderboard ORDER BY weekly_points DESC LIMIT $1',
+      `SELECT l.*, u.avatar_file_id
+       FROM leaderboard l
+       JOIN users u ON l.id = u.id
+       ORDER BY l.weekly_points DESC
+       LIMIT $1`,
       [limit]
     );
 
@@ -165,6 +175,7 @@ export const statsService = {
         username: row.username || undefined,
         first_name: row.first_name,
         last_name: row.last_name || undefined,
+        avatar_file_id: row.avatar_file_id || undefined,
         role: 'participant' as const,
         created_at: '',
         updated_at: '',
@@ -179,7 +190,7 @@ export const statsService = {
   // Получить рейтинг по цели (🔥 weight_loss / 💪 muscle_gain)
   async getLeaderboardByGoal(goal: UserGoal, limit = 20): Promise<LeaderboardEntry[]> {
     const result = await query<LeaderboardRow & { goal?: UserGoal }>(
-      `SELECT l.*, u.goal
+      `SELECT l.*, u.goal, u.avatar_file_id
        FROM leaderboard l
        JOIN users u ON l.id = u.id
        WHERE u.goal = $1
@@ -196,6 +207,7 @@ export const statsService = {
         username: row.username || undefined,
         first_name: row.first_name,
         last_name: row.last_name || undefined,
+        avatar_file_id: row.avatar_file_id || undefined,
         role: 'participant' as const,
         goal: row.goal,
         created_at: '',
@@ -211,7 +223,7 @@ export const statsService = {
   // Получить недельный рейтинг по цели
   async getWeeklyLeaderboardByGoal(goal: UserGoal, limit = 20): Promise<LeaderboardEntry[]> {
     const result = await query<LeaderboardRow & { goal?: UserGoal }>(
-      `SELECT l.*, u.goal
+      `SELECT l.*, u.goal, u.avatar_file_id
        FROM leaderboard l
        JOIN users u ON l.id = u.id
        WHERE u.goal = $1
@@ -228,6 +240,7 @@ export const statsService = {
         username: row.username || undefined,
         first_name: row.first_name,
         last_name: row.last_name || undefined,
+        avatar_file_id: row.avatar_file_id || undefined,
         role: 'participant' as const,
         goal: row.goal,
         created_at: '',
