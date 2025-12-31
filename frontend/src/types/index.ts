@@ -31,6 +31,7 @@ export interface User {
   target_weight?: number;
   height?: number;
   age?: number;
+  avatar_file_id?: string;
   created_at: string;
   updated_at: string;
 }

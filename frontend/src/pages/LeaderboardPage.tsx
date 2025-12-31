@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useStore } from '../store'
+import { api } from '../services/api'
 
 type TabType = 'all' | 'weekly'
 
@@ -93,8 +94,12 @@ export default function LeaderboardPage() {
               transition={{ delay: 0.2 }}
               className="flex flex-col items-center"
             >
-              <div className={`w-16 h-16 ${podiumColors[1].border} border-2 ${podiumColors[1].bg} flex items-center justify-center mb-2 relative`}>
-                <span className="text-2xl">🥈</span>
+              <div className={`w-16 h-16 ${podiumColors[1].border} border-2 ${podiumColors[1].bg} flex items-center justify-center mb-2 relative overflow-hidden`}>
+                {data[1]?.user.avatar_file_id ? (
+                  <img src={api.getPhotoUrl(data[1].user.avatar_file_id)} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-2xl">🥈</span>
+                )}
                 <motion.div
                   className="absolute -top-1 -right-1 w-6 h-6 bg-void-200 border border-steel-400 flex items-center justify-center font-mono text-xs font-bold text-steel-300"
                   initial={{ scale: 0 }}
@@ -123,10 +128,14 @@ export default function LeaderboardPage() {
               <motion.div
                 animate={{ y: [0, -5, 0] }}
                 transition={{ repeat: Infinity, duration: 2 }}
-                className={`w-20 h-20 ${podiumColors[0].border} border-2 ${podiumColors[0].bg} flex items-center justify-center mb-2 relative`}
+                className={`w-20 h-20 ${podiumColors[0].border} border-2 ${podiumColors[0].bg} flex items-center justify-center mb-2 relative overflow-hidden`}
                 style={{ boxShadow: '0 0 30px rgba(255, 215, 0, 0.25)' }}
               >
-                <span className="text-3xl">👑</span>
+                {data[0]?.user.avatar_file_id ? (
+                  <img src={api.getPhotoUrl(data[0].user.avatar_file_id)} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-3xl">👑</span>
+                )}
                 <motion.div
                   className="absolute -top-1 -right-1 w-6 h-6 bg-yellow-400 flex items-center justify-center font-mono text-xs font-bold text-void"
                   initial={{ scale: 0 }}
@@ -152,8 +161,12 @@ export default function LeaderboardPage() {
               transition={{ delay: 0.3 }}
               className="flex flex-col items-center"
             >
-              <div className={`w-16 h-16 ${podiumColors[2].border} border-2 ${podiumColors[2].bg} flex items-center justify-center mb-2 relative`}>
-                <span className="text-2xl">🥉</span>
+              <div className={`w-16 h-16 ${podiumColors[2].border} border-2 ${podiumColors[2].bg} flex items-center justify-center mb-2 relative overflow-hidden`}>
+                {data[2]?.user.avatar_file_id ? (
+                  <img src={api.getPhotoUrl(data[2].user.avatar_file_id)} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-2xl">🥉</span>
+                )}
                 <motion.div
                   className="absolute -top-1 -right-1 w-6 h-6 bg-void-200 border border-orange-600 flex items-center justify-center font-mono text-xs font-bold text-orange-400"
                   initial={{ scale: 0 }}
@@ -229,14 +242,22 @@ export default function LeaderboardPage() {
                     </div>
 
                     {/* Avatar */}
-                    <div className={`w-12 h-12 border-2 flex items-center justify-center relative ${
+                    <div className={`w-12 h-12 border-2 flex items-center justify-center relative overflow-hidden ${
                       isCurrentUser ? 'border-neon-lime bg-neon-lime/20' : 'border-void-400 bg-void-300'
                     }`}>
-                      <span className={`font-display text-lg font-bold ${
-                        isCurrentUser ? 'text-neon-lime' : 'text-steel-300'
-                      }`}>
-                        {entry.user.first_name[0]}
-                      </span>
+                      {entry.user.avatar_file_id ? (
+                        <img
+                          src={api.getPhotoUrl(entry.user.avatar_file_id)}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className={`font-display text-lg font-bold ${
+                          isCurrentUser ? 'text-neon-lime' : 'text-steel-300'
+                        }`}>
+                          {entry.user.first_name[0]}
+                        </span>
+                      )}
                       {entry.current_streak >= 7 && (
                         <motion.div
                           className="absolute -top-1 -right-1"

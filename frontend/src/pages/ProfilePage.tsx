@@ -4,6 +4,7 @@ import { useStore } from '../store'
 import { useTelegram } from '../hooks/useTelegram'
 import { AchievementsList } from '../components/AchievementCard'
 import ActivityCalendar from '../components/ActivityCalendar'
+import { api } from '../services/api'
 
 const BOT_USERNAME = 'ne_kak_vse_bot'
 
@@ -74,13 +75,21 @@ export default function ProfilePage() {
             className="relative"
           >
             <div
-              className="w-20 h-20 border-2 border-neon-lime bg-neon-lime/10 flex items-center justify-center cursor-pointer hover:bg-neon-lime/20 transition-colors"
+              className="w-20 h-20 border-2 border-neon-lime bg-neon-lime/10 flex items-center justify-center cursor-pointer hover:bg-neon-lime/20 transition-colors overflow-hidden"
               style={{ boxShadow: '6px 6px 0 0 #BFFF00' }}
               onClick={openBotForAvatar}
             >
-              <span className="font-display text-3xl font-bold text-neon-lime">
-                {user.first_name[0]}
-              </span>
+              {user.avatar_file_id ? (
+                <img
+                  src={api.getPhotoUrl(user.avatar_file_id)}
+                  alt="Avatar"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="font-display text-3xl font-bold text-neon-lime">
+                  {user.first_name[0]}
+                </span>
+              )}
             </div>
             {/* Edit avatar button */}
             <motion.button
