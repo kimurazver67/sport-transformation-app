@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Include avatar_file_id in leaderboard API response
 • Добавлено: Interactive user deletion with buttons
 • Исправлено: Don't show WebApp button in group chats for /help
 • Добавлено: Display avatar in profile and leaderboard
 • Исправлено: Correct bot username for avatar upload
-• Исправлено: Remove Dockerfile, use Nixpacks for фронтенд
 
-31.12.2025 12:12
+31.12.2025 12:14
