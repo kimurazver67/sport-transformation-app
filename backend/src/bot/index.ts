@@ -99,6 +99,38 @@ bot.start(async (ctx) => {
   await ctx.reply(welcomeText, keyboard);
 });
 
+// ===== КОМАНДА /help =====
+bot.command('help', async (ctx) => {
+  const user = ctx.user;
+  const isTrainer = user?.role === 'trainer';
+
+  let helpText = `📚 *Список команд*\n\n`;
+
+  // Основные команды для всех
+  helpText += `*Основные:*\n`;
+  helpText += `/start — Главное меню\n`;
+  helpText += `/app — Открыть приложение\n`;
+  helpText += `/checkin — Сделать чекин\n`;
+  helpText += `/stats — Моя статистика\n`;
+  helpText += `/photo — Загрузить фото прогресса\n`;
+  helpText += `/help — Список команд\n`;
+
+  // Команды для тренера
+  if (isTrainer) {
+    helpText += `\n*Команды тренера:*\n`;
+    helpText += `/debug — Вкл/выкл debug логи\n`;
+    helpText += `/deleteuser — Удалить пользователя\n`;
+    helpText += `/addtrainer — Добавить тренера\n`;
+    helpText += `/chatid — Узнать ID чата\n`;
+  }
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.webApp('📱 Открыть приложение', config.app.webappUrl)],
+  ]);
+
+  await ctx.reply(helpText, { parse_mode: 'Markdown', ...keyboard });
+});
+
 // ===== КОМАНДА /checkin =====
 bot.command('checkin', async (ctx) => {
   await startCheckinFlow(ctx);
