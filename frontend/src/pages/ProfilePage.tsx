@@ -5,7 +5,7 @@ import { useTelegram } from '../hooks/useTelegram'
 import { AchievementsList } from '../components/AchievementCard'
 import ActivityCalendar from '../components/ActivityCalendar'
 
-const BOT_USERNAME = 'MuzhitskyDvizhBot' // TODO: move to env
+const BOT_USERNAME = 'ne_kak_vse_bot'
 
 export default function ProfilePage() {
   const {
