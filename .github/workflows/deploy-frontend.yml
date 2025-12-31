@@ -30,9 +30,10 @@ jobs:
           VITE_API_URL: https://sport-transformation-app-production.up.railway.app
         run: npm run build
 
-      - name: Create package.json for Railway
+      - name: Prepare dist for Railway deploy
         working-directory: frontend/dist
         run: |
+          # Create package.json for static server
           cat > package.json << 'EOF'
           {
             "name": "frontend-static",
@@ -42,6 +43,18 @@ jobs:
             },
             "dependencies": {
               "serve": "^14.2.5"
+            }
+          }
+          EOF
+          # Create railway.json to use nixpacks (not Dockerfile)
+          cat > railway.json << 'EOF'
+          {
+            "$schema": "https://railway.app/railway.schema.json",
+            "build": {
+              "builder": "NIXPACKS"
+            },
+            "deploy": {
+              "restartPolicyType": "ON_FAILURE"
             }
           }
           EOF
