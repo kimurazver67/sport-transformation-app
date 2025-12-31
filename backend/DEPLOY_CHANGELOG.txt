@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Handle middleware errors in group chats
 • Исправлено: Use NIXPACKS for фронтенд деплой instead of Dockerfile
 • Исправлено: TypeScript error for openTelegramLink
 • Добавлено: Avatar upload via bot + leaderboard fix
 • Исправлено: Handle /help command in group chats
-• Добавлено: Add /help command with list of available commands
 
-31.12.2025 11:33
+31.12.2025 11:36
