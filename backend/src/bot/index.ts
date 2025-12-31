@@ -57,24 +57,29 @@ bot.catch(async (err: unknown, ctx) => {
 // Middleware: привязка пользователя к контексту
 bot.use(async (ctx, next) => {
   if (ctx.from) {
-    const existingUser = await userService.findByTelegramId(ctx.from.id);
-    const isNewUser = !existingUser;
+    try {
+      const existingUser = await userService.findByTelegramId(ctx.from.id);
+      const isNewUser = !existingUser;
 
-    ctx.user = await userService.findOrCreate({
-      telegram_id: ctx.from.id,
-      username: ctx.from.username,
-      first_name: ctx.from.first_name,
-      last_name: ctx.from.last_name,
-    });
-
-    // Уведомляем о новом пользователе
-    if (isNewUser && ctx.user) {
-      await adminNotifier.newUser({
-        telegramId: ctx.from.id,
-        firstName: ctx.from.first_name,
-        lastName: ctx.from.last_name,
+      ctx.user = await userService.findOrCreate({
+        telegram_id: ctx.from.id,
         username: ctx.from.username,
+        first_name: ctx.from.first_name,
+        last_name: ctx.from.last_name,
       });
+
+      // Уведомляем о новом пользователе
+      if (isNewUser && ctx.user) {
+        await adminNotifier.newUser({
+          telegramId: ctx.from.id,
+          firstName: ctx.from.first_name,
+          lastName: ctx.from.last_name,
+          username: ctx.from.username,
+        });
+      }
+    } catch (error) {
+      // В группах могут быть ошибки - просто продолжаем без ctx.user
+      console.error('[Bot Middleware] Error loading user:', error);
     }
   }
   return next();
