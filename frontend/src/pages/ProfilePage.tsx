@@ -21,10 +21,11 @@ export default function ProfilePage() {
 
   // Открыть бота для загрузки аватарки
   const openBotForAvatar = useCallback(() => {
-    if (webApp) {
-      webApp.openTelegramLink(`https://t.me/${BOT_USERNAME}?start=avatar`)
+    const url = `https://t.me/${BOT_USERNAME}?start=avatar`
+    if (webApp && typeof (webApp as any).openTelegramLink === 'function') {
+      (webApp as any).openTelegramLink(url)
     } else {
-      window.open(`https://t.me/${BOT_USERNAME}?start=avatar`, '_blank')
+      window.open(url, '_blank')
     }
   }, [webApp])
 
