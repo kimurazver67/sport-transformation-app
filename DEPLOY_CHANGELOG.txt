@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Support @username search in /deleteuser command
 • Добавлено: Add /deleteuser command for trainers
 • Исправлено: Align mindfulness API routes with фронтенд paths
 • Исправлено: Lock diary form after submission until next day 21:00
 • Добавлено: Add Mindfulness page (diary + impulse tracker)
-• Добавлено: Add full task management UI for admin
 
-30.12.2025 19:22
+30.12.2025 19:54

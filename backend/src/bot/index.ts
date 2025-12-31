@@ -334,6 +334,83 @@ bot.command('app', async (ctx) => {
   await ctx.reply('Нажми кнопку, чтобы открыть приложение:', keyboard);
 });
 
+// ===== КОМАНДА /addtrainer - добавить тренера (только для тренера) =====
+bot.command('addtrainer', async (ctx) => {
+  const user = ctx.user;
+
+  // Проверяем права (только тренер)
+  if (!user || user.role !== 'trainer') {
+    return ctx.reply('❌ Эта команда доступна только тренеру.');
+  }
+
+  const args = ctx.message.text.split(' ').slice(1);
+  const targetIdentifier = args[0];
+
+  if (!targetIdentifier) {
+    return ctx.reply(
+      '📋 *Добавить тренера*\n\n' +
+      'Использование:\n' +
+      '`/addtrainer @username`\n' +
+      '`/addtrainer <telegram_id>`\n\n' +
+      '⚠️ Пользователь должен сначала написать боту `/start`',
+      { parse_mode: 'Markdown' }
+    );
+  }
+
+  // Ищем пользователя по telegram_id или username
+  let targetUser: User | null = null;
+
+  if (targetIdentifier.startsWith('@')) {
+    const username = targetIdentifier.slice(1);
+    const result = await query<User>(
+      'SELECT * FROM users WHERE LOWER(username) = LOWER($1)',
+      [username]
+    );
+    targetUser = result.rows[0] || null;
+  } else {
+    const telegramId = parseInt(targetIdentifier);
+    if (isNaN(telegramId)) {
+      return ctx.reply('❌ Неверный формат. Используй @username или telegram_id.');
+    }
+    targetUser = await userService.findByTelegramId(telegramId);
+  }
+
+  if (!targetUser) {
+    return ctx.reply(
+      `❌ Пользователь "${targetIdentifier}" не найден.\n\n` +
+      `💡 Убедись, что пользователь написал боту /start`
+    );
+  }
+
+  // Проверяем, не тренер ли уже
+  if (targetUser.role === 'trainer') {
+    return ctx.reply(`✅ ${targetUser.first_name} уже является тренером.`);
+  }
+
+  // Назначаем тренером
+  await query(
+    'UPDATE users SET role = $1, updated_at = NOW() WHERE id = $2',
+    ['trainer', targetUser.id]
+  );
+
+  await ctx.reply(
+    `✅ *Тренер добавлен*\n\n` +
+    `👤 ${targetUser.first_name}${targetUser.username ? ` (@${targetUser.username})` : ''}\n` +
+    `🆔 Telegram ID: ${targetUser.telegram_id}\n\n` +
+    `Теперь у пользователя есть доступ к:\n` +
+    `• Админ-панели в приложении\n` +
+    `• Командам /debug, /deleteuser, /addtrainer`,
+    { parse_mode: 'Markdown' }
+  );
+
+  // Уведомляем админа
+  await adminNotifier.sendToAdmin(
+    `👑 <b>Новый тренер</b>\n\n` +
+    `👤 ${targetUser.first_name} (${targetUser.telegram_id})\n` +
+    `Назначен тренером`
+  );
+});
+
 // ===== КОМАНДА /deleteuser - удалить пользователя (только для тренера) =====
 bot.command('deleteuser', async (ctx) => {
   const user = ctx.user;
