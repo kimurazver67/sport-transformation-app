@@ -84,7 +84,7 @@ export default function LeaderboardPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="flex justify-center items-end gap-3 mb-8 h-48"
+            className="flex justify-center items-end gap-3 mb-8 pt-8"
           >
             {/* 2nd Place */}
             <motion.div

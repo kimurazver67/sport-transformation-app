@@ -1,9 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { useStore } from '../store'
 import { useTelegram } from '../hooks/useTelegram'
 import { AchievementsList } from '../components/AchievementCard'
 import ActivityCalendar from '../components/ActivityCalendar'
+
+const BOT_USERNAME = 'MuzhitskyDvizhBot' // TODO: move to env
 
 export default function ProfilePage() {
   const {
@@ -15,7 +17,16 @@ export default function ProfilePage() {
     fetchAchievements,
     fetchCheckins,
   } = useStore()
-  const { close } = useTelegram()
+  const { close, webApp } = useTelegram()
+
+  // Открыть бота для загрузки аватарки
+  const openBotForAvatar = useCallback(() => {
+    if (webApp) {
+      webApp.openTelegramLink(`https://t.me/${BOT_USERNAME}?start=avatar`)
+    } else {
+      window.open(`https://t.me/${BOT_USERNAME}?start=avatar`, '_blank')
+    }
+  }, [webApp])
 
   useEffect(() => {
     fetchAchievements()
@@ -59,15 +70,29 @@ export default function ProfilePage() {
             initial={{ scale: 0, rotate: -180 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: 'spring', stiffness: 200 }}
-            className="w-20 h-20 border-2 border-neon-lime bg-neon-lime/10 flex items-center justify-center relative"
-            style={{ boxShadow: '6px 6px 0 0 #BFFF00' }}
+            className="relative"
           >
-            <span className="font-display text-3xl font-bold text-neon-lime">
-              {user.first_name[0]}
-            </span>
+            <div
+              className="w-20 h-20 border-2 border-neon-lime bg-neon-lime/10 flex items-center justify-center cursor-pointer hover:bg-neon-lime/20 transition-colors"
+              style={{ boxShadow: '6px 6px 0 0 #BFFF00' }}
+              onClick={openBotForAvatar}
+            >
+              <span className="font-display text-3xl font-bold text-neon-lime">
+                {user.first_name[0]}
+              </span>
+            </div>
+            {/* Edit avatar button */}
+            <motion.button
+              onClick={openBotForAvatar}
+              className="absolute -bottom-1 -right-1 w-7 h-7 bg-neon-magenta border-2 border-void flex items-center justify-center"
+              whileTap={{ scale: 0.9 }}
+              title="Загрузить аватарку"
+            >
+              <span className="text-sm">📷</span>
+            </motion.button>
             {stats && stats.current_streak > 0 && (
               <motion.div
-                className="absolute -top-2 -right-2 text-2xl"
+                className="absolute -top-2 -left-2 text-2xl"
                 animate={{ y: [0, -3, 0], rotate: [0, 10, -10, 0] }}
                 transition={{ repeat: Infinity, duration: 2 }}
               >

@@ -80,10 +80,34 @@ bot.use(async (ctx, next) => {
   return next();
 });
 
+// Состояние загрузки аватарки
+const avatarUploadState = new Map<number, { waiting: boolean }>();
+
 // ===== КОМАНДА /start =====
 bot.start(async (ctx) => {
   const user = ctx.user!;
   const isTrainer = user.role === 'trainer';
+
+  // Проверяем параметр start (deep link)
+  const startPayload = ctx.startPayload;
+
+  // Если пришли для загрузки аватарки
+  if (startPayload === 'avatar') {
+    avatarUploadState.set(ctx.from!.id, { waiting: true });
+
+    await ctx.reply(
+      `📷 *Загрузка аватарки*\n\n` +
+      `Отправь мне фото, которое хочешь использовать как аватарку в приложении.\n\n` +
+      `💡 Лучше использовать квадратное фото с твоим лицом.`,
+      {
+        parse_mode: 'Markdown',
+        ...Markup.inlineKeyboard([
+          [Markup.button.callback('❌ Отмена', 'avatar_cancel')],
+        ]),
+      }
+    );
+    return;
+  }
 
   const welcomeText = isTrainer
     ? `👋 Привет, тренер ${user.first_name}!\n\nТы управляешь курсом "Трансформация тела".`
@@ -860,6 +884,22 @@ bot.action('my_progress', async (ctx) => {
   await ctx.editMessageText(text, { parse_mode: 'Markdown', ...keyboard });
 });
 
+// ===== ОТМЕНА ЗАГРУЗКИ АВАТАРКИ =====
+bot.action('avatar_cancel', async (ctx) => {
+  await ctx.answerCbQuery('Отменено');
+  avatarUploadState.delete(ctx.from!.id);
+
+  await ctx.editMessageText(
+    '❌ Загрузка аватарки отменена.\n\n' +
+    'Ты можешь загрузить аватарку позже через профиль в приложении.',
+    {
+      ...Markup.inlineKeyboard([
+        [Markup.button.webApp('📱 Открыть приложение', config.app.webappUrl)],
+      ]),
+    }
+  );
+});
+
 // ===== ПРИЁМ ФОТО =====
 bot.on(message('photo'), async (ctx) => {
   const user = ctx.user!;
@@ -868,6 +908,29 @@ bot.on(message('photo'), async (ctx) => {
   const fileId = photo.file_id;
 
   try {
+    // Проверяем, ждёт ли пользователь загрузки аватарки
+    const avatarState = avatarUploadState.get(ctx.from!.id);
+    if (avatarState?.waiting) {
+      // Сохраняем file_id аватарки в БД
+      await query(
+        'UPDATE users SET avatar_file_id = $1, updated_at = NOW() WHERE id = $2',
+        [fileId, user.id]
+      );
+
+      avatarUploadState.delete(ctx.from!.id);
+
+      const keyboard = Markup.inlineKeyboard([
+        [Markup.button.webApp('📱 Открыть приложение', config.app.webappUrl)],
+      ]);
+
+      await ctx.reply(
+        `✅ *Аватарка установлена!*\n\n` +
+        `Теперь она будет отображаться в твоём профиле и рейтинге.`,
+        { parse_mode: 'Markdown', ...keyboard }
+      );
+      return;
+    }
+
     // Проверяем, есть ли активная фото-сессия
     const session = photoSessionState.get(ctx.from!.id);
 
