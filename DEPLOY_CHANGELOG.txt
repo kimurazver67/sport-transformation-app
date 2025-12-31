@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Add /help command with list of available commands
 • Добавлено: Add /addtrainer command to promote users to trainer role
 • Исправлено: Support @username search in /deleteuser command
 • Добавлено: Add /deleteuser command for trainers
 • Исправлено: Align mindfulness API routes with фронтенд paths
-• Исправлено: Lock diary form after submission until next day 21:00
 
-31.12.2025 11:02
+31.12.2025 11:03

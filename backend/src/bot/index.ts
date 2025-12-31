@@ -101,8 +101,14 @@ bot.start(async (ctx) => {
 
 // ===== КОМАНДА /help =====
 bot.command('help', async (ctx) => {
-  const user = ctx.user;
-  const isTrainer = user?.role === 'trainer';
+  // В группах ctx.user может быть undefined, проверяем напрямую
+  let isTrainer = ctx.user?.role === 'trainer';
+
+  // Если ctx.user не установлен (группа без middleware), проверяем напрямую из БД
+  if (!ctx.user && ctx.from) {
+    const dbUser = await userService.findByTelegramId(ctx.from.id);
+    isTrainer = dbUser?.role === 'trainer';
+  }
 
   let helpText = `📚 *Список команд*\n\n`;
 
