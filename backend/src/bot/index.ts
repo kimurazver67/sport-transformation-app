@@ -128,6 +128,27 @@ bot.start(async (ctx) => {
   await ctx.reply(welcomeText, keyboard);
 });
 
+// ===== CALLBACK: ГЛАВНОЕ МЕНЮ =====
+bot.action('main_menu', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const user = ctx.user!;
+  const isTrainer = user.role === 'trainer';
+
+  const welcomeText = isTrainer
+    ? `👋 Привет, тренер ${user.first_name}!\n\nТы управляешь курсом "Трансформация тела".`
+    : `💪 Курс "Трансформация тела"\n\nВыбери действие:`;
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.webApp('📱 Открыть приложение', config.app.webappUrl)],
+    [Markup.button.callback('📊 Мой прогресс', 'my_progress')],
+    [Markup.button.callback('✅ Чекин сегодня', 'quick_checkin')],
+    [Markup.button.callback('📸 Загрузить фото', 'start_photo_session')],
+  ]);
+
+  await ctx.editMessageText(welcomeText, keyboard);
+});
+
 // ===== КОМАНДА /help =====
 bot.command('help', async (ctx) => {
   // В группах ctx.user может быть undefined, проверяем напрямую
@@ -780,6 +801,7 @@ bot.action(/mood_(\d)/, async (ctx) => {
 
     const keyboard = Markup.inlineKeyboard([
       [Markup.button.webApp('📱 Открыть приложение', config.app.webappUrl)],
+      [Markup.button.callback('🏠 Меню', 'main_menu')],
     ]);
 
     await ctx.editMessageText(text, keyboard);
@@ -815,6 +837,42 @@ bot.action(/mood_(\d)/, async (ctx) => {
   }
 });
 
+// ===== МОЯ СТАТИСТИКА =====
+bot.action('my_stats', async (ctx) => {
+  await ctx.answerCbQuery();
+
+  const user = ctx.user!;
+  const stats = await statsService.getUserStats(user.id);
+  const checkinStats = await checkinService.getStats(user.id);
+
+  let text = '📊 *Твоя статистика*\n\n';
+
+  if (stats) {
+    const moodEmojis = ['😢', '😕', '😐', '🙂', '😃'];
+    const avgMoodEmoji = moodEmojis[Math.round(checkinStats.avgMood) - 1] || '😐';
+
+    text += `🔥 Текущий streak: ${stats.current_streak} дней\n`;
+    text += `🏆 Максимальный streak: ${stats.max_streak} дней\n\n`;
+    text += `⭐ Очки всего: ${stats.total_points}\n`;
+    text += `📅 Очки за неделю: ${stats.weekly_points}\n\n`;
+    text += `📈 Позиция в рейтинге: #${stats.rank_overall}\n\n`;
+    text += `✅ Чекинов: ${checkinStats.totalCheckins}\n`;
+    text += `🏋️ Дней с тренировкой: ${checkinStats.workoutDays}\n`;
+    text += `😴 Средний сон: ${checkinStats.avgSleep} ч\n`;
+    text += `${avgMoodEmoji} Среднее настроение: ${checkinStats.avgMood.toFixed(1)}/5`;
+  } else {
+    text += 'Статистика пока недоступна.\nСделай первый чекин!';
+  }
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('🏆 Рейтинг', 'leaderboard')],
+    [Markup.button.webApp('📱 Открыть приложение', config.app.webappUrl)],
+    [Markup.button.callback('🏠 Меню', 'main_menu')],
+  ]);
+
+  await ctx.editMessageText(text, { parse_mode: 'Markdown', ...keyboard });
+});
+
 // ===== РЕЙТИНГ =====
 bot.action('leaderboard', async (ctx) => {
   await ctx.answerCbQuery();
@@ -846,6 +904,7 @@ bot.action('leaderboard', async (ctx) => {
   const keyboard = Markup.inlineKeyboard([
     [Markup.button.callback('📅 Рейтинг недели', 'weekly_leaderboard')],
     [Markup.button.webApp('📱 Подробнее', config.app.webappUrl)],
+    [Markup.button.callback('🏠 Меню', 'main_menu')],
   ]);
 
   await ctx.editMessageText(text, { parse_mode: 'Markdown', ...keyboard });
@@ -872,6 +931,7 @@ bot.action('weekly_leaderboard', async (ctx) => {
   const keyboard = Markup.inlineKeyboard([
     [Markup.button.callback('🏆 Общий рейтинг', 'leaderboard')],
     [Markup.button.webApp('📱 Подробнее', config.app.webappUrl)],
+    [Markup.button.callback('🏠 Меню', 'main_menu')],
   ]);
 
   await ctx.editMessageText(text, { parse_mode: 'Markdown', ...keyboard });
@@ -902,6 +962,7 @@ bot.action('my_progress', async (ctx) => {
   const keyboard = Markup.inlineKeyboard([
     [Markup.button.webApp('📱 Внести замеры', config.app.webappUrl)],
     [Markup.button.callback('📊 Статистика', 'my_stats')],
+    [Markup.button.callback('🏠 Меню', 'main_menu')],
   ]);
 
   await ctx.editMessageText(text, { parse_mode: 'Markdown', ...keyboard });
