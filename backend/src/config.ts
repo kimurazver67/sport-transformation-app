@@ -25,7 +25,7 @@ const envSchema = z.object({
   WEBAPP_URL: z.string().optional(),
 
   // Course
-  COURSE_START_DATE: z.string().default('2025-01-01'),
+  COURSE_START_DATE: z.string().default('2026-01-05'),
   TRAINER_TELEGRAM_ID: z.string().optional(),
 
   // Admin Chat
