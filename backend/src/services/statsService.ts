@@ -90,28 +90,17 @@ export const statsService = {
           : new Date(stats.last_checkin_date).toISOString().split('T')[0])
       : null;
 
-    console.log('[Streak Debug]', {
-      userId,
-      today,
-      yesterday,
-      lastCheckinDate,
-      currentStreak: stats.current_streak
-    });
-
     let newStreak: number;
 
     if (lastCheckinDate === yesterday) {
       // Продолжаем streak
       newStreak = stats.current_streak + 1;
-      console.log('[Streak] Continuing streak:', newStreak);
     } else if (lastCheckinDate === today) {
       // Уже был чекин сегодня
       newStreak = stats.current_streak;
-      console.log('[Streak] Already checked in today');
     } else {
       // Начинаем новый streak
       newStreak = 1;
-      console.log('[Streak] Starting new streak');
     }
 
     const newMaxStreak = Math.max(newStreak, stats.max_streak);
