@@ -149,3 +149,31 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   }
   next();
 }
+
+// Middleware для проверки что пользователь имеет доступ к userId в параметрах
+// Разрешает доступ если: userId совпадает с текущим user ИЛИ пользователь тренер
+export function requireSelfOrTrainer(req: Request, res: Response, next: NextFunction) {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'Authentication required',
+    });
+  }
+
+  const { userId } = req.params;
+
+  // Тренеры имеют доступ ко всем данным
+  if (req.user.role === 'trainer') {
+    return next();
+  }
+
+  // Проверяем что userId совпадает с текущим пользователем
+  if (req.user.id !== userId) {
+    return res.status(403).json({
+      success: false,
+      error: 'Access denied: You can only modify your own data',
+    });
+  }
+
+  next();
+}

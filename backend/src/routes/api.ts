@@ -10,6 +10,7 @@ import { nutritionService } from '../services/nutritionService';
 import { getCurrentWeek, getDaysUntilStart, isCourseStarted, canSubmitMeasurement, config } from '../config';
 import { CheckinForm, MeasurementForm } from '../types';
 import { query } from '../db/postgres';
+import { requireSelfOrTrainer } from '../middleware/auth';
 
 const router = Router();
 
@@ -33,7 +34,7 @@ router.get('/user/:telegramId', async (req: Request, res: Response) => {
 });
 
 // Установить цель участника
-router.post('/user/:userId/goal', async (req: Request, res: Response) => {
+router.post('/user/:userId/goal', requireSelfOrTrainer, async (req: Request, res: Response) => {
   try {
     const { goal } = req.body;
 
@@ -55,7 +56,7 @@ router.post('/user/:userId/goal', async (req: Request, res: Response) => {
 });
 
 // Обновить данные онбординга (цель + рост + возраст + целевой вес)
-router.post('/user/:userId/onboarding', async (req: Request, res: Response) => {
+router.post('/user/:userId/onboarding', requireSelfOrTrainer, async (req: Request, res: Response) => {
   try {
     const { goal, height, age, target_weight } = req.body;
 
@@ -105,7 +106,7 @@ router.get('/checkin/today/:userId', async (req: Request, res: Response) => {
 });
 
 // Создать/обновить чекин
-router.post('/checkin/:userId', async (req: Request, res: Response) => {
+router.post('/checkin/:userId', requireSelfOrTrainer, async (req: Request, res: Response) => {
   try {
     const data: CheckinForm = req.body;
     const checkin = await checkinService.createOrUpdate(req.params.userId, data);
@@ -194,7 +195,7 @@ router.get('/measurement/can-submit', async (req: Request, res: Response) => {
 });
 
 // Создать/обновить замер
-router.post('/measurement/:userId', async (req: Request, res: Response) => {
+router.post('/measurement/:userId', requireSelfOrTrainer, async (req: Request, res: Response) => {
   try {
     const userId = req.params.userId;
 
@@ -652,41 +653,47 @@ export function getDebugMode(): boolean {
   return debugModeEnabled;
 }
 
-router.post('/debug/log', async (req: Request, res: Response) => {
-  try {
-    // Если debug отключен - просто возвращаем success без отправки
-    if (!debugModeEnabled) {
-      return res.json({ success: true, debugEnabled: false });
+// Отключаем debug endpoints в production
+if (process.env.NODE_ENV === 'production') {
+  router.use('/debug/*', (_req: Request, res: Response) => {
+    res.status(404).json({ success: false, error: 'Not found' });
+  });
+} else {
+  router.post('/debug/log', async (req: Request, res: Response) => {
+    try {
+      // Если debug отключен - просто возвращаем success без отправки
+      if (!debugModeEnabled) {
+        return res.json({ success: true, debugEnabled: false });
+      }
+
+      const { message, data } = req.body;
+      const logMessage = `🔍 <b>Frontend Debug</b>\n\n📝 ${message}\n${data ? `\n<pre>${JSON.stringify(data, null, 2)}</pre>` : ''}`;
+
+      // Отправляем в телеграм через fetch
+      await fetch(`https://api.telegram.org/bot${config.bot.token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: config.admin.chatId,
+          text: logMessage,
+          parse_mode: 'HTML',
+        }),
+      });
+
+      res.json({ success: true, debugEnabled: true });
+    } catch (error) {
+      console.error('Debug log error:', error);
+      res.status(500).json({ success: false, error: 'Failed to send debug log' });
     }
+  });
 
-    const { message, data } = req.body;
-    const logMessage = `🔍 <b>Frontend Debug</b>\n\n📝 ${message}\n${data ? `\n<pre>${JSON.stringify(data, null, 2)}</pre>` : ''}`;
+  // Проверить статус debug режима
+  router.get('/debug/status', async (_req: Request, res: Response) => {
+    res.json({ success: true, debugEnabled: debugModeEnabled });
+  });
 
-    // Отправляем в телеграм через fetch
-    await fetch(`https://api.telegram.org/bot${config.bot.token}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: config.admin.chatId,
-        text: logMessage,
-        parse_mode: 'HTML',
-      }),
-    });
-
-    res.json({ success: true, debugEnabled: true });
-  } catch (error) {
-    console.error('Debug log error:', error);
-    res.status(500).json({ success: false, error: 'Failed to send debug log' });
-  }
-});
-
-// Проверить статус debug режима
-router.get('/debug/status', async (_req: Request, res: Response) => {
-  res.json({ success: true, debugEnabled: debugModeEnabled });
-});
-
-// DEBUG: Добавить тестовый замер для любой недели (только для тестирования)
-router.post('/debug/add-measurement', async (req: Request, res: Response) => {
+  // DEBUG: Добавить тестовый замер для любой недели (только для тестирования)
+  router.post('/debug/add-measurement', async (req: Request, res: Response) => {
   try {
     const { telegram_id, week_number, weight, chest, waist, hips, bicep_left, bicep_right, thigh_left, thigh_right } = req.body;
 
@@ -806,5 +813,6 @@ router.get('/debug/measurements/:telegram_id', async (req: Request, res: Respons
     res.status(500).json({ success: false, error: String(error) });
   }
 });
+}
 
 export default router;
