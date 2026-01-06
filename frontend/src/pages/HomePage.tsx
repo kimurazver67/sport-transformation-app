@@ -60,7 +60,7 @@ function StreakFire({ streak }: { streak: number }) {
 }
 
 export default function HomePage() {
-  const { user, stats, todayCheckin, courseWeek, isCourseStarted, daysUntilStart, fetchTodayCheckin } = useStore()
+  const { user, stats, todayCheckin, courseWeek, isCourseStarted, daysUntilStart, fetchTodayCheckin, nutrition } = useStore()
   const { hapticFeedback } = useTelegram()
   const [showCheckinForm, setShowCheckinForm] = useState(false)
 
@@ -386,6 +386,67 @@ export default function HomePage() {
           </motion.div>
         </div>
       </section>
+
+      {/* КБЖУ Card */}
+      {nutrition && (
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.85 }}
+          className="px-4 mb-6"
+        >
+          <div className="brutal-card relative overflow-hidden">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🍽️</span>
+                <h3 className="font-display font-bold text-steel-100 uppercase tracking-wider text-sm">
+                  Твой КБЖУ
+                </h3>
+              </div>
+              <div className="font-mono text-[10px] text-steel-500 uppercase">
+                {nutrition.goal === 'weight_loss' ? '🔥 Похудение' : '💪 Набор'}
+              </div>
+            </div>
+
+            {/* Калории */}
+            <div className="border-2 border-neon-lime bg-neon-lime/5 p-3 mb-3">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-xs text-steel-400 uppercase">Калории</span>
+                <span className="font-display text-2xl font-bold text-neon-lime">
+                  {nutrition.calories}
+                </span>
+              </div>
+              <div className="font-mono text-[10px] text-steel-500 mt-1">
+                ккал/день • вес {nutrition.weight} кг
+              </div>
+            </div>
+
+            {/* БЖУ Grid */}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="border border-neon-cyan bg-neon-cyan/5 p-2 text-center">
+                <div className="font-mono text-[10px] text-steel-500 uppercase mb-1">Белки</div>
+                <div className="font-display text-lg font-bold text-neon-cyan">{nutrition.protein}г</div>
+              </div>
+              <div className="border border-neon-magenta bg-neon-magenta/5 p-2 text-center">
+                <div className="font-mono text-[10px] text-steel-500 uppercase mb-1">Жиры</div>
+                <div className="font-display text-lg font-bold text-neon-magenta">{nutrition.fat}г</div>
+              </div>
+              <div className="border border-yellow-400 bg-yellow-400/5 p-2 text-center">
+                <div className="font-mono text-[10px] text-steel-500 uppercase mb-1">Углеводы</div>
+                <div className="font-display text-lg font-bold text-yellow-400">{nutrition.carbs}г</div>
+              </div>
+            </div>
+
+            {/* Accent line */}
+            <motion.div
+              className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-neon-cyan via-neon-lime to-neon-magenta"
+              initial={{ width: 0 }}
+              animate={{ width: '100%' }}
+              transition={{ delay: 1, duration: 0.6 }}
+            />
+          </div>
+        </motion.section>
+      )}
 
       {/* Motivation Banner */}
       <motion.section

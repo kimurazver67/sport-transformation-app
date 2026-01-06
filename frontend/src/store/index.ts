@@ -61,6 +61,17 @@ interface Store {
   stats: UserStats | null
   fetchStats: () => Promise<void>
 
+  // Питание (КБЖУ)
+  nutrition: {
+    calories: number
+    protein: number
+    fat: number
+    carbs: number
+    goal: 'weight_loss' | 'muscle_gain'
+    weight: number
+  } | null
+  fetchNutrition: () => Promise<void>
+
   // Рейтинг
   leaderboard: LeaderboardEntry[]
   weeklyLeaderboard: LeaderboardEntry[]
@@ -101,11 +112,12 @@ export const useStore = create<Store>((set, get) => ({
       set({ user, isLoading: false })
 
       // Загружаем остальные данные
-      const { fetchTodayCheckin, fetchStats, fetchCourseWeek } = get()
+      const { fetchTodayCheckin, fetchStats, fetchCourseWeek, fetchNutrition } = get()
       await Promise.all([
         fetchTodayCheckin(),
         fetchStats(),
         fetchCourseWeek(),
+        fetchNutrition(),
       ])
     } catch (error) {
       console.error('Failed to fetch user:', error)
@@ -247,6 +259,22 @@ export const useStore = create<Store>((set, get) => ({
       set({ stats })
     } catch (error) {
       console.error('Failed to fetch stats:', error)
+    }
+  },
+
+  // Питание (КБЖУ)
+  nutrition: null,
+
+  fetchNutrition: async () => {
+    const { user } = get()
+    if (!user) return
+
+    try {
+      const nutrition = await api.getNutrition(user.id)
+      set({ nutrition })
+    } catch (error) {
+      // Молча игнорируем — у пользователя может не быть цели или веса
+      console.log('Nutrition not available:', error)
     }
   },
 

@@ -6,6 +6,7 @@ import { statsService } from '../services/statsService';
 import { taskService } from '../services/taskService';
 import { achievementService } from '../services/achievementService';
 import { mindfulnessService } from '../services/mindfulnessService';
+import { nutritionService } from '../services/nutritionService';
 import { getCurrentWeek, getDaysUntilStart, isCourseStarted, canSubmitMeasurement, config } from '../config';
 import { CheckinForm, MeasurementForm } from '../types';
 import { query } from '../db/postgres';
@@ -254,6 +255,39 @@ router.get('/stats/:userId', async (req: Request, res: Response) => {
     res.json({ success: true, data: stats });
   } catch (error) {
     console.error('Get stats error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// ===== ПИТАНИЕ (КБЖУ) =====
+
+// Получить рекомендуемое КБЖУ для пользователя
+router.get('/nutrition/:userId', async (req: Request, res: Response) => {
+  try {
+    const user = await userService.findById(req.params.userId);
+
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    if (!user.goal) {
+      return res.status(400).json({ success: false, error: 'User goal not set' });
+    }
+
+    // Получаем последний замер для актуального веса
+    const measurements = await measurementService.getAllByUser(user.id);
+    const currentWeight = measurements.length > 0
+      ? measurements[measurements.length - 1].weight
+      : user.start_weight;
+
+    if (!currentWeight) {
+      return res.status(400).json({ success: false, error: 'No weight data available' });
+    }
+
+    const nutrition = nutritionService.calculate(currentWeight, user.goal);
+    res.json({ success: true, data: nutrition });
+  } catch (error) {
+    console.error('Get nutrition error:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });

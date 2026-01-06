@@ -143,6 +143,17 @@ export const api = {
   getStats: (userId: string) =>
     request<UserStats>(`/api/stats/${userId}`),
 
+  // Питание (КБЖУ)
+  getNutrition: (userId: string) =>
+    request<{
+      calories: number
+      protein: number
+      fat: number
+      carbs: number
+      goal: 'weight_loss' | 'muscle_gain'
+      weight: number
+    }>(`/api/nutrition/${userId}`),
+
   // Рейтинг
   getLeaderboard: (limit = 20) =>
     request<LeaderboardEntry[]>(`/api/leaderboard?limit=${limit}`),
