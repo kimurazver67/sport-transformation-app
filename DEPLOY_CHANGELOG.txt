@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Update default course дата старта to 2026-01-05
 • Рефакторинг: Critical fixes from Spec-Driven Development review
 • security: Add authorization protection to API endpoints
 • Обслуживание: Update деплой список изменений
 • Исправлено: Fix streak calculation and recalculate all user streaks
-• debug: Add logging to streak calculation
 
-06.01.2026 23:11
+06.01.2026 23:18
