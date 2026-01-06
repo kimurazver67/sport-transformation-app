@@ -101,8 +101,8 @@ async function getImpulseLogs(
   const result = await query<ImpulseLog>(
     `SELECT * FROM impulse_logs
      WHERE user_id = $1
-       AND logged_at >= $2
-       AND logged_at < $3 + INTERVAL '1 day'
+       AND logged_at >= $2::timestamp
+       AND logged_at < $3::timestamp + INTERVAL '1 day'
      ORDER BY logged_at ASC`,
     [userId, formatDate(startDate), formatDate(endDate)]
   );
