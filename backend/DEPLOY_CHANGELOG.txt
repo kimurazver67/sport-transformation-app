@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Remove tasks_completed from resetAllPoints query
 • Добавлено: Add admin endpoint to reset all user points
 • Исправлено: Activity calendar date format mismatch
 • Исправлено: Update KBJU calorie formulas (weight_loss: 30, muscle_gain: 32)
 • Добавлено: Auto-calculate KBJU (calories, protein, fat, carbs) based on weight and goal
-• Исправлено: Disable task uncomplete - prevent XP farming
 
-06.01.2026 20:06
+06.01.2026 20:12

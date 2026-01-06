@@ -200,8 +200,8 @@ export default function HomePage() {
         </div>
       </motion.section>
 
-      {/* Onboarding - показываем до старта курса если цель не выбрана */}
-      {!isCourseStarted && !user.goal && user.role === 'participant' && (
+      {/* Onboarding - показываем если цель не выбрана */}
+      {!user.goal && user.role === 'participant' && (
         <section className="px-4 mb-6">
           <OnboardingFlow />
         </section>
