@@ -22,7 +22,7 @@ export interface NutritionPlan {
  * - Ккал = Вес × 36
  * - Б = Вес × 2
  * - Ж = Вес × 1
- * - У = (Ккал − Б×4 − Ж×9) ÷ 4
+ * - У = (Ккал − Б×4 − Ж×9) ÷ 4 + 150г
  */
 export function calculateNutrition(weight: number, goal: UserGoal): NutritionPlan {
   let calories: number;
@@ -41,7 +41,7 @@ export function calculateNutrition(weight: number, goal: UserGoal): NutritionPla
     calories = Math.round(weight * 36);
     protein = Math.round(weight * 2);
     fat = Math.round(weight * 1);
-    carbs = Math.round((calories - protein * 4 - fat * 9) / 4);
+    carbs = Math.round((calories - protein * 4 - fat * 9) / 4) + 150;
   }
 
   // Защита от отрицательных значений
