@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Fix streak calculation and recalculate all user streaks
 • debug: Add logging to streak calculation
 • Обслуживание: Update деплой список изменений
 • Исправлено: Recalculate total calories for muscle gain with added carbs
 • Обслуживание: Update деплой список изменений
-• Обслуживание: Update деплой список изменений
 
-06.01.2026 22:24
+06.01.2026 22:26
