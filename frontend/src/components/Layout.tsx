@@ -11,6 +11,7 @@ const navItems = [
   { path: '/', icon: '🏠', label: 'ГЛАВНАЯ', activeIcon: '⚡' },
   { path: '/measurements', icon: '📏', label: 'ЗАМЕРЫ', activeIcon: '📊' },
   { path: '/mindfulness', icon: '🧘', label: 'ДНЕВНИК', activeIcon: '✨' },
+  { path: '/psychology', icon: '🧠', label: 'ПСИХОЛОГ', activeIcon: '💡' },
   { path: '/leaderboard', icon: '🏆', label: 'РЕЙТИНГ', activeIcon: '👑' },
   { path: '/profile', icon: '👤', label: 'ПРОФИЛЬ', activeIcon: '🔥' },
 ]
