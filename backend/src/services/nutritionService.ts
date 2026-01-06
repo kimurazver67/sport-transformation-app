@@ -38,10 +38,12 @@ export function calculateNutrition(weight: number, goal: UserGoal): NutritionPla
     carbs = Math.round((calories - protein * 4 - 450) / 4);
   } else {
     // Набор массы (muscle_gain)
-    calories = Math.round(weight * 36);
+    const baseCalories = Math.round(weight * 36);
     protein = Math.round(weight * 2);
     fat = Math.round(weight * 1);
-    carbs = Math.round((calories - protein * 4 - fat * 9) / 4) + 150;
+    carbs = Math.round((baseCalories - protein * 4 - fat * 9) / 4) + 150;
+    // Пересчитываем итоговую калорийность с учётом добавленных углеводов
+    calories = protein * 4 + fat * 9 + carbs * 4;
   }
 
   // Защита от отрицательных значений
