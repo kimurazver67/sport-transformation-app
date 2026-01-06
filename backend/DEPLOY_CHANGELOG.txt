@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Add 'Menu' button to bot callbacks for навигация
 • Исправлено: Avatar on podium base, emoji on top
 • Исправлено: Include avatar_file_id in leaderboard API response
 • Добавлено: Interactive user deletion with buttons
 • Исправлено: Don't show WebApp button in group chats for /help
-• Добавлено: Display avatar in profile and leaderboard
 
-31.12.2025 12:18
+06.01.2026 11:09

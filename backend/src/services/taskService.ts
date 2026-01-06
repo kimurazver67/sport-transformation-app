@@ -179,10 +179,33 @@ export const taskService = {
 
   // Отменить выполнение задания
   async uncomplete(userId: string, taskId: string): Promise<void> {
+    // Проверяем, было ли задание выполнено
+    const existingResult = await query<{ id: string }>(
+      'SELECT id FROM task_completions WHERE user_id = $1 AND task_id = $2',
+      [userId, taskId]
+    );
+
+    if (!existingResult.rows[0]) {
+      // Задание не было выполнено, ничего не делаем
+      return;
+    }
+
+    // Проверяем, является ли задание бонусным
+    const taskResult = await query<{ is_bonus: boolean }>(
+      'SELECT is_bonus FROM tasks WHERE id = $1',
+      [taskId]
+    );
+
+    // Удаляем выполнение
     await query(
       'DELETE FROM task_completions WHERE user_id = $1 AND task_id = $2',
       [userId, taskId]
     );
+
+    // Отнимаем очки
+    const isBonus = taskResult.rows[0]?.is_bonus;
+    const points = isBonus ? POINTS.TASK_COMPLETED * 2 : POINTS.TASK_COMPLETED;
+    await statsService.addPoints(userId, -points);
   },
 
   // Удалить задание (только тренер)
