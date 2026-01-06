@@ -10,68 +10,42 @@ export const checkinService = {
     try {
       const today = new Date().toISOString().split('T')[0];
 
-      // Проверяем существующий чекин
-      const existingResult = await query<{ id: string }>(
-        'SELECT id FROM daily_checkins WHERE user_id = $1 AND date = $2',
-        [userId, today]
+      // Используем INSERT ... ON CONFLICT для атомарности (предотвращаем race condition)
+      // Если запись существует - обновляем, если нет - создаём
+      const upsertResult = await query<DailyCheckin & { is_new: boolean }>(
+        `INSERT INTO daily_checkins
+          (user_id, date, workout, workout_type, nutrition, water, water_liters, sleep_hours, mood, steps)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        ON CONFLICT (user_id, date)
+        DO UPDATE SET
+          workout = EXCLUDED.workout,
+          workout_type = EXCLUDED.workout_type,
+          nutrition = EXCLUDED.nutrition,
+          water = EXCLUDED.water,
+          water_liters = EXCLUDED.water_liters,
+          sleep_hours = EXCLUDED.sleep_hours,
+          mood = EXCLUDED.mood,
+          steps = EXCLUDED.steps
+        RETURNING *, (xmax = 0) AS is_new`,
+        [
+          userId,
+          today,
+          data.workout,
+          data.workout_type || null,
+          data.nutrition,
+          data.water,
+          data.water_liters || null,
+          data.sleep_hours,
+          data.mood,
+          data.steps || null,
+        ]
       );
 
-      const existing = existingResult.rows[0];
+      const result = upsertResult.rows[0];
+      const isNewCheckin = result.is_new;
 
-      let result: DailyCheckin;
-
-      if (existing) {
-        // Обновляем существующий
-        const updateResult = await query<DailyCheckin>(
-          `UPDATE daily_checkins SET
-            workout = $1,
-            workout_type = $2,
-            nutrition = $3,
-            water = $4,
-            water_liters = $5,
-            sleep_hours = $6,
-            mood = $7,
-            steps = $8
-          WHERE id = $9
-          RETURNING *`,
-          [
-            data.workout,
-            data.workout_type || null,
-            data.nutrition,
-            data.water,
-            data.water_liters || null,
-            data.sleep_hours,
-            data.mood,
-            data.steps || null,
-            existing.id,
-          ]
-        );
-
-        result = updateResult.rows[0];
-      } else {
-        // Создаём новый
-        const insertResult = await query<DailyCheckin>(
-          `INSERT INTO daily_checkins
-            (user_id, date, workout, workout_type, nutrition, water, water_liters, sleep_hours, mood, steps)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-          RETURNING *`,
-          [
-            userId,
-            today,
-            data.workout,
-            data.workout_type || null,
-            data.nutrition,
-            data.water,
-            data.water_liters || null,
-            data.sleep_hours,
-            data.mood,
-            data.steps || null,
-          ]
-        );
-
-        result = insertResult.rows[0];
-
-        // Начисляем очки только за новый чекин
+      // Начисляем очки только за новый чекин
+      if (isNewCheckin) {
         await statsService.addPoints(userId, POINTS.DAILY_CHECKIN);
         await statsService.updateStreak(userId);
 

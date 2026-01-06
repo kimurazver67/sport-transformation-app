@@ -396,16 +396,16 @@ router.post('/tasks/:taskId/complete/:userId', async (req: Request, res: Respons
   }
 });
 
-// Отменить выполнение задания
-router.delete('/tasks/:taskId/complete/:userId', async (req: Request, res: Response) => {
-  try {
-    await taskService.uncomplete(req.params.userId, req.params.taskId);
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Uncomplete task error:', error);
-    res.status(500).json({ success: false, error: 'Internal server error' });
-  }
-});
+// Отменить выполнение задания - ОТКЛЮЧЕНО для предотвращения XP farming
+// router.delete('/tasks/:taskId/complete/:userId', async (req: Request, res: Response) => {
+//   try {
+//     await taskService.uncomplete(req.params.userId, req.params.taskId);
+//     res.json({ success: true });
+//   } catch (error) {
+//     console.error('Uncomplete task error:', error);
+//     res.status(500).json({ success: false, error: 'Internal server error' });
+//   }
+// });
 
 // ===== КОНЦЕПЦИИ НЕДЕЛИ =====
 

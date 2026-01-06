@@ -231,24 +231,30 @@ export const taskService = {
     );
     const participantCount = parseInt(participantCountResult.rows[0]?.count || '0', 10);
 
-    const result = [];
+    // Оптимизация: получаем все completion counts одним запросом (исправление N+1 query)
+    const taskIds = tasks.map(t => t.id);
+    const completionCountsResult = await query<{ task_id: string; count: string }>(
+      `SELECT task_id, COUNT(*) as count
+       FROM task_completions
+       WHERE task_id = ANY($1)
+       GROUP BY task_id`,
+      [taskIds]
+    );
 
-    for (const task of tasks) {
-      const completionCountResult = await query<{ count: string }>(
-        'SELECT COUNT(*) as count FROM task_completions WHERE task_id = $1',
-        [task.id]
-      );
-      const completedCount = parseInt(completionCountResult.rows[0]?.count || '0', 10);
+    // Создаём map для быстрого доступа
+    const completionCounts = new Map<string, number>();
+    completionCountsResult.rows.forEach(row => {
+      completionCounts.set(row.task_id, parseInt(row.count, 10));
+    });
 
-      result.push({
-        taskId: task.id,
-        title: task.title,
-        goal: task.goal,
-        isBonus: task.is_bonus,
-        completedCount,
-        totalParticipants: participantCount,
-      });
-    }
+    const result = tasks.map(task => ({
+      taskId: task.id,
+      title: task.title,
+      goal: task.goal,
+      isBonus: task.is_bonus,
+      completedCount: completionCounts.get(task.id) || 0,
+      totalParticipants: participantCount,
+    }));
 
     return result;
   },

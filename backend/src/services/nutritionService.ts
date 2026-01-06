@@ -25,6 +25,11 @@ export interface NutritionPlan {
  * - У = (Ккал − Б×4 − Ж×9) ÷ 4 + 150г
  */
 export function calculateNutrition(weight: number, goal: UserGoal): NutritionPlan {
+  // Валидация веса
+  if (!weight || weight <= 0 || weight > 500) {
+    throw new Error('Invalid weight: must be between 1 and 500 kg');
+  }
+
   let calories: number;
   let protein: number;
   let fat: number;
