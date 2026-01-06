@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Обслуживание: Update деплой список изменений
 • Добавлено: Add +150g carbs for muscle gain goal
 • Исправлено: Update KBJU calorie formulas (weight_loss: 29, muscle_gain: 36)
 • Исправлено: Show onboarding for goal selection anytime, not only before course start
 • Исправлено: Remove tasks_completed from resetAllPoints query
-• Добавлено: Add admin endpoint to reset all user points
 
 06.01.2026 22:17
