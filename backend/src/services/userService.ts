@@ -187,4 +187,51 @@ export const userService = {
 
     return result.rows;
   },
+
+  // Разблокировать замеры для пользователя на определённое количество часов
+  async unlockMeasurement(userId: string, hours: number = 24): Promise<Date> {
+    const unlockUntil = new Date(Date.now() + hours * 60 * 60 * 1000);
+
+    await query(
+      `UPDATE users SET measurement_unlocked_until = $1, updated_at = NOW() WHERE id = $2`,
+      [unlockUntil.toISOString(), userId]
+    );
+
+    return unlockUntil;
+  },
+
+  // Заблокировать замеры (убрать разблокировку)
+  async lockMeasurement(userId: string): Promise<void> {
+    await query(
+      `UPDATE users SET measurement_unlocked_until = NULL, updated_at = NOW() WHERE id = $1`,
+      [userId]
+    );
+  },
+
+  // Проверить, разблокированы ли замеры для пользователя
+  async isMeasurementUnlocked(userId: string): Promise<boolean> {
+    const result = await query<{ measurement_unlocked_until: string | null }>(
+      `SELECT measurement_unlocked_until FROM users WHERE id = $1`,
+      [userId]
+    );
+
+    const unlockUntil = result.rows[0]?.measurement_unlocked_until;
+    if (!unlockUntil) return false;
+
+    return new Date(unlockUntil) > new Date();
+  },
+
+  // Получить время разблокировки замеров
+  async getMeasurementUnlockTime(userId: string): Promise<Date | null> {
+    const result = await query<{ measurement_unlocked_until: string | null }>(
+      `SELECT measurement_unlocked_until FROM users WHERE id = $1`,
+      [userId]
+    );
+
+    const unlockUntil = result.rows[0]?.measurement_unlocked_until;
+    if (!unlockUntil) return null;
+
+    const unlockDate = new Date(unlockUntil);
+    return unlockDate > new Date() ? unlockDate : null;
+  },
 };

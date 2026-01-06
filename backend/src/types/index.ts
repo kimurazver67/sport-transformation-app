@@ -32,6 +32,7 @@ export interface User {
   height?: number;
   age?: number;
   avatar_file_id?: string;
+  measurement_unlocked_until?: string;
   created_at: string;
   updated_at: string;
 }

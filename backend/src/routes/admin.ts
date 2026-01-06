@@ -263,6 +263,53 @@ router.get('/sheets-url', (req: Request, res: Response) => {
   res.json({ success: true, data: { url } });
 });
 
+// ===== РАЗБЛОКИРОВКА ЗАМЕРОВ =====
+
+// Открыть замеры для участника на определённое время
+router.post('/unlock-measurement/:userId', async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.userId;
+    const { hours = 24 } = req.body; // По умолчанию 24 часа
+
+    // Получаем пользователя
+    const participants = await userService.getAllParticipants();
+    const user = participants.find(p => p.id === userId);
+
+    if (!user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    // Устанавливаем время разблокировки
+    const unlockUntil = await userService.unlockMeasurement(userId, hours);
+
+    res.json({
+      success: true,
+      data: {
+        userId,
+        userName: user.first_name,
+        unlocked_until: unlockUntil,
+      },
+    });
+  } catch (error) {
+    console.error('Unlock measurement error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Закрыть замеры для участника (отменить разблокировку)
+router.post('/lock-measurement/:userId', async (req: Request, res: Response) => {
+  try {
+    const userId = req.params.userId;
+
+    await userService.lockMeasurement(userId);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Lock measurement error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 // ===== БОНУСЫ ЗА ПРОГРЕСС =====
 
 // Запустить начисление бонусов за прогресс вручную

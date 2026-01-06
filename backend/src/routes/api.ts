@@ -165,6 +165,25 @@ router.get('/measurements/:userId', async (req: Request, res: Response) => {
 router.get('/measurement/can-submit', async (req: Request, res: Response) => {
   try {
     const timezoneOffset = req.query.tz ? parseInt(req.query.tz as string) : undefined;
+    const userId = req.query.userId as string | undefined;
+
+    // Сначала проверяем персональную разблокировку
+    if (userId) {
+      const isUnlocked = await userService.isMeasurementUnlocked(userId);
+      if (isUnlocked) {
+        const unlockTime = await userService.getMeasurementUnlockTime(userId);
+        return res.json({
+          success: true,
+          data: {
+            allowed: true,
+            unlocked: true,
+            unlocked_until: unlockTime?.toISOString(),
+          },
+        });
+      }
+    }
+
+    // Иначе проверяем стандартное окно
     const result = canSubmitMeasurement(timezoneOffset);
     res.json({ success: true, data: result });
   } catch (error) {
@@ -176,20 +195,27 @@ router.get('/measurement/can-submit', async (req: Request, res: Response) => {
 // Создать/обновить замер
 router.post('/measurement/:userId', async (req: Request, res: Response) => {
   try {
-    // Проверяем временное окно
-    const timezoneOffset = req.body.timezoneOffset;
-    const canSubmit = canSubmitMeasurement(timezoneOffset);
+    const userId = req.params.userId;
 
-    if (!canSubmit.allowed) {
-      return res.status(403).json({
-        success: false,
-        error: canSubmit.reason,
-        nextWindow: canSubmit.nextWindow,
-      });
+    // Сначала проверяем персональную разблокировку
+    const isUnlocked = await userService.isMeasurementUnlocked(userId);
+
+    if (!isUnlocked) {
+      // Если не разблокировано — проверяем стандартное окно
+      const timezoneOffset = req.body.timezoneOffset;
+      const canSubmit = canSubmitMeasurement(timezoneOffset);
+
+      if (!canSubmit.allowed) {
+        return res.status(403).json({
+          success: false,
+          error: canSubmit.reason,
+          nextWindow: canSubmit.nextWindow,
+        });
+      }
     }
 
     const data: MeasurementForm = req.body;
-    const measurement = await measurementService.createOrUpdate(req.params.userId, data);
+    const measurement = await measurementService.createOrUpdate(userId, data);
     res.json({ success: true, data: measurement });
   } catch (error) {
     console.error('Create measurement error:', error);

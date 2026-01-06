@@ -210,7 +210,8 @@ export const useStore = create<Store>((set, get) => ({
 
   checkMeasurementWindow: async () => {
     try {
-      const result = await api.canSubmitMeasurement()
+      const { user } = get()
+      const result = await api.canSubmitMeasurement(user?.id)
       set({
         canSubmitMeasurement: result.allowed,
         measurementWindowInfo: result.allowed ? null : { reason: result.reason, nextWindow: result.nextWindow }

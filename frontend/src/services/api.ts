@@ -108,13 +108,17 @@ export const api = {
   getMeasurements: (userId: string) =>
     request<WeeklyMeasurement[]>(`/api/measurements/${userId}`),
 
-  canSubmitMeasurement: () => {
+  canSubmitMeasurement: (userId?: string) => {
     const tz = new Date().getTimezoneOffset()
+    const params = new URLSearchParams({ tz: String(tz) })
+    if (userId) params.append('userId', userId)
     return request<{
       allowed: boolean
       reason?: string
       nextWindow?: { day: string; time: string }
-    }>(`/api/measurement/can-submit?tz=${tz}`)
+      unlocked?: boolean
+      unlocked_until?: string
+    }>(`/api/measurement/can-submit?${params}`)
   },
 
   createMeasurement: (userId: string, data: MeasurementForm) => {
@@ -319,6 +323,23 @@ export const api = {
   // Синхронизация с Google Sheets
   syncAdminSheets: () =>
     request<{ message: string }>('/admin/sync-sheets', {
+      method: 'POST',
+    }),
+
+  // Открыть замеры для участника
+  unlockMeasurement: (userId: string, hours = 24) =>
+    request<{
+      userId: string
+      userName: string
+      unlocked_until: string
+    }>(`/admin/unlock-measurement/${userId}`, {
+      method: 'POST',
+      body: JSON.stringify({ hours }),
+    }),
+
+  // Закрыть замеры для участника
+  lockMeasurement: (userId: string) =>
+    request<{ success: boolean }>(`/admin/lock-measurement/${userId}`, {
       method: 'POST',
     }),
 }

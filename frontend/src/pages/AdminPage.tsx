@@ -20,6 +20,7 @@ interface ParticipantData {
     first_name: string
     last_name?: string
     goal?: 'weight_loss' | 'muscle_gain' | null
+    measurement_unlocked_until?: string | null
   }
   stats: {
     total_points: number
@@ -229,6 +230,48 @@ export default function AdminPage() {
       hapticFeedback('error')
       showAlert('Ошибка синхронизации')
     }
+  }
+
+  const unlockMeasurement = async (userId: string, userName: string) => {
+    const confirmed = await showConfirm(`Открыть замеры для ${userName} на 24 часа?`)
+    if (!confirmed) return
+
+    try {
+      const result = await api.unlockMeasurement(userId, 24)
+      hapticFeedback('success')
+      const until = new Date(result.unlocked_until).toLocaleString('ru-RU', {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+      showAlert(`Замеры открыты до ${until}`)
+      fetchData() // Обновляем список
+    } catch (err) {
+      hapticFeedback('error')
+      showAlert('Ошибка при открытии замеров')
+    }
+  }
+
+  const lockMeasurement = async (userId: string, userName: string) => {
+    const confirmed = await showConfirm(`Закрыть замеры для ${userName}?`)
+    if (!confirmed) return
+
+    try {
+      await api.lockMeasurement(userId)
+      hapticFeedback('success')
+      showAlert('Замеры закрыты')
+      fetchData()
+    } catch (err) {
+      hapticFeedback('error')
+      showAlert('Ошибка при закрытии замеров')
+    }
+  }
+
+  // Проверка, активна ли разблокировка
+  const isUnlocked = (unlockUntil?: string | null): boolean => {
+    if (!unlockUntil) return false
+    return new Date(unlockUntil) > new Date()
   }
 
   if (isLoading) {
@@ -506,6 +549,25 @@ export default function AdminPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {/* Кнопка разблокировки замеров */}
+                  {isUnlocked(p.user.measurement_unlocked_until) ? (
+                    <button
+                      onClick={() => lockMeasurement(p.user.id, p.user.first_name)}
+                      className="font-mono text-[10px] px-2 py-1 border border-neon-orange bg-neon-orange/20 text-neon-orange hover:bg-neon-orange hover:text-void transition-all"
+                      title="Замеры открыты — нажми чтобы закрыть"
+                    >
+                      📏✓
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => unlockMeasurement(p.user.id, p.user.first_name)}
+                      className="font-mono text-[10px] px-2 py-1 border border-steel-500 text-steel-500 hover:border-neon-orange hover:text-neon-orange transition-all"
+                      title="Открыть замеры на 24ч"
+                    >
+                      📏
+                    </button>
+                  )}
+                  {/* Статус чекина */}
                   {p.has_checkin_today ? (
                     <div className="w-8 h-8 flex items-center justify-center border-2 border-neon-lime text-neon-lime">
                       ✓
