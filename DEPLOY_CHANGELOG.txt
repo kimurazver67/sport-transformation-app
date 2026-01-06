@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Update Railway service name in бэкенд деплойment workflow
 • ci: Add GitHub Actions workflow for бэкенд деплойment
 • Исправлено: Update default course дата старта to 2026-01-05
 • Рефакторинг: Critical fixes from Spec-Driven Development review
 • security: Add authorization protection to API endpoints
-• Обслуживание: Update деплой список изменений
 
-06.01.2026 23:23
+06.01.2026 23:27
