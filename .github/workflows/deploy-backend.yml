@@ -23,7 +23,7 @@ jobs:
         working-directory: backend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --service sport-transformation-app
+        run: railway up --service sport-transformation-app --detach
 
       - name: Notify Telegram on Success
         if: success()
