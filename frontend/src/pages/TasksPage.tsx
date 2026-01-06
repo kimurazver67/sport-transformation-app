@@ -4,7 +4,7 @@ import { useStore } from '../store'
 import { useTelegram } from '../hooks/useTelegram'
 
 export default function TasksPage() {
-  const { courseWeek, tasks, fetchTasks, completeTask, uncompleteTask } = useStore()
+  const { courseWeek, tasks, fetchTasks, completeTask } = useStore()
   const { hapticFeedback } = useTelegram()
 
   useEffect(() => {
@@ -12,16 +12,17 @@ export default function TasksPage() {
   }, [])
 
   const handleToggle = async (taskId: string, completed: boolean) => {
+    // Запрещаем отмену выполнения — задание нельзя "развыполнить"
+    if (completed) {
+      return
+    }
+
     hapticFeedback('light')
     try {
-      if (completed) {
-        await uncompleteTask(taskId)
-      } else {
-        await completeTask(taskId)
-        hapticFeedback('success')
-      }
+      await completeTask(taskId)
+      hapticFeedback('success')
     } catch (error) {
-      console.error('Failed to toggle task:', error)
+      console.error('Failed to complete task:', error)
       hapticFeedback('error')
     }
   }
@@ -107,10 +108,10 @@ export default function TasksPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.05 * index }}
             onClick={() => handleToggle(task.id, task.completed)}
-            className={`p-4 border-2 cursor-pointer transition-all relative overflow-hidden ${
+            className={`p-4 border-2 transition-all relative overflow-hidden ${
               task.completed
                 ? 'border-neon-lime bg-neon-lime/5'
-                : 'border-void-400 bg-void-200 hover:border-steel-500'
+                : 'border-void-400 bg-void-200 hover:border-steel-500 cursor-pointer'
             }`}
             style={{
               boxShadow: task.completed ? '4px 4px 0 0 #BFFF00' : 'none'
