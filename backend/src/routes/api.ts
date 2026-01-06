@@ -7,10 +7,11 @@ import { taskService } from '../services/taskService';
 import { achievementService } from '../services/achievementService';
 import { mindfulnessService } from '../services/mindfulnessService';
 import { nutritionService } from '../services/nutritionService';
+import { aiPsychologistService } from '../services/aiPsychologistService';
 import { getCurrentWeek, getDaysUntilStart, isCourseStarted, canSubmitMeasurement, config } from '../config';
 import { CheckinForm, MeasurementForm } from '../types';
 import { query } from '../db/postgres';
-import { requireSelfOrTrainer } from '../middleware/auth';
+import { requireSelfOrTrainer, trainerOnly, requireAuth } from '../middleware/auth';
 
 const router = Router();
 
@@ -814,5 +815,289 @@ router.get('/debug/measurements/:telegram_id', async (req: Request, res: Respons
   }
 });
 }
+
+// =============================================
+// AI ПСИХОЛОГ - ENDPOINTS
+// =============================================
+
+/**
+ * GET /api/psychology/analysis/:userId/:weekNumber
+ * Получить психологический анализ за неделю
+ *
+ * Query params:
+ * - force: boolean (принудительная регенерация)
+ */
+router.get(
+  '/psychology/analysis/:userId/:weekNumber',
+  requireAuth,
+  requireSelfOrTrainer,
+  async (req: Request, res: Response) => {
+    try {
+      const { userId, weekNumber } = req.params;
+      const force = req.query.force === 'true';
+
+      const weekNum = parseInt(weekNumber);
+
+      if (isNaN(weekNum) || weekNum < 0 || weekNum > 20) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid week number. Must be between 0 and 20',
+        });
+      }
+
+      const analysis = await aiPsychologistService.getAnalysis(userId, weekNum, force);
+
+      res.json({
+        success: true,
+        data: analysis,
+      });
+    } catch (error) {
+      console.error('Get psychology analysis error:', error);
+
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+      // Специфичные ошибки для клиента
+      if (errorMessage.includes('AI Psychologist is not enabled')) {
+        return res.status(503).json({
+          success: false,
+          error: 'AI Psychologist feature is currently unavailable',
+          code: 'AI_NOT_ENABLED',
+        });
+      }
+
+      if (errorMessage.includes('Недостаточно')) {
+        return res.status(400).json({
+          success: false,
+          error: errorMessage,
+          code: 'INSUFFICIENT_DATA',
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        error: 'Failed to generate psychology analysis',
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/psychology/history/:userId
+ * Получить историю анализов пользователя
+ *
+ * Query params:
+ * - limit: number (по умолчанию 10)
+ */
+router.get(
+  '/psychology/history/:userId',
+  requireAuth,
+  requireSelfOrTrainer,
+  async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.params;
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      if (limit < 1 || limit > 100) {
+        return res.status(400).json({
+          success: false,
+          error: 'Limit must be between 1 and 100',
+        });
+      }
+
+      const history = await aiPsychologistService.getAnalysisHistory(userId, limit);
+
+      res.json({
+        success: true,
+        data: history,
+      });
+    } catch (error) {
+      console.error('Get psychology history error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch analysis history',
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/psychology/availability/:userId/:weekNumber
+ * Проверить доступность анализа для недели
+ */
+router.get(
+  '/psychology/availability/:userId/:weekNumber',
+  requireAuth,
+  requireSelfOrTrainer,
+  async (req: Request, res: Response) => {
+    try {
+      const { userId, weekNumber } = req.params;
+      const weekNum = parseInt(weekNumber);
+
+      if (isNaN(weekNum) || weekNum < 0 || weekNum > 20) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid week number',
+        });
+      }
+
+      const availability = await aiPsychologistService.checkAvailability(userId, weekNum);
+
+      res.json({
+        success: true,
+        data: availability,
+      });
+    } catch (error) {
+      console.error('Check psychology availability error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to check availability',
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/psychology/regenerate/:userId/:weekNumber
+ * Принудительная регенерация анализа (только для тренера)
+ */
+router.post(
+  '/psychology/regenerate/:userId/:weekNumber',
+  requireAuth,
+  trainerOnly,
+  async (req: Request, res: Response) => {
+    try {
+      const { userId, weekNumber } = req.params;
+      const weekNum = parseInt(weekNumber);
+
+      if (isNaN(weekNum) || weekNum < 0 || weekNum > 20) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid week number',
+        });
+      }
+
+      console.log(`Trainer requested regeneration for user ${userId}, week ${weekNum}`);
+
+      // Удаляем старый анализ
+      await aiPsychologistService.deleteAnalysis(userId, weekNum);
+
+      // Генерируем новый
+      const analysis = await aiPsychologistService.generateWeeklyAnalysis(userId, weekNum);
+
+      res.json({
+        success: true,
+        data: analysis,
+        message: 'Analysis regenerated successfully',
+      });
+    } catch (error) {
+      console.error('Regenerate psychology analysis error:', error);
+
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+      res.status(500).json({
+        success: false,
+        error: errorMessage,
+      });
+    }
+  }
+);
+
+/**
+ * DELETE /api/psychology/analysis/:userId/:weekNumber
+ * Удалить анализ (только для тренера)
+ */
+router.delete(
+  '/psychology/analysis/:userId/:weekNumber',
+  requireAuth,
+  trainerOnly,
+  async (req: Request, res: Response) => {
+    try {
+      const { userId, weekNumber } = req.params;
+      const weekNum = parseInt(weekNumber);
+
+      if (isNaN(weekNum)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid week number',
+        });
+      }
+
+      await aiPsychologistService.deleteAnalysis(userId, weekNum);
+
+      res.json({
+        success: true,
+        message: 'Analysis deleted successfully',
+      });
+    } catch (error) {
+      console.error('Delete psychology analysis error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to delete analysis',
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/psychology/week/:weekNumber
+ * Получить все анализы за неделю (только для тренера)
+ */
+router.get(
+  '/psychology/week/:weekNumber',
+  requireAuth,
+  trainerOnly,
+  async (req: Request, res: Response) => {
+    try {
+      const { weekNumber } = req.params;
+      const weekNum = parseInt(weekNumber);
+
+      if (isNaN(weekNum) || weekNum < 0 || weekNum > 20) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid week number',
+        });
+      }
+
+      const analyses = await aiPsychologistService.getWeekAnalysesForAllUsers(weekNum);
+
+      res.json({
+        success: true,
+        data: analyses,
+      });
+    } catch (error) {
+      console.error('Get week analyses error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch week analyses',
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/psychology/stats
+ * Статистика по анализам (только для тренера)
+ */
+router.get(
+  '/psychology/stats',
+  requireAuth,
+  trainerOnly,
+  async (req: Request, res: Response) => {
+    try {
+      const stats = await aiPsychologistService.getStatistics();
+
+      res.json({
+        success: true,
+        data: stats,
+      });
+    } catch (error) {
+      console.error('Get psychology stats error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to fetch statistics',
+      });
+    }
+  }
+);
 
 export default router;
