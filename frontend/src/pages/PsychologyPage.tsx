@@ -126,10 +126,10 @@ const PsychologyPage = () => {
             </div>
 
             <div className="border-t-2 border-yellow-400/20 pt-4 mt-4">
-              <p className="font-mono text-xs font-bold text-steel-100 uppercase mb-2">
+              <p className="font-mono text-xs font-bold text-steel-100 uppercase mb-3">
                 <span className="text-yellow-400">[</span> Когда придет отчет? <span className="text-yellow-400">]</span>
               </p>
-              <div className="bg-void-300 border border-void-400 p-3 space-y-2">
+              <div className="bg-void-300 border border-void-400 p-3 space-y-2 mb-4">
                 <div className="flex items-center gap-2">
                   <span className="text-lg">📅</span>
                   <p className="font-mono text-xs text-steel-400">
@@ -142,10 +142,34 @@ const PsychologyPage = () => {
                     Минимум <span className="text-neon-lime font-bold">3 чекина</span> за неделю
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">💡</span>
+              </div>
+
+              <p className="font-mono text-xs font-bold text-steel-100 uppercase mb-2">
+                <span className="text-neon-cyan">[</span> Что вносить для анализа? <span className="text-neon-cyan">]</span>
+              </p>
+              <div className="bg-void-300 border border-void-400 p-3 space-y-2">
+                <div className="flex items-start gap-2">
+                  <span className="text-lg flex-shrink-0">✅</span>
                   <p className="font-mono text-xs text-steel-400">
-                    Больше данных = <span className="text-neon-lime font-bold">точнее анализ</span>
+                    <span className="text-neon-cyan font-bold">Ежедневные чекины:</span> тренировки, питание, сон, настроение
+                  </p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-lg flex-shrink-0">🧘</span>
+                  <p className="font-mono text-xs text-steel-400">
+                    <span className="text-neon-cyan font-bold">Дневник осознанности:</span> благодарности, победы, трудности, уроки
+                  </p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-lg flex-shrink-0">⚡</span>
+                  <p className="font-mono text-xs text-steel-400">
+                    <span className="text-neon-cyan font-bold">Импульсы:</span> срывы, триггеры, как справился
+                  </p>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-lg flex-shrink-0">💡</span>
+                  <p className="font-mono text-xs text-steel-400">
+                    Больше данных = <span className="text-neon-lime font-bold">глубже анализ</span> от AI психолога
                   </p>
                 </div>
               </div>
