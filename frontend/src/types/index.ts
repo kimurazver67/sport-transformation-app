@@ -257,3 +257,113 @@ export interface ParticipantProgress {
   achievements: Achievement[];
   stats: UserStats;
 }
+
+// =============================================
+// AI ПСИХОЛОГ - ТИПЫ (синхронизированы с backend)
+// =============================================
+
+// ===== ПРИОРИТЕТЫ =====
+export type PsychologyPriority = 'high' | 'medium' | 'low';
+
+// ===== ТИПЫ ИНСАЙТОВ =====
+export type InsightType = 'warning' | 'positive' | 'neutral';
+
+// ===== КАТЕГОРИИ РЕКОМЕНДАЦИЙ =====
+export type RecommendationCategory = 'sleep' | 'nutrition' | 'training' | 'mindset' | 'stress' | 'recovery';
+
+// ===== ПАТТЕРН ПОВЕДЕНИЯ =====
+export interface BehavioralPattern {
+  score: number; // 1-10
+  observation: string;
+  evidence: string[];
+}
+
+// ===== КЛЮЧЕВОЙ ИНСАЙТ =====
+export interface KeyInsight {
+  type: InsightType;
+  title: string;
+  description: string;
+  priority: PsychologyPriority;
+}
+
+// ===== ВЫЯВЛЕННАЯ ПРОБЛЕМА =====
+export interface IdentifiedProblem {
+  problem: string;
+  root_cause: string;
+  impact: string;
+  evidence: string[];
+}
+
+// ===== РЕКОМЕНДАЦИЯ =====
+export interface Recommendation {
+  category: RecommendationCategory;
+  priority: PsychologyPriority;
+  action: string;
+  why: string;
+  how: string[];
+  expected_result: string;
+}
+
+// ===== ПРИЗНАНИЕ ПРОГРЕССА =====
+export interface ProgressRecognition {
+  wins: string[];
+  growth_areas: string[];
+}
+
+// ===== ПОЛНЫЙ ПСИХОЛОГИЧЕСКИЙ АНАЛИЗ =====
+export interface PsychologyAnalysis {
+  behavioral_patterns: {
+    consistency?: BehavioralPattern;
+    sleep?: BehavioralPattern;
+    nutrition?: BehavioralPattern;
+    emotional_state?: BehavioralPattern;
+    stress_management?: BehavioralPattern;
+    discipline?: BehavioralPattern;
+  };
+  key_insights: KeyInsight[];
+  identified_problems: IdentifiedProblem[];
+  recommendations: Recommendation[];
+  progress_recognition: ProgressRecognition;
+  next_week_focus: string[];
+}
+
+// ===== НЕДЕЛЬНЫЕ ДАННЫЕ (SUMMARY) =====
+export interface WeeklyDataSummary {
+  total_checkins: number;
+  total_workouts: number;
+  avg_sleep_hours: number;
+  avg_mood: number;
+  avg_water_liters: number;
+  nutrition_adherence: number; // 0-100%
+  total_impulses: number;
+  impulses_resisted: number;
+  impulses_gave_in: number;
+  tasks_completed: number;
+  tasks_total: number;
+  mindfulness_entries: number;
+  weight_change?: number;
+  has_measurement: boolean;
+}
+
+// ===== СОХРАНЁННЫЙ АНАЛИЗ =====
+export interface PsychologyAnalysisRecord {
+  id: string;
+  user_id: string;
+  week_number: number;
+  analysis: PsychologyAnalysis;
+  data_summary: WeeklyDataSummary;
+  created_at: string;
+}
+
+// ===== ИСТОРИЯ АНАЛИЗОВ =====
+export interface AnalysisHistory {
+  analyses: PsychologyAnalysisRecord[];
+  total: number;
+}
+
+// ===== ДОСТУПНОСТЬ АНАЛИЗА =====
+export interface AnalysisAvailability {
+  available: boolean;
+  has_cached: boolean;
+  reason?: string;
+}

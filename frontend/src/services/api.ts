@@ -9,6 +9,9 @@ import type {
   CheckinForm,
   MeasurementForm,
   ApiResponse,
+  PsychologyAnalysisRecord,
+  AnalysisHistory,
+  AnalysisAvailability,
 } from '../types'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
@@ -353,4 +356,49 @@ export const api = {
     request<{ success: boolean }>(`/admin/lock-measurement/${userId}`, {
       method: 'POST',
     }),
+
+  // ===== PSYCHOLOGY (AI Психолог) =====
+
+  // Получить психологический анализ за неделю (или сгенерировать новый)
+  getPsychologyAnalysis: (userId: string, weekNumber: number, force: boolean = false) =>
+    request<PsychologyAnalysisRecord>(
+      `/api/psychology/analysis/${userId}/${weekNumber}?force=${force}`
+    ),
+
+  // Получить историю анализов пользователя
+  getPsychologyHistory: (userId: string, limit: number = 10) =>
+    request<AnalysisHistory>(`/api/psychology/history/${userId}?limit=${limit}`),
+
+  // Проверить доступность анализа для недели
+  checkPsychologyAvailability: (userId: string, weekNumber: number) =>
+    request<AnalysisAvailability>(
+      `/api/psychology/availability/${userId}/${weekNumber}`
+    ),
+
+  // Принудительно регенерировать анализ (только тренер)
+  regeneratePsychologyAnalysis: (userId: string, weekNumber: number) =>
+    request<PsychologyAnalysisRecord>(
+      `/api/psychology/regenerate/${userId}/${weekNumber}`,
+      { method: 'POST' }
+    ),
+
+  // Удалить анализ (только тренер)
+  deletePsychologyAnalysis: (userId: string, weekNumber: number) =>
+    request<void>(
+      `/api/psychology/analysis/${userId}/${weekNumber}`,
+      { method: 'DELETE' }
+    ),
+
+  // Получить все анализы за неделю для всех пользователей (только тренер)
+  getPsychologyWeekAnalyses: (weekNumber: number) =>
+    request<PsychologyAnalysisRecord[]>(`/api/psychology/week/${weekNumber}`),
+
+  // Получить статистику по анализам (только тренер)
+  getPsychologyStats: () =>
+    request<{
+      total_analyses: number
+      analyses_this_week: number
+      unique_users: number
+      avg_per_user: number
+    }>('/api/psychology/stats'),
 }

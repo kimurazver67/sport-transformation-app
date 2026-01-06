@@ -5,6 +5,7 @@ import { useStore } from '../store'
 import { useTelegram } from '../hooks/useTelegram'
 import CheckinForm from '../components/CheckinForm'
 import OnboardingFlow from '../components/OnboardingFlow'
+import PsychologyInsight from '../components/PsychologyInsight'
 
 // Animated counter component
 function AnimatedCounter({ value, duration = 1500 }: { value: number; duration?: number }) {
@@ -448,11 +449,23 @@ export default function HomePage() {
         </motion.section>
       )}
 
+      {/* Psychology Insight */}
+      {user.role === 'participant' && isCourseStarted && (
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9 }}
+          className="px-4 mb-6"
+        >
+          <PsychologyInsight />
+        </motion.section>
+      )}
+
       {/* Motivation Banner */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.9 }}
+        transition={{ delay: 0.95 }}
         className="px-4"
       >
         <div className="border-2 border-void-400 p-4 relative corner-decoration bg-void-200">
