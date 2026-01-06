@@ -259,7 +259,6 @@ export const statsService = {
       `UPDATE user_stats
        SET total_points = $1,
            weekly_points = $1,
-           tasks_completed = 0,
            updated_at = NOW()`,
       [points]
     );
