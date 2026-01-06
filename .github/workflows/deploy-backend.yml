@@ -23,8 +23,7 @@ jobs:
         working-directory: backend
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
-        run: railway up --service sport-transformation-app-production
+        run: railway up --service sport-transformation-app
 
       - name: Notify Telegram on Success
         if: success()
