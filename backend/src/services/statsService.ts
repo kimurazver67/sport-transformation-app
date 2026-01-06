@@ -252,4 +252,17 @@ export const statsService = {
       rank: index + 1,
     }));
   },
+
+  // Сбросить баллы всем пользователям
+  async resetAllPoints(points: number): Promise<number> {
+    const result = await query(
+      `UPDATE user_stats
+       SET total_points = $1,
+           weekly_points = $1,
+           tasks_completed = 0,
+           updated_at = NOW()`,
+      [points]
+    );
+    return result.rowCount || 0;
+  },
 };

@@ -358,4 +358,26 @@ router.get('/weekly-progress/:week?', async (req: Request, res: Response) => {
   }
 });
 
+// ===== СБРОС БАЛЛОВ =====
+
+// Сбросить баллы всем пользователям
+router.post('/reset-points', async (req: Request, res: Response) => {
+  try {
+    const { points = 100 } = req.body;
+
+    const result = await statsService.resetAllPoints(points);
+
+    res.json({
+      success: true,
+      data: {
+        message: `Points reset to ${points} for all users`,
+        updated: result
+      }
+    });
+  } catch (error) {
+    console.error('Reset points error:', error);
+    res.status(500).json({ success: false, error: 'Failed to reset points' });
+  }
+});
+
 export default router;

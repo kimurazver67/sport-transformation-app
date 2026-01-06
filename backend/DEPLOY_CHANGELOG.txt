@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Activity calendar date format mismatch
 • Исправлено: Update KBJU calorie formulas (weight_loss: 30, muscle_gain: 32)
 • Добавлено: Auto-calculate KBJU (calories, protein, fat, carbs) based on weight and goal
 • Исправлено: Disable task uncomplete - prevent XP farming
 • Добавлено: Admin panel to unlock measurements for participants
-• Исправлено: Deduct XP when task completion is cancelled
 
-06.01.2026 19:59
+06.01.2026 20:02
