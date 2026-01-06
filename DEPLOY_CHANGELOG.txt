@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Update KBJU calorie formulas (weight_loss: 30, muscle_gain: 32)
 • Добавлено: Auto-calculate KBJU (calories, protein, fat, carbs) based on weight and goal
 • Исправлено: Disable task uncomplete - prevent XP farming
 • Добавлено: Admin panel to unlock measurements for participants
 • Исправлено: Deduct XP when task completion is cancelled
-• Добавлено: Add 'Menu' button to bot callbacks for навигация
 
-06.01.2026 19:07
+06.01.2026 19:59

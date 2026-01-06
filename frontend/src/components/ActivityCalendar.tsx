@@ -20,7 +20,9 @@ export default function ActivityCalendar({ checkins, months = 3 }: ActivityCalen
     // Create map for quick checkin lookup
     const checkinMap = new Map<string, DailyCheckin>()
     checkins.forEach((c) => {
-      checkinMap.set(c.date, c)
+      // Normalize date to YYYY-MM-DD format
+      const dateStr = c.date.split('T')[0]
+      checkinMap.set(dateStr, c)
     })
 
     return days.map((day) => {
