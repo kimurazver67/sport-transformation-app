@@ -118,10 +118,38 @@ const PsychologyPage = () => {
         )}
 
         {error && (
-          <div className="brutal-card border-2 border-yellow-400 bg-yellow-400/5 p-6 text-center">
-            <div className="text-4xl mb-3">📊</div>
-            <p className="font-display font-bold text-steel-100 mb-1 uppercase">Недостаточно_данных</p>
-            <p className="font-mono text-xs text-steel-500">{error}</p>
+          <div className="brutal-card border-2 border-yellow-400 bg-yellow-400/5 p-6">
+            <div className="text-center">
+              <div className="text-4xl mb-3">📊</div>
+              <p className="font-display font-bold text-steel-100 mb-1 uppercase">Недостаточно_данных</p>
+              <p className="font-mono text-xs text-steel-500 mb-4">{error}</p>
+            </div>
+
+            <div className="border-t-2 border-yellow-400/20 pt-4 mt-4">
+              <p className="font-mono text-xs font-bold text-steel-100 uppercase mb-2">
+                <span className="text-yellow-400">[</span> Когда придет отчет? <span className="text-yellow-400">]</span>
+              </p>
+              <div className="bg-void-300 border border-void-400 p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">📅</span>
+                  <p className="font-mono text-xs text-steel-400">
+                    <span className="text-neon-lime font-bold">Каждое воскресенье</span> в 20:00
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">📋</span>
+                  <p className="font-mono text-xs text-steel-400">
+                    Минимум <span className="text-neon-lime font-bold">3 чекина</span> за неделю
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">💡</span>
+                  <p className="font-mono text-xs text-steel-400">
+                    Больше данных = <span className="text-neon-lime font-bold">точнее анализ</span>
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
