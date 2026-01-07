@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Обслуживание: Update список изменений
 • Исправлено: Make nutrition migration 014 idempotent (IF NOT EXISTS)
 • Документация: Add urgent fix instructions for Railway 502 error
 • Обслуживание: Trigger Railway reдеплой to fix 502 error
 • Документация: Add Railway ADMIN_CHAT_ID setup instructions and test script
-• Исправлено: Remove FatSecret dependency from all core nutrition endpoints
 
 07.01.2026 13:25
