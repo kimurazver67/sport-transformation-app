@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Expand product database to 500 items
 • Добавлено: Phase 1.5 - Seed nutrition database (tags, products, recipes)
 • Добавлено: Phase 1 - Nutrition system database schema and types
 • Исправлено: Update muscle_gain KBJU formula
 • Добавлено: Add detailed data requirements to Psychology error state
-• Добавлено: Add schedule info to Psychology page error state
 
-07.01.2026 09:58
+07.01.2026 10:12

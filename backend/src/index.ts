@@ -7,6 +7,7 @@ import { telegramAuthMiddleware, trainerOnly } from './middleware/auth';
 import { adminNotifier, initAdminNotifier } from './services/adminNotifierService';
 import apiRoutes from './routes/api';
 import adminRoutes from './routes/admin';
+import nutritionRoutes from './routes/nutrition';
 import { testConnection, closePool, runMigrations } from './db/postgres';
 import { testRedisConnection, closeRedis } from './db/redis';
 
@@ -33,6 +34,9 @@ app.use(telegramAuthMiddleware);
 
 // API маршруты
 app.use('/api', apiRoutes);
+
+// Nutrition API маршруты
+app.use('/api/nutrition', nutritionRoutes);
 
 // Admin маршруты (только для тренера)
 app.use('/admin', trainerOnly, adminRoutes);

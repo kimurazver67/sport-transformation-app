@@ -39,6 +39,11 @@ const envSchema = z.object({
   AI_PSYCHOLOGIST_TEMPERATURE: z.string().default('0.7'),
   MIN_CHECKINS_FOR_ANALYSIS: z.string().default('3'),
   MIN_MINDFULNESS_FOR_ANALYSIS: z.string().default('2'),
+
+  // FatSecret API
+  FATSECRET_CLIENT_ID: z.string().optional(),
+  FATSECRET_CLIENT_SECRET: z.string().optional(),
+  FATSECRET_ENABLED: z.string().default('false'),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -90,6 +95,11 @@ export const config = {
       minCheckinsForAnalysis: parseInt(parsed.data.MIN_CHECKINS_FOR_ANALYSIS, 10),
       minMindfulnessForAnalysis: parseInt(parsed.data.MIN_MINDFULNESS_FOR_ANALYSIS, 10),
     },
+  },
+  fatsecret: {
+    clientId: parsed.data.FATSECRET_CLIENT_ID,
+    clientSecret: parsed.data.FATSECRET_CLIENT_SECRET,
+    enabled: parsed.data.FATSECRET_ENABLED === 'true',
   },
 };
 
