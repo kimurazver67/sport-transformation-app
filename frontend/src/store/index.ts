@@ -111,13 +111,13 @@ export const useStore = create<Store>((set, get) => ({
       const user = await api.getUser(telegramId)
       set({ user, isLoading: false })
 
-      // Загружаем остальные данные
+      // Загружаем остальные данные (с catch чтобы ошибка одного не ломала все)
       const { fetchTodayCheckin, fetchStats, fetchCourseWeek, fetchNutrition } = get()
       await Promise.all([
-        fetchTodayCheckin(),
-        fetchStats(),
-        fetchCourseWeek(),
-        fetchNutrition(),
+        fetchTodayCheckin().catch(e => console.log('fetchTodayCheckin error:', e)),
+        fetchStats().catch(e => console.log('fetchStats error:', e)),
+        fetchCourseWeek().catch(e => console.log('fetchCourseWeek error:', e)),
+        fetchNutrition().catch(e => console.log('fetchNutrition skipped:', e)),
       ])
     } catch (error) {
       console.error('Failed to fetch user:', error)
@@ -139,12 +139,16 @@ export const useStore = create<Store>((set, get) => ({
   },
 
   updateOnboarding: async (data) => {
-    const { user } = get()
+    const { user, fetchNutrition } = get()
     if (!user) return
 
     try {
       const updatedUser = await api.updateOnboarding(user.id, data)
       set({ user: updatedUser })
+      // После обновления цели загружаем КБЖУ
+      if (data.goal) {
+        await fetchNutrition().catch(e => console.log('fetchNutrition after onboarding:', e))
+      }
     } catch (error) {
       console.error('Failed to update onboarding:', error)
       throw error
