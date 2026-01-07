@@ -22,6 +22,45 @@ if (config.fatsecret.enabled && config.fatsecret.clientId && config.fatsecret.cl
 }
 
 /**
+ * GET /api/nutrition/debug
+ * Диагностика состояния nutrition таблиц
+ */
+router.get('/debug', async (req: Request, res: Response) => {
+  try {
+    // Проверяем существование таблиц
+    const tablesCheck = await pool.query(`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+      AND table_name IN ('products', 'tags', 'recipes', 'recipe_items')
+    `);
+
+    const tables = tablesCheck.rows.map(r => r.table_name);
+
+    // Считаем записи в каждой таблице
+    const counts: Record<string, number> = {};
+    for (const table of ['products', 'tags', 'recipes']) {
+      try {
+        const result = await pool.query(`SELECT COUNT(*) as count FROM ${table}`);
+        counts[table] = parseInt(result.rows[0].count);
+      } catch (e: any) {
+        counts[table] = -1; // таблица не существует
+      }
+    }
+
+    res.json({
+      existing_tables: tables,
+      counts,
+      fatsecret_enabled: !!nutritionService
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      error: error.message
+    });
+  }
+});
+
+/**
  * GET /api/nutrition/products/search
  * Поиск продуктов (локальная БД + FatSecret API)
  */
