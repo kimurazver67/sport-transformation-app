@@ -1102,20 +1102,4 @@ router.get(
   }
 );
 
-// ВРЕМЕННЫЙ endpoint для сброса заданий (удалить после использования)
-router.post('/tasks/reset-all-completions-temp-secret-2026', async (req: Request, res: Response) => {
-  try {
-    const result = await query('DELETE FROM task_completions RETURNING *');
-    const deletedCount = result.rowCount || 0;
-    console.log(`[TEMP] Reset task completions: deleted ${deletedCount} records`);
-    res.json({
-      success: true,
-      data: { deletedCount, message: `Сброшено ${deletedCount} выполненных заданий` }
-    });
-  } catch (error) {
-    console.error('Reset task completions error:', error);
-    res.status(500).json({ success: false, error: 'Internal server error' });
-  }
-});
-
 export default router;
