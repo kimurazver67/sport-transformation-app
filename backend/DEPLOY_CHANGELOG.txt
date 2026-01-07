@@ -1,9 +1,9 @@
 Последние изменения:
 
-• Добавлено: Expand recipe database to 500+ recipes (TheMealDB import + template generator)
+• Добавлено: Expand recipe database to 500+ recipes
 • Добавлено: Phase 4 - Meal plan generation algorithm
 • Добавлено: Phase 3 - Nutrition фронтенд components
 • Документация: Add FatSecret API integration setup guide
 • Добавлено: Phase 2 - Backend nutrition services and API
 
-07.01.2026 11:30
+07.01.2026 12:09

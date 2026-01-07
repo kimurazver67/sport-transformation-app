@@ -264,7 +264,7 @@ router.delete('/exclusions/:userId/tags/:tagId', async (req: Request, res: Respo
 
 /**
  * POST /api/nutrition/meal-plans/generate
- * Генерация плана питания
+ * Генерация плана питания (не требует FatSecret)
  */
 router.post('/meal-plans/generate', async (req: Request, res: Response) => {
   try {
@@ -305,7 +305,7 @@ router.post('/meal-plans/generate', async (req: Request, res: Response) => {
 
 /**
  * GET /api/nutrition/meal-plans/:mealPlanId
- * Получить план питания со всеми днями и приёмами пищи
+ * Получить план питания со всеми днями и приёмами пищи (не требует FatSecret)
  */
 router.get('/meal-plans/:mealPlanId', async (req: Request, res: Response) => {
   try {
@@ -398,7 +398,7 @@ router.get('/meal-plans/:mealPlanId', async (req: Request, res: Response) => {
 
 /**
  * GET /api/nutrition/meal-plans/:mealPlanId/shopping-list
- * Получить список покупок для плана питания
+ * Получить список покупок для плана питания (не требует FatSecret)
  */
 router.get('/meal-plans/:mealPlanId/shopping-list', async (req: Request, res: Response) => {
   try {
