@@ -272,8 +272,9 @@ router.get('/nutrition/:userId', async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
+    // Если нет цели — возвращаем null (пользователь ещё не прошёл онбординг)
     if (!user.goal) {
-      return res.status(400).json({ success: false, error: 'User goal not set' });
+      return res.json({ success: true, data: null });
     }
 
     // Получаем последний замер для актуального веса
@@ -282,8 +283,9 @@ router.get('/nutrition/:userId', async (req: Request, res: Response) => {
       ? measurements[measurements.length - 1].weight
       : user.start_weight;
 
+    // Если нет веса — возвращаем null
     if (!currentWeight) {
-      return res.status(400).json({ success: false, error: 'No weight data available' });
+      return res.json({ success: true, data: null });
     }
 
     const nutrition = nutritionService.calculate(currentWeight, user.goal);

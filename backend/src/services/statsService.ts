@@ -26,14 +26,27 @@ interface LeaderboardRow {
 
 export const statsService = {
   // Получить статистику пользователя
-  async getUserStats(userId: string): Promise<UserStats | null> {
-    const statsResult = await query<UserStatsRow>(
+  async getUserStats(userId: string): Promise<UserStats> {
+    let statsResult = await query<UserStatsRow>(
       'SELECT * FROM user_stats WHERE user_id = $1',
       [userId]
     );
 
+    // Если статистики нет, создаём запись
+    if (!statsResult.rows[0]) {
+      await query(
+        `INSERT INTO user_stats (user_id, current_streak, max_streak, total_points, weekly_points)
+         VALUES ($1, 0, 0, 0, 0)
+         ON CONFLICT (user_id) DO NOTHING`,
+        [userId]
+      );
+      statsResult = await query<UserStatsRow>(
+        'SELECT * FROM user_stats WHERE user_id = $1',
+        [userId]
+      );
+    }
+
     const stats = statsResult.rows[0];
-    if (!stats) return null;
 
     // Получаем позиции в рейтинге через view
     const leaderboardResult = await query<{ rank_overall: number; rank_weekly: number }>(
@@ -45,10 +58,10 @@ export const statsService = {
 
     return {
       user_id: userId,
-      current_streak: stats.current_streak,
-      max_streak: stats.max_streak,
-      total_points: stats.total_points,
-      weekly_points: stats.weekly_points,
+      current_streak: stats?.current_streak || 0,
+      max_streak: stats?.max_streak || 0,
+      total_points: stats?.total_points || 0,
+      weekly_points: stats?.weekly_points || 0,
       total_checkins: 0,
       total_measurements: 0,
       tasks_completed: 0,

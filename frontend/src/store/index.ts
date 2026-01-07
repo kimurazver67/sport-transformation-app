@@ -146,12 +146,16 @@ export const useStore = create<Store>((set, get) => ({
   },
 
   updateOnboarding: async (data) => {
-    const { user } = get()
+    const { user, fetchNutrition } = get()
     if (!user) return
 
     try {
       const updatedUser = await api.updateOnboarding(user.id, data)
       set({ user: updatedUser })
+      // После обновления цели загружаем КБЖУ
+      if (data.goal) {
+        await fetchNutrition().catch(e => console.log('fetchNutrition after onboarding:', e))
+      }
     } catch (error) {
       console.error('Failed to update onboarding:', error)
       throw error
