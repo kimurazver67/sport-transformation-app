@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Handle missing goal/nutrition for new users gracefully
+• Исправлено: Use direct node commands instead of npm workspace in nixpacks
 • Исправлено: Make migrations 014 and 015 idempotent
 • Исправлено: Use npm install instead of npm ci in nixpacks
 • Документация: Add Railway Root Directory configuration instructions
-• Исправлено: Update деплойment configuration for monorepo structure
-• Исправлено: Add Railway configuration files for monorepo деплойment
 
-07.01.2026 14:11
+07.01.2026 15:58
