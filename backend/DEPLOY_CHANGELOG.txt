@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Add --detach flag to Railway деплойment to prevent CI timeout
 • Обслуживание: Update деплой список изменений
 • Исправлено: Update Railway service name in бэкенд деплойment workflow
 • ci: Add GitHub Actions workflow for бэкенд деплойment
 • Исправлено: Update default course дата старта to 2026-01-05
-• Рефакторинг: Critical fixes from Spec-Driven Development review
 
-06.01.2026 23:28
+07.01.2026 14:58

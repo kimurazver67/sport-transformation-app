@@ -49,6 +49,15 @@ window.onunhandledrejection = (event) => {
   )
 }
 
+// Ловим кастомные ошибки из store
+window.addEventListener('app-error', ((event: CustomEvent) => {
+  const { message, stack } = event.detail
+  sendErrorToTelegram(message, stack)
+}) as EventListener)
+
+// Отправляем лог при старте
+sendErrorToTelegram('App starting...', `User Agent: ${navigator.userAgent}`)
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <BrowserRouter>

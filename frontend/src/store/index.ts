@@ -107,20 +107,26 @@ export const useStore = create<Store>((set, get) => ({
 
   fetchUser: async (telegramId) => {
     try {
+      console.log('[Store] fetchUser started for telegramId:', telegramId)
       set({ isLoading: true, error: null })
       const user = await api.getUser(telegramId)
+      console.log('[Store] User loaded:', user?.id)
       set({ user, isLoading: false })
 
-      // Загружаем остальные данные
-      const { fetchTodayCheckin, fetchStats, fetchCourseWeek, fetchNutrition } = get()
+      // Загружаем остальные данные (без nutrition - он опционален)
+      const { fetchTodayCheckin, fetchStats, fetchCourseWeek } = get()
+      console.log('[Store] Loading additional data...')
       await Promise.all([
-        fetchTodayCheckin(),
-        fetchStats(),
-        fetchCourseWeek(),
-        fetchNutrition(),
+        fetchTodayCheckin().catch(e => console.error('[Store] fetchTodayCheckin error:', e)),
+        fetchStats().catch(e => console.error('[Store] fetchStats error:', e)),
+        fetchCourseWeek().catch(e => console.error('[Store] fetchCourseWeek error:', e)),
       ])
-    } catch (error) {
-      console.error('Failed to fetch user:', error)
+      console.log('[Store] All data loaded successfully')
+    } catch (error: any) {
+      console.error('[Store] Failed to fetch user:', error)
+      // Отправляем ошибку в Telegram
+      const errorMsg = `[Store] fetchUser failed: ${error?.message || String(error)}`
+      window.dispatchEvent(new CustomEvent('app-error', { detail: { message: errorMsg, stack: error?.stack } }))
       set({ error: 'Не удалось загрузить данные', isLoading: false })
     }
   },
