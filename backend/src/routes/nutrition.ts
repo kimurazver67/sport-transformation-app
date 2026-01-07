@@ -4,7 +4,11 @@ import { Router, Request, Response } from 'express';
 import { config } from '../config';
 import { pool } from '../db/postgres';
 
+console.log('[Nutrition Routes] Module loading...');
+
 const router = Router();
+
+console.log('[Nutrition Routes] Router created');
 
 // Ленивая загрузка сервисов (чтобы ошибки не ломали весь модуль)
 let nutritionService: any = null;
@@ -555,5 +559,7 @@ router.get('/meal-plans/:mealPlanId/shopping-list', async (req: Request, res: Re
     });
   }
 });
+
+console.log('[Nutrition Routes] All routes registered, exporting...');
 
 export default router;

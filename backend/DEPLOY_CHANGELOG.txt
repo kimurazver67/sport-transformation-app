@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Lazy load nutrition services to prevent module crash
 • Исправлено: Improve debug endpoint error handling
 • Добавлено: Add nutrition debug endpoint
 • Исправлено: Make migrations idempotent - don't crash on "already exists"
 • Добавлено: Auto-run SQL migration files on startup
-• Исправлено: Add name_ru field to tags endpoint response
 
-07.01.2026 23:50
+07.01.2026 23:53
