@@ -19,10 +19,10 @@ export interface NutritionPlan {
  * - У = (Ккал − Б×4 − 450) ÷ 4
  *
  * Набор массы:
- * - Ккал = Вес × 36
+ * - Ккал = Вес × 36 + 500
  * - Б = Вес × 2
  * - Ж = Вес × 1
- * - У = (Ккал − Б×4 − Ж×9) ÷ 4 + 150г
+ * - У = (Ккал − Б×4 − Ж×9) ÷ 4
  */
 export function calculateNutrition(weight: number, goal: UserGoal): NutritionPlan {
   // Валидация веса
@@ -44,11 +44,11 @@ export function calculateNutrition(weight: number, goal: UserGoal): NutritionPla
   } else {
     // Набор массы (muscle_gain)
     const baseCalories = Math.round(weight * 36);
+    calories = baseCalories + 500; // +500 ккал к базовому минимуму
     protein = Math.round(weight * 2);
     fat = Math.round(weight * 1);
-    carbs = Math.round((baseCalories - protein * 4 - fat * 9) / 4) + 150;
-    // Пересчитываем итоговую калорийность с учётом добавленных углеводов
-    calories = protein * 4 + fat * 9 + carbs * 4;
+    // Углеводы рассчитываются от итоговой калорийности (без доп. +150г)
+    carbs = Math.round((calories - protein * 4 - fat * 9) / 4);
   }
 
   // Защита от отрицательных значений
