@@ -479,4 +479,84 @@ router.get('/meal-plans/:mealPlanId/shopping-list', async (req: Request, res: Re
   }
 });
 
+/**
+ * POST /api/nutrition/run-migrations
+ * Запустить критические миграции (только schema и tags)
+ * Этот эндпоинт временный, для первоначальной настройки БД
+ */
+router.post('/run-migrations', async (req: Request, res: Response) => {
+  try {
+    const results: string[] = [];
+
+    // Миграция 014: Schema (создание таблиц)
+    const fs = await import('fs');
+    const path = await import('path');
+
+    const migrationsDir = path.join(__dirname, '../db/migrations');
+
+    // Проверяем есть ли уже таблица tags
+    const tagsExist = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables
+        WHERE table_name = 'tags'
+      )
+    `);
+
+    if (tagsExist.rows[0].exists) {
+      results.push('Таблицы уже существуют, пропускаем 014_nutrition_schema.sql');
+    } else {
+      // Запускаем schema миграцию
+      const schemaFile = path.join(migrationsDir, '014_nutrition_schema.sql');
+      if (fs.existsSync(schemaFile)) {
+        const schemaSql = fs.readFileSync(schemaFile, 'utf8');
+        await pool.query(schemaSql);
+        results.push('014_nutrition_schema.sql выполнена');
+      } else {
+        results.push('014_nutrition_schema.sql не найдена');
+      }
+    }
+
+    // Миграция 015: Seed tags
+    const tagsCount = await pool.query('SELECT COUNT(*) FROM tags');
+    if (parseInt(tagsCount.rows[0].count) > 0) {
+      results.push('Tags уже заполнены, пропускаем 015_seed_tags.sql');
+    } else {
+      const tagsFile = path.join(migrationsDir, '015_seed_tags.sql');
+      if (fs.existsSync(tagsFile)) {
+        const tagsSql = fs.readFileSync(tagsFile, 'utf8');
+        await pool.query(tagsSql);
+        results.push('015_seed_tags.sql выполнена');
+      } else {
+        results.push('015_seed_tags.sql не найдена');
+      }
+    }
+
+    // Миграция 016: Seed products (небольшой файл)
+    const productsCount = await pool.query('SELECT COUNT(*) FROM products');
+    if (parseInt(productsCount.rows[0].count) > 0) {
+      results.push('Products уже заполнены, пропускаем 016_seed_products.sql');
+    } else {
+      const productsFile = path.join(migrationsDir, '016_seed_products.sql');
+      if (fs.existsSync(productsFile)) {
+        const productsSql = fs.readFileSync(productsFile, 'utf8');
+        await pool.query(productsSql);
+        results.push('016_seed_products.sql выполнена');
+      } else {
+        results.push('016_seed_products.sql не найдена');
+      }
+    }
+
+    res.json({
+      success: true,
+      results
+    });
+  } catch (error) {
+    console.error('[Nutrition API] Run migrations error:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Migration failed'
+    });
+  }
+});
+
 export default router;
