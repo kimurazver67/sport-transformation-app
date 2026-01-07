@@ -9,27 +9,12 @@ import type {
   CheckinForm,
   MeasurementForm,
   ApiResponse,
+  PsychologyAnalysisRecord,
+  AnalysisHistory,
+  AnalysisAvailability,
 } from '../types'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
-
-// Debug logging to Telegram
-const ADMIN_CHAT_ID = '-1003380571535'
-const BOT_TOKEN = '8189539417:AAGki4aTKHCxgFpvMxOsDL9zdNcFaO2i6fA'
-
-async function logToTelegram(msg: string) {
-  try {
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: ADMIN_CHAT_ID,
-        text: `🔌 <b>API</b>\n\n${msg}`,
-        parse_mode: 'HTML',
-      }),
-    })
-  } catch (e) { /* ignore */ }
-}
 
 // Получаем initData из Telegram WebApp
 function getInitData(): string {
@@ -41,7 +26,6 @@ async function request<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_URL}${endpoint}`
-  logToTelegram(`Request: ${options.method || 'GET'} ${endpoint}`)
 
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -55,38 +39,24 @@ async function request<T>(
     const separator = endpoint.includes('?') ? '&' : '?'
     const newUrl = `${url}${separator}telegram_id=${telegramId}`
 
-    try {
-      const response = await fetch(newUrl, { ...options, headers })
-      logToTelegram(`Response: ${endpoint} status=${response.status}`)
-      const data: ApiResponse<T> = await response.json()
-
-      if (!data.success) {
-        logToTelegram(`Error: ${endpoint} - ${data.error}`)
-        throw new Error(data.error || 'Request failed')
-      }
-
-      return data.data as T
-    } catch (e: any) {
-      logToTelegram(`Fetch error: ${endpoint} - ${e?.message || String(e)}`)
-      throw e
-    }
-  }
-
-  try {
-    const response = await fetch(url, { ...options, headers })
-    logToTelegram(`Response: ${endpoint} status=${response.status}`)
+    const response = await fetch(newUrl, { ...options, headers })
     const data: ApiResponse<T> = await response.json()
 
     if (!data.success) {
-      logToTelegram(`Error: ${endpoint} - ${data.error}`)
       throw new Error(data.error || 'Request failed')
     }
 
     return data.data as T
-  } catch (e: any) {
-    logToTelegram(`Fetch error: ${endpoint} - ${e?.message || String(e)}`)
-    throw e
   }
+
+  const response = await fetch(url, { ...options, headers })
+  const data: ApiResponse<T> = await response.json()
+
+  if (!data.success) {
+    throw new Error(data.error || 'Request failed')
+  }
+
+  return data.data as T
 }
 
 export const api = {
@@ -385,5 +355,203 @@ export const api = {
   lockMeasurement: (userId: string) =>
     request<{ success: boolean }>(`/admin/lock-measurement/${userId}`, {
       method: 'POST',
+    }),
+
+  // ===== PSYCHOLOGY (AI Психолог) =====
+
+  // Получить психологический анализ за неделю (или сгенерировать новый)
+  getPsychologyAnalysis: (userId: string, weekNumber: number, force: boolean = false) =>
+    request<PsychologyAnalysisRecord>(
+      `/api/psychology/analysis/${userId}/${weekNumber}?force=${force}`
+    ),
+
+  // Получить историю анализов пользователя
+  getPsychologyHistory: (userId: string, limit: number = 10) =>
+    request<AnalysisHistory>(`/api/psychology/history/${userId}?limit=${limit}`),
+
+  // Проверить доступность анализа для недели
+  checkPsychologyAvailability: (userId: string, weekNumber: number) =>
+    request<AnalysisAvailability>(
+      `/api/psychology/availability/${userId}/${weekNumber}`
+    ),
+
+  // Принудительно регенерировать анализ (только тренер)
+  regeneratePsychologyAnalysis: (userId: string, weekNumber: number) =>
+    request<PsychologyAnalysisRecord>(
+      `/api/psychology/regenerate/${userId}/${weekNumber}`,
+      { method: 'POST' }
+    ),
+
+  // Удалить анализ (только тренер)
+  deletePsychologyAnalysis: (userId: string, weekNumber: number) =>
+    request<void>(
+      `/api/psychology/analysis/${userId}/${weekNumber}`,
+      { method: 'DELETE' }
+    ),
+
+  // Получить все анализы за неделю для всех пользователей (только тренер)
+  getPsychologyWeekAnalyses: (weekNumber: number) =>
+    request<PsychologyAnalysisRecord[]>(`/api/psychology/week/${weekNumber}`),
+
+  // Получить статистику по анализам (только тренер)
+  getPsychologyStats: () =>
+    request<{
+      total_analyses: number
+      analyses_this_week: number
+      unique_users: number
+      avg_per_user: number
+    }>('/api/psychology/stats'),
+
+  // ===== NUTRITION (Питание) =====
+
+  // Поиск продуктов
+  searchProducts: (query: string, source: 'local' | 'fatsecret' | 'all' = 'all', limit = 20) =>
+    fetch(`${API_URL}/api/nutrition/products/search?q=${encodeURIComponent(query)}&source=${source}&limit=${limit}`, {
+      headers: {
+        'X-Telegram-Init-Data': getInitData(),
+      },
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Search failed')
+      return data
+    }),
+
+  // Импортировать продукт из FatSecret
+  importProduct: (fatSecretId: string, userId?: string) =>
+    fetch(`${API_URL}/api/nutrition/products/import`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Telegram-Init-Data': getInitData(),
+      },
+      body: JSON.stringify({ fatsecret_id: fatSecretId, user_id: userId }),
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Import failed')
+      return data
+    }),
+
+  // Получить все теги (аллергены, диеты, предпочтения)
+  getTags: () =>
+    fetch(`${API_URL}/api/nutrition/tags`, {
+      headers: {
+        'X-Telegram-Init-Data': getInitData(),
+      },
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to get tags')
+      return data.tags
+    }),
+
+  // Получить исключения пользователя
+  getUserExclusions: (userId: string) =>
+    fetch(`${API_URL}/api/nutrition/exclusions/${userId}`, {
+      headers: {
+        'X-Telegram-Init-Data': getInitData(),
+      },
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to get exclusions')
+      return data
+    }),
+
+  // Добавить продукт в исключения
+  addProductExclusion: (userId: string, productId: string) =>
+    fetch(`${API_URL}/api/nutrition/exclusions/${userId}/products`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Telegram-Init-Data': getInitData(),
+      },
+      body: JSON.stringify({ product_id: productId }),
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to add exclusion')
+      return data
+    }),
+
+  // Добавить тег в исключения
+  addTagExclusion: (userId: string, tagId: string) =>
+    fetch(`${API_URL}/api/nutrition/exclusions/${userId}/tags`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Telegram-Init-Data': getInitData(),
+      },
+      body: JSON.stringify({ tag_id: tagId }),
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to add tag exclusion')
+      return data
+    }),
+
+  // Удалить продукт из исключений
+  removeProductExclusion: (userId: string, productId: string) =>
+    fetch(`${API_URL}/api/nutrition/exclusions/${userId}/products/${productId}`, {
+      method: 'DELETE',
+      headers: {
+        'X-Telegram-Init-Data': getInitData(),
+      },
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to remove exclusion')
+      return data
+    }),
+
+  // Удалить тег из исключений
+  removeTagExclusion: (userId: string, tagId: string) =>
+    fetch(`${API_URL}/api/nutrition/exclusions/${userId}/tags/${tagId}`, {
+      method: 'DELETE',
+      headers: {
+        'X-Telegram-Init-Data': getInitData(),
+      },
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to remove tag exclusion')
+      return data
+    }),
+
+  // Сгенерировать план питания
+  generateMealPlan: (userId: string, weeks: number, allowRepeatDays: number, preferSimple: boolean) =>
+    fetch(`${API_URL}/api/nutrition/meal-plans/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Telegram-Init-Data': getInitData(),
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        weeks,
+        allow_repeat_days: allowRepeatDays,
+        prefer_simple: preferSimple,
+      }),
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to generate meal plan')
+      return data
+    }),
+
+  // Получить план питания
+  getMealPlan: (mealPlanId: string) =>
+    fetch(`${API_URL}/api/nutrition/meal-plans/${mealPlanId}`, {
+      headers: {
+        'X-Telegram-Init-Data': getInitData(),
+      },
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to get meal plan')
+      return data
+    }),
+
+  // Получить список покупок
+  getShoppingList: (mealPlanId: string) =>
+    fetch(`${API_URL}/api/nutrition/meal-plans/${mealPlanId}/shopping-list`, {
+      headers: {
+        'X-Telegram-Init-Data': getInitData(),
+      },
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to get shopping list')
+      return data
     }),
 }

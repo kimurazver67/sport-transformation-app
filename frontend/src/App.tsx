@@ -9,6 +9,7 @@ import LeaderboardPage from './pages/LeaderboardPage'
 import ProfilePage from './pages/ProfilePage'
 import TasksPage from './pages/TasksPage'
 import MindfulnessPage from './pages/MindfulnessPage'
+import PsychologyPage from './pages/PsychologyPage'
 import AdminPage from './pages/AdminPage'
 import LoadingScreen from './components/LoadingScreen'
 
@@ -100,6 +101,7 @@ function App() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/tasks" element={<TasksPage />} />
         <Route path="/mindfulness" element={<MindfulnessPage />} />
+        <Route path="/psychology" element={<PsychologyPage />} />
         {isTrainer && <Route path="/admin" element={<AdminPage />} />}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
