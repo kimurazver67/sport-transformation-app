@@ -14,7 +14,8 @@ INSERT INTO tags (name, name_ru, type, description) VALUES
 ('soy', 'Соя', 'allergen', 'Соевые продукты'),
 ('sesame', 'Кунжут', 'allergen', 'Семена кунжута и продукты с ними'),
 ('mustard', 'Горчица', 'allergen', 'Горчица и продукты с ней'),
-('celery', 'Сельдерей', 'allergen', 'Сельдерей и продукты с ним');
+('celery', 'Сельдерей', 'allergen', 'Сельдерей и продукты с ним')
+ON CONFLICT (name) DO NOTHING;
 
 -- ===== DIETS (Диеты) =====
 
@@ -25,7 +26,8 @@ INSERT INTO tags (name, name_ru, type, description) VALUES
 ('keto', 'Кето-диета', 'diet', 'Низкоуглеводная, высокожировая диета'),
 ('paleo', 'Палео-диета', 'diet', 'Без зерновых, бобовых, молочных'),
 ('halal', 'Халяль', 'diet', 'Разрешено исламом'),
-('kosher', 'Кошер', 'diet', 'Разрешено иудаизмом');
+('kosher', 'Кошер', 'diet', 'Разрешено иудаизмом')
+ON CONFLICT (name) DO NOTHING;
 
 -- ===== PREFERENCES (Предпочтения) =====
 
@@ -37,7 +39,8 @@ INSERT INTO tags (name, name_ru, type, description) VALUES
 ('organic', 'Органическое', 'preference', 'Органические продукты'),
 ('non_gmo', 'Без ГМО', 'preference', 'Продукты без генетической модификации'),
 ('whole_grain', 'Цельнозерновое', 'preference', 'Из цельного зерна'),
-('raw', 'Сырое', 'preference', 'Продукты без термообработки');
+('raw', 'Сырое', 'preference', 'Продукты без термообработки')
+ON CONFLICT (name) DO NOTHING;
 
 -- ===== ИНДЕКСЫ УЖЕ СОЗДАНЫ В МИГРАЦИИ 014 =====
 -- CREATE INDEX idx_tags_type ON tags(type);

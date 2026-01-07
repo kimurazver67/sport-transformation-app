@@ -364,12 +364,15 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+DROP TRIGGER IF EXISTS update_products_updated_at ON products;
 CREATE TRIGGER update_products_updated_at BEFORE UPDATE ON products
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_recipes_updated_at ON recipes;
 CREATE TRIGGER update_recipes_updated_at BEFORE UPDATE ON recipes
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_meal_plans_updated_at ON meal_plans;
 CREATE TRIGGER update_meal_plans_updated_at BEFORE UPDATE ON meal_plans
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
