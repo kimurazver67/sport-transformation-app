@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Add comprehensive debug logging to Telegram
 • Исправлено: Add error logging to Telegram and remove nutrition dependency
 • Исправлено: Add --detach flag to Railway деплойment to prevent CI timeout
 • Обслуживание: Update деплой список изменений
 • Исправлено: Update Railway service name in бэкенд деплойment workflow
-• ci: Add GitHub Actions workflow for бэкенд деплойment
 
-07.01.2026 15:07
+07.01.2026 15:15

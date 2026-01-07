@@ -113,13 +113,14 @@ export const useStore = create<Store>((set, get) => ({
       console.log('[Store] User loaded:', user?.id)
       set({ user, isLoading: false })
 
-      // Загружаем остальные данные (без nutrition - он опционален)
-      const { fetchTodayCheckin, fetchStats, fetchCourseWeek } = get()
+      // Загружаем остальные данные
+      const { fetchTodayCheckin, fetchStats, fetchCourseWeek, fetchNutrition } = get()
       console.log('[Store] Loading additional data...')
       await Promise.all([
         fetchTodayCheckin().catch(e => console.error('[Store] fetchTodayCheckin error:', e)),
         fetchStats().catch(e => console.error('[Store] fetchStats error:', e)),
         fetchCourseWeek().catch(e => console.error('[Store] fetchCourseWeek error:', e)),
+        fetchNutrition().catch(e => console.log('[Store] fetchNutrition skipped:', e)), // Опционально - может не быть у пользователя
       ])
       console.log('[Store] All data loaded successfully')
     } catch (error: any) {
