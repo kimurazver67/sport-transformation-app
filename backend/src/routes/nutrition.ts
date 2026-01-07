@@ -1,25 +1,41 @@
 // backend/src/routes/nutrition.ts
 
 import { Router, Request, Response } from 'express';
-import { NutritionDataService } from '../services/nutritionDataService';
-import { MealPlanGenerator } from '../services/mealPlanGenerator';
 import { config } from '../config';
 import { pool } from '../db/postgres';
 
 const router = Router();
 
-// Инициализируем сервис
-let nutritionService: NutritionDataService | null = null;
+// Ленивая загрузка сервисов (чтобы ошибки не ломали весь модуль)
+let nutritionService: any = null;
+let MealPlanGenerator: any = null;
 
-if (config.fatsecret.enabled && config.fatsecret.clientId && config.fatsecret.clientSecret) {
-  nutritionService = new NutritionDataService(
-    config.fatsecret.clientId,
-    config.fatsecret.clientSecret
-  );
-  console.log('[Nutrition API] FatSecret integration enabled');
-} else {
-  console.log('[Nutrition API] FatSecret integration disabled (missing credentials)');
+async function initServices() {
+  if (nutritionService === null && config.fatsecret.enabled && config.fatsecret.clientId && config.fatsecret.clientSecret) {
+    try {
+      const { NutritionDataService } = await import('../services/nutritionDataService');
+      nutritionService = new NutritionDataService(
+        config.fatsecret.clientId,
+        config.fatsecret.clientSecret
+      );
+      console.log('[Nutrition API] FatSecret integration enabled');
+    } catch (e) {
+      console.error('[Nutrition API] Failed to init FatSecret:', e);
+    }
+  }
+
+  if (MealPlanGenerator === null) {
+    try {
+      const module = await import('../services/mealPlanGenerator');
+      MealPlanGenerator = module.MealPlanGenerator;
+    } catch (e) {
+      console.error('[Nutrition API] Failed to load MealPlanGenerator:', e);
+    }
+  }
 }
+
+// Инициализируем при первом запросе
+let servicesInitialized = false;
 
 /**
  * GET /api/nutrition/debug
@@ -70,6 +86,12 @@ router.get('/debug', async (req: Request, res: Response) => {
  */
 router.get('/products/search', async (req: Request, res: Response) => {
   try {
+    // Ленивая инициализация сервисов
+    if (!servicesInitialized) {
+      await initServices();
+      servicesInitialized = true;
+    }
+
     const query = req.query.q as string;
     const source = (req.query.source as 'local' | 'fatsecret' | 'all') || 'all';
     const limit = parseInt(req.query.limit as string) || 20;
@@ -342,6 +364,12 @@ router.delete('/exclusions/:userId/tags/:tagId', async (req: Request, res: Respo
  */
 router.post('/meal-plans/generate', async (req: Request, res: Response) => {
   try {
+    // Ленивая инициализация сервисов
+    if (!servicesInitialized) {
+      await initServices();
+      servicesInitialized = true;
+    }
+
     const { user_id, weeks, allow_repeat_days, prefer_simple } = req.body;
 
     if (!user_id) {
@@ -353,6 +381,12 @@ router.post('/meal-plans/generate', async (req: Request, res: Response) => {
     if (!weeks || weeks < 1 || weeks > 4) {
       return res.status(400).json({
         error: 'weeks must be between 1 and 4'
+      });
+    }
+
+    if (!MealPlanGenerator) {
+      return res.status(503).json({
+        error: 'MealPlanGenerator not available'
       });
     }
 
