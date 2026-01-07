@@ -27,12 +27,6 @@ if (config.fatsecret.enabled && config.fatsecret.clientId && config.fatsecret.cl
  */
 router.get('/products/search', async (req: Request, res: Response) => {
   try {
-    if (!nutritionService) {
-      return res.status(503).json({
-        error: 'Nutrition service is not available'
-      });
-    }
-
     const query = req.query.q as string;
     const source = (req.query.source as 'local' | 'fatsecret' | 'all') || 'all';
     const limit = parseInt(req.query.limit as string) || 20;
@@ -43,12 +37,46 @@ router.get('/products/search', async (req: Request, res: Response) => {
       });
     }
 
-    const result = await nutritionService.searchProducts(query, source, limit);
+    // Если FatSecret доступен - используем nutritionService
+    if (nutritionService) {
+      const result = await nutritionService.searchProducts(query, source, limit);
+      return res.json({
+        products: result.products,
+        total: result.products.length,
+        cached: result.cached
+      });
+    }
+
+    // Fallback: только локальная БД (без FatSecret)
+    if (source === 'fatsecret') {
+      return res.json({
+        products: [],
+        total: 0,
+        cached: false,
+        note: 'FatSecret integration is disabled'
+      });
+    }
+
+    // Поиск в локальной БД
+    const result = await pool.query(`
+      SELECT
+        id, name, calories, protein, fat, carbs,
+        category, unit, unit_weight, cooking_ratio,
+        'local' as source
+      FROM products
+      WHERE
+        name ILIKE $1 OR
+        name ILIKE $2
+      ORDER BY
+        CASE WHEN name ILIKE $2 THEN 0 ELSE 1 END,
+        name
+      LIMIT $3
+    `, [`%${query}%`, `${query}%`, limit]);
 
     res.json({
-      products: result.products,
-      total: result.products.length,
-      cached: result.cached
+      products: result.rows,
+      total: result.rows.length,
+      cached: false
     });
   } catch (error) {
     console.error('[Nutrition API] Search error:', error);
