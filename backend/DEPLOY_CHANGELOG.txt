@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Документация: Add FatSecret API integration setup guide
 • Добавлено: Phase 2 - Backend nutrition services and API
 • Добавлено: Expand product database to 500 items
 • Добавлено: Phase 1.5 - Seed nutrition database (tags, products, recipes)
 • Добавлено: Phase 1 - Nutrition system database schema and types
-• Исправлено: Update muscle_gain KBJU formula
 
-07.01.2026 10:20
+07.01.2026 10:24

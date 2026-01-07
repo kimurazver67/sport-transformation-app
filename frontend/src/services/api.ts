@@ -401,4 +401,113 @@ export const api = {
       unique_users: number
       avg_per_user: number
     }>('/api/psychology/stats'),
+
+  // ===== NUTRITION (Питание) =====
+
+  // Поиск продуктов
+  searchProducts: (query: string, source: 'local' | 'fatsecret' | 'all' = 'all', limit = 20) =>
+    fetch(`${API_URL}/api/nutrition/products/search?q=${encodeURIComponent(query)}&source=${source}&limit=${limit}`, {
+      headers: {
+        'X-Telegram-Init-Data': getInitData(),
+      },
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Search failed')
+      return data
+    }),
+
+  // Импортировать продукт из FatSecret
+  importProduct: (fatSecretId: string, userId?: string) =>
+    fetch(`${API_URL}/api/nutrition/products/import`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Telegram-Init-Data': getInitData(),
+      },
+      body: JSON.stringify({ fatsecret_id: fatSecretId, user_id: userId }),
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Import failed')
+      return data
+    }),
+
+  // Получить все теги (аллергены, диеты, предпочтения)
+  getTags: () =>
+    fetch(`${API_URL}/api/nutrition/tags`, {
+      headers: {
+        'X-Telegram-Init-Data': getInitData(),
+      },
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to get tags')
+      return data.tags
+    }),
+
+  // Получить исключения пользователя
+  getUserExclusions: (userId: string) =>
+    fetch(`${API_URL}/api/nutrition/exclusions/${userId}`, {
+      headers: {
+        'X-Telegram-Init-Data': getInitData(),
+      },
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to get exclusions')
+      return data
+    }),
+
+  // Добавить продукт в исключения
+  addProductExclusion: (userId: string, productId: string) =>
+    fetch(`${API_URL}/api/nutrition/exclusions/${userId}/products`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Telegram-Init-Data': getInitData(),
+      },
+      body: JSON.stringify({ product_id: productId }),
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to add exclusion')
+      return data
+    }),
+
+  // Добавить тег в исключения
+  addTagExclusion: (userId: string, tagId: string) =>
+    fetch(`${API_URL}/api/nutrition/exclusions/${userId}/tags`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Telegram-Init-Data': getInitData(),
+      },
+      body: JSON.stringify({ tag_id: tagId }),
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to add tag exclusion')
+      return data
+    }),
+
+  // Удалить продукт из исключений
+  removeProductExclusion: (userId: string, productId: string) =>
+    fetch(`${API_URL}/api/nutrition/exclusions/${userId}/products/${productId}`, {
+      method: 'DELETE',
+      headers: {
+        'X-Telegram-Init-Data': getInitData(),
+      },
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to remove exclusion')
+      return data
+    }),
+
+  // Удалить тег из исключений
+  removeTagExclusion: (userId: string, tagId: string) =>
+    fetch(`${API_URL}/api/nutrition/exclusions/${userId}/tags/${tagId}`, {
+      method: 'DELETE',
+      headers: {
+        'X-Telegram-Init-Data': getInitData(),
+      },
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to remove tag exclusion')
+      return data
+    }),
 }
