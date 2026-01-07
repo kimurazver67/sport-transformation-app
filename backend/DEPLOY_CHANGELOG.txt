@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Phase 1 - Nutrition system database schema and types
 • Исправлено: Update muscle_gain KBJU formula
 • Добавлено: Add detailed data requirements to Psychology error state
 • Добавлено: Add schedule info to Psychology page error state
 • Исправлено: PostgreSQL timestamp operator + brutal style for Psychology page
-• Добавлено: Add Psychology section to нижняя навигацияigation
 
-07.01.2026 09:47
+07.01.2026 09:53
