@@ -294,6 +294,82 @@ router.delete('/exclusions/:userId/tags/:tagId', async (req: Request, res: Respo
 });
 
 /**
+ * GET /api/nutrition/meal-plans/user/:userId
+ * Получить активный план питания пользователя
+ */
+router.get('/meal-plans/user/:userId', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    // Получаем активный план пользователя
+    const planResult = await pool.query(
+      `SELECT * FROM meal_plans
+       WHERE user_id = $1 AND status = 'active'
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [userId]
+    );
+
+    if (planResult.rows.length === 0) {
+      return res.json({
+        plan: null,
+        days: []
+      });
+    }
+
+    const plan = planResult.rows[0];
+
+    // Получаем все дни с приёмами пищи
+    const daysResult = await pool.query(`
+      SELECT
+        md.*,
+        json_agg(
+          json_build_object(
+            'id', m.id,
+            'meal_type', m.meal_type,
+            'portion_multiplier', m.portion_multiplier,
+            'calories', m.calories,
+            'protein', m.protein,
+            'fat', m.fat,
+            'carbs', m.carbs,
+            'recipe', json_build_object(
+              'id', r.id,
+              'name', r.name,
+              'name_short', r.name_short,
+              'cooking_time', r.cooking_time,
+              'complexity', r.complexity,
+              'instructions', r.instructions
+            )
+          )
+          ORDER BY
+            CASE m.meal_type
+              WHEN 'breakfast' THEN 1
+              WHEN 'lunch' THEN 2
+              WHEN 'dinner' THEN 3
+              WHEN 'snack' THEN 4
+            END
+        ) as meals
+      FROM meal_days md
+      JOIN meals m ON md.id = m.meal_day_id
+      JOIN recipes r ON m.recipe_id = r.id
+      WHERE md.meal_plan_id = $1
+      GROUP BY md.id
+      ORDER BY md.week_number, md.day_number
+    `, [plan.id]);
+
+    res.json({
+      plan,
+      days: daysResult.rows
+    });
+  } catch (error) {
+    console.error('[Nutrition API] Get user meal plan error:', error);
+    res.status(500).json({
+      error: 'Failed to get meal plan'
+    });
+  }
+});
+
+/**
  * POST /api/nutrition/meal-plans/generate
  * Генерация плана питания (не требует FatSecret)
  */

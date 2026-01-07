@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Use correct table name shopping_list_items
 • Исправлено: Rename /nutrition/:userId to /user-nutrition/:userId to avoid route conflict
 • Добавлено: Add run-migrations endpoint for manual DB setup
 • Исправлено: Remove migrations from startup to avoid Railway timeout
 • Исправлено: Restore all files to working state (commit 176446f)
-• Исправлено: Restore working nutrition.ts - revert experiments
 
-08.01.2026 00:45
+08.01.2026 01:09

@@ -562,6 +562,18 @@ export const api = {
       return data
     }),
 
+  // Получить активный план питания пользователя
+  getUserMealPlan: (userId: string) =>
+    fetch(`${API_URL}/api/nutrition/meal-plans/user/${userId}`, {
+      headers: {
+        'X-Telegram-Init-Data': getInitData(),
+      },
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to get user meal plan')
+      return data
+    }),
+
   // Получить план питания
   getMealPlan: (mealPlanId: string) =>
     fetch(`${API_URL}/api/nutrition/meal-plans/${mealPlanId}`, {
