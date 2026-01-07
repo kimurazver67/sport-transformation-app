@@ -393,3 +393,299 @@ export interface AnalysisHistory {
   analyses: PsychologyAnalysisRecord[];
   total: number;
 }
+
+// =============================================
+// NUTRITION SYSTEM - ТИПЫ
+// =============================================
+
+// ===== КАТЕГОРИИ ПРОДУКТОВ =====
+export type ProductCategory =
+  | 'meat'           // Мясо
+  | 'poultry'        // Птица
+  | 'fish'           // Рыба
+  | 'seafood'        // Морепродукты
+  | 'dairy'          // Молочные продукты
+  | 'eggs'           // Яйца
+  | 'grains'         // Крупы
+  | 'pasta'          // Макароны
+  | 'bread'          // Хлеб
+  | 'vegetables'     // Овощи
+  | 'fruits'         // Фрукты
+  | 'nuts'           // Орехи
+  | 'dried_fruits'   // Сухофрукты
+  | 'oils'           // Масла
+  | 'condiments'     // Приправы/соусы
+  | 'legumes'        // Бобовые
+  | 'beverages'      // Напитки
+  | 'other';         // Прочее
+
+// ===== ТИПЫ ПРИЁМОВ ПИЩИ =====
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+
+// ===== ТИПЫ ТЕГОВ =====
+export type TagType =
+  | 'allergen'       // Аллерген (лактоза, глютен, орехи)
+  | 'diet'           // Диета (веган, вегетарианец)
+  | 'preference';    // Предпочтение (без сахара, низкокалорийное)
+
+// ===== СТАТУС ПЛАНА ПИТАНИЯ =====
+export type MealPlanStatus = 'draft' | 'active' | 'completed' | 'archived';
+
+// ===== ПРОДУКТ =====
+export interface Product {
+  id: string;
+  fatsecret_id?: string;
+  imported_by_user_id?: string;
+  name: string;
+  name_short?: string;
+  calories: number;
+  protein: number;
+  fat: number;
+  carbs: number;
+  fiber: number;
+  category: ProductCategory;
+  is_perishable: boolean;
+  cooking_ratio: number;
+  price_per_kg?: number;
+  unit: string;
+  unit_weight?: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// ===== ТЕГ =====
+export interface Tag {
+  id: string;
+  name: string;
+  name_ru: string;
+  type: TagType;
+  description?: string;
+  created_at: string;
+}
+
+// ===== РЕЦЕПТ =====
+export interface Recipe {
+  id: string;
+  name: string;
+  name_short?: string;
+  meal_type: MealType;
+  cooking_time?: number;
+  instructions?: string;
+  servings: number;
+  is_scalable: boolean;
+  min_portion: number;
+  max_portion: number;
+  complexity: string;
+  cached_calories?: number;
+  cached_protein?: number;
+  cached_fat?: number;
+  cached_carbs?: number;
+  cached_fiber?: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// ===== ИНГРЕДИЕНТ РЕЦЕПТА =====
+export interface RecipeItem {
+  id: string;
+  recipe_id: string;
+  product_id: string;
+  amount_grams: number;
+  is_optional: boolean;
+  notes?: string;
+  created_at: string;
+}
+
+// ===== ПЛАН ПИТАНИЯ =====
+export interface MealPlan {
+  id: string;
+  user_id: string;
+  weeks: number;
+  status: MealPlanStatus;
+  target_calories: number;
+  target_protein: number;
+  target_fat: number;
+  target_carbs: number;
+  avg_calories?: number;
+  avg_protein?: number;
+  avg_fat?: number;
+  avg_carbs?: number;
+  allow_repeat_days: number;
+  prefer_simple: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// ===== ДЕНЬ ПЛАНА =====
+export interface MealDay {
+  id: string;
+  meal_plan_id: string;
+  week_number: number;
+  day_number: number;
+  total_calories?: number;
+  total_protein?: number;
+  total_fat?: number;
+  total_carbs?: number;
+  created_at: string;
+}
+
+// ===== ПРИЁМ ПИЩИ =====
+export interface Meal {
+  id: string;
+  meal_day_id: string;
+  recipe_id: string;
+  meal_type: MealType;
+  portion_multiplier: number;
+  calories?: number;
+  protein?: number;
+  fat?: number;
+  carbs?: number;
+  created_at: string;
+}
+
+// ===== ЭЛЕМЕНТ СПИСКА ПОКУПОК =====
+export interface ShoppingListItem {
+  id: string;
+  meal_plan_id: string;
+  product_id: string;
+  total_grams: number;
+  is_monthly: boolean;
+  week_numbers?: number[];
+  created_at: string;
+}
+
+// ===== РАСШИРЕННЫЕ ТИПЫ С ДАННЫМИ =====
+
+export interface RecipeWithItems extends Recipe {
+  items?: (RecipeItem & { product?: Product })[];
+  tags?: Tag[];
+}
+
+export interface MealWithRecipe extends Meal {
+  recipe?: RecipeWithItems;
+}
+
+export interface MealDayWithMeals extends MealDay {
+  meals?: MealWithRecipe[];
+}
+
+export interface MealPlanWithDays extends MealPlan {
+  days?: MealDayWithMeals[];
+  user?: User;
+}
+
+export interface ShoppingListItemWithProduct extends ShoppingListItem {
+  product?: Product;
+}
+
+// ===== FATSECRET API =====
+
+export interface FatSecretProduct {
+  food_id: string;
+  food_name: string;
+  food_description: string;
+}
+
+export interface FatSecretSearchResult {
+  products: (Product & { source: 'local' | 'fatsecret' })[];
+  total: number;
+  cached: boolean;
+}
+
+// ===== ФОРМЫ И ЗАПРОСЫ =====
+
+export interface GenerateMealPlanRequest {
+  userId: string;
+  weeks?: number;
+  allowRepeatDays?: number;
+  preferSimple?: boolean;
+}
+
+export interface SearchProductsRequest {
+  query: string;
+  source?: 'local' | 'fatsecret' | 'all';
+  limit?: number;
+}
+
+export interface ImportProductRequest {
+  fatSecretId: string;
+  userId?: string;
+}
+
+export interface ImportProductResponse {
+  productId: string;
+  alreadyExists: boolean;
+}
+
+export interface AddExclusionRequest {
+  userId: string;
+  productId?: string;
+  tagId?: string;
+}
+
+export interface UpdateMealRequest {
+  recipeId: string;
+  portionMultiplier?: number;
+}
+
+// ===== СТАТИСТИКА И СВОДКИ =====
+
+export interface NutritionStats {
+  total_recipes: number;
+  total_products: number;
+  active_meal_plans: number;
+  avg_plan_adherence: number;
+}
+
+export interface ShoppingList {
+  mealPlanId: string;
+  monthly: ShoppingListItemWithProduct[];
+  weekly: {
+    [weekNumber: number]: ShoppingListItemWithProduct[];
+  };
+}
+
+// ===== КОНФИГУРАЦИЯ =====
+
+export const MEAL_DISTRIBUTION = {
+  breakfast: 0.25,
+  lunch: 0.35,
+  dinner: 0.30,
+  snack: 0.10,
+} as const;
+
+export const PRODUCT_CATEGORY_LABELS: Record<ProductCategory, string> = {
+  meat: 'Мясо',
+  poultry: 'Птица',
+  fish: 'Рыба',
+  seafood: 'Морепродукты',
+  dairy: 'Молочные',
+  eggs: 'Яйца',
+  grains: 'Крупы',
+  pasta: 'Макароны',
+  bread: 'Хлеб',
+  vegetables: 'Овощи',
+  fruits: 'Фрукты',
+  nuts: 'Орехи',
+  dried_fruits: 'Сухофрукты',
+  oils: 'Масла',
+  condiments: 'Приправы',
+  legumes: 'Бобовые',
+  beverages: 'Напитки',
+  other: 'Прочее',
+};
+
+export const MEAL_TYPE_LABELS: Record<MealType, string> = {
+  breakfast: 'Завтрак',
+  lunch: 'Обед',
+  dinner: 'Ужин',
+  snack: 'Перекус',
+};
+
+export const TAG_TYPE_LABELS: Record<TagType, string> = {
+  allergen: 'Аллерген',
+  diet: 'Диета',
+  preference: 'Предпочтение',
+};

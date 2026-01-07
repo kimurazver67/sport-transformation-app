@@ -1,10 +1,9 @@
 Последние изменения:
 
-• Изменено: Update muscle_gain KBJU formula (вес × 36 + 500 ккал, убран +150г углеводов)
-• Добавлено: Add AI Psychology feature (Frontend)
-• Добавлено: Add AI Psychologist powered by Claude Sonnet 4.5
-• Исправлено: Add --detach flag to Railway деплойment to prevent CI timeout
-• Обслуживание: Update деплой список изменений
-• Исправлено: Update Railway service name in бэкенд деплойment workflow
+• Исправлено: Update muscle_gain KBJU formula
+• Добавлено: Add detailed data requirements to Psychology error state
+• Добавлено: Add schedule info to Psychology page error state
+• Исправлено: PostgreSQL timestamp operator + brutal style for Psychology page
+• Добавлено: Add Psychology section to нижняя навигацияigation
 
-07.01.2026 01:30
+07.01.2026 09:47
