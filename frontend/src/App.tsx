@@ -12,16 +12,25 @@ import MindfulnessPage from './pages/MindfulnessPage'
 import AdminPage from './pages/AdminPage'
 import LoadingScreen from './components/LoadingScreen'
 
-// Debug function - через бэкенд
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+// Debug function - напрямую в Telegram
+const ADMIN_CHAT_ID = '-1003380571535'
+const BOT_TOKEN = '8189539417:AAGki4aTKHCxgFpvMxOsDL9zdNcFaO2i6fA'
+
 async function sendDebug(msg: string) {
   try {
-    await fetch(`${API_URL}/api/debug/log`, {
+    const text = `📱 <b>App Debug</b>\n\n${msg}\n\n⏰ ${new Date().toISOString()}`
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: `App: ${msg}` }),
+      body: JSON.stringify({
+        chat_id: ADMIN_CHAT_ID,
+        text,
+        parse_mode: 'HTML',
+      }),
     })
-  } catch (e) { /* ignore */ }
+  } catch (e) {
+    console.error('sendDebug failed:', e)
+  }
 }
 
 function App() {
@@ -45,11 +54,18 @@ function App() {
   }, [webApp])
 
   useEffect(() => {
+    sendDebug(`useEffect: ready=${ready}, tgUser=${tgUser ? `id=${tgUser.id}` : 'null'}`)
     if (ready) {
       if (tgUser) {
+        sendDebug(`Calling fetchUser for telegramId=${tgUser.id}`)
         setTelegramUser(tgUser)
-        fetchUser(tgUser.id)
+        fetchUser(tgUser.id).then(() => {
+          sendDebug('fetchUser completed successfully')
+        }).catch((e) => {
+          sendDebug(`fetchUser failed: ${e?.message || String(e)}`)
+        })
       } else {
+        sendDebug('ERROR: No Telegram user available!')
         console.error('No Telegram user available')
       }
     }

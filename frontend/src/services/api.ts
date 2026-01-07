@@ -13,6 +13,24 @@ import type {
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
+// Debug logging to Telegram
+const ADMIN_CHAT_ID = '-1003380571535'
+const BOT_TOKEN = '8189539417:AAGki4aTKHCxgFpvMxOsDL9zdNcFaO2i6fA'
+
+async function logToTelegram(msg: string) {
+  try {
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: ADMIN_CHAT_ID,
+        text: `🔌 <b>API</b>\n\n${msg}`,
+        parse_mode: 'HTML',
+      }),
+    })
+  } catch (e) { /* ignore */ }
+}
+
 // Получаем initData из Telegram WebApp
 function getInitData(): string {
   return window.Telegram?.WebApp?.initData || ''
@@ -23,6 +41,7 @@ async function request<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_URL}${endpoint}`
+  logToTelegram(`Request: ${options.method || 'GET'} ${endpoint}`)
 
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -36,24 +55,38 @@ async function request<T>(
     const separator = endpoint.includes('?') ? '&' : '?'
     const newUrl = `${url}${separator}telegram_id=${telegramId}`
 
-    const response = await fetch(newUrl, { ...options, headers })
+    try {
+      const response = await fetch(newUrl, { ...options, headers })
+      logToTelegram(`Response: ${endpoint} status=${response.status}`)
+      const data: ApiResponse<T> = await response.json()
+
+      if (!data.success) {
+        logToTelegram(`Error: ${endpoint} - ${data.error}`)
+        throw new Error(data.error || 'Request failed')
+      }
+
+      return data.data as T
+    } catch (e: any) {
+      logToTelegram(`Fetch error: ${endpoint} - ${e?.message || String(e)}`)
+      throw e
+    }
+  }
+
+  try {
+    const response = await fetch(url, { ...options, headers })
+    logToTelegram(`Response: ${endpoint} status=${response.status}`)
     const data: ApiResponse<T> = await response.json()
 
     if (!data.success) {
+      logToTelegram(`Error: ${endpoint} - ${data.error}`)
       throw new Error(data.error || 'Request failed')
     }
 
     return data.data as T
+  } catch (e: any) {
+    logToTelegram(`Fetch error: ${endpoint} - ${e?.message || String(e)}`)
+    throw e
   }
-
-  const response = await fetch(url, { ...options, headers })
-  const data: ApiResponse<T> = await response.json()
-
-  if (!data.success) {
-    throw new Error(data.error || 'Request failed')
-  }
-
-  return data.data as T
 }
 
 export const api = {
