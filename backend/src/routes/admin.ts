@@ -201,6 +201,30 @@ router.get('/tasks/stats', async (req: Request, res: Response) => {
   }
 });
 
+// Сбросить выполнение заданий для всех пользователей
+router.post('/tasks/reset-completions', async (req: Request, res: Response) => {
+  try {
+    const { query: dbQuery } = await import('../db/postgres');
+
+    // Удаляем все записи о выполнении заданий
+    const result = await dbQuery('DELETE FROM task_completions RETURNING *');
+    const deletedCount = result.rowCount || 0;
+
+    console.log(`Reset task completions: deleted ${deletedCount} records`);
+
+    res.json({
+      success: true,
+      data: {
+        deletedCount,
+        message: `Сброшено ${deletedCount} выполненных заданий`
+      }
+    });
+  } catch (error) {
+    console.error('Reset task completions error:', error);
+    res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 // ===== УВЕДОМЛЕНИЯ =====
 
 // Отправить напоминание одному участнику

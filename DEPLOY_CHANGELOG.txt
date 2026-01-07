@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Hide completed tasks, show completion message
 • Исправлено: Handle missing goal/nutrition for new users gracefully
 • Исправлено: Show data check stage before AI generation
 • Добавлено: Add AI Psychologist feature
 • Добавлено: Enable KBJU (nutrition) loading in store
-• Исправлено: Add comprehensive debug logging to Telegram
 
-07.01.2026 16:31
+07.01.2026 16:45
