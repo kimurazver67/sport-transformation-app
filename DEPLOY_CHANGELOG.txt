@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Add run-migrations endpoint for manual DB setup
 • Исправлено: Remove migrations from startup to avoid Railway timeout
 • Исправлено: Restore all files to working state (commit 176446f)
 • Исправлено: Restore working nutrition.ts - revert experiments
 • Исправлено: Lazy load pool and config in nutrition routes
-• debug: Add simple ping endpoint
 
-08.01.2026 00:20
+08.01.2026 00:35

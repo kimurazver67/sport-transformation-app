@@ -186,7 +186,7 @@ export const api = {
       carbs: number
       goal: 'weight_loss' | 'muscle_gain'
       weight: number
-    }>(`/api/nutrition/${userId}`),
+    }>(`/api/user-nutrition/${userId}`),
 
   // Рейтинг
   getLeaderboard: (limit = 20) =>

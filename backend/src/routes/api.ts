@@ -264,7 +264,8 @@ router.get('/stats/:userId', async (req: Request, res: Response) => {
 // ===== ПИТАНИЕ (КБЖУ) =====
 
 // Получить рекомендуемое КБЖУ для пользователя
-router.get('/nutrition/:userId', async (req: Request, res: Response) => {
+// Переименовано с /nutrition/:userId чтобы избежать конфликта с /api/nutrition/* роутами
+router.get('/user-nutrition/:userId', async (req: Request, res: Response) => {
   try {
     const user = await userService.findById(req.params.userId);
 
