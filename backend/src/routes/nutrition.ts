@@ -26,7 +26,11 @@ if (config.fatsecret.enabled && config.fatsecret.clientId && config.fatsecret.cl
  * Диагностика состояния nutrition таблиц
  */
 router.get('/debug', async (req: Request, res: Response) => {
+  const debug: any = { step: 'start' };
+
   try {
+    debug.step = 'checking tables';
+
     // Проверяем существование таблиц
     const tablesCheck = await pool.query(`
       SELECT table_name
@@ -35,7 +39,8 @@ router.get('/debug', async (req: Request, res: Response) => {
       AND table_name IN ('products', 'tags', 'recipes', 'recipe_items')
     `);
 
-    const tables = tablesCheck.rows.map(r => r.table_name);
+    debug.tables = tablesCheck.rows.map(r => r.table_name);
+    debug.step = 'counting records';
 
     // Считаем записи в каждой таблице
     const counts: Record<string, number> = {};
@@ -48,15 +53,14 @@ router.get('/debug', async (req: Request, res: Response) => {
       }
     }
 
-    res.json({
-      existing_tables: tables,
-      counts,
-      fatsecret_enabled: !!nutritionService
-    });
+    debug.counts = counts;
+    debug.fatsecret_enabled = !!nutritionService;
+
+    res.json(debug);
   } catch (error: any) {
-    res.status(500).json({
-      error: error.message
-    });
+    debug.error = error.message;
+    debug.stack = error.stack?.split('\n').slice(0, 5);
+    res.status(500).json(debug);
   }
 });
 
