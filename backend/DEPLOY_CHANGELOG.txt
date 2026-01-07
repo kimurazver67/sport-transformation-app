@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Restore all files to working state (commit 176446f)
 • Исправлено: Restore working nutrition.ts - revert experiments
 • Исправлено: Lazy load pool and config in nutrition routes
 • debug: Add simple ping endpoint
 • debug: Add logging to nutrition routes
-• Исправлено: Lazy load nutrition services to prevent module crash
 
-08.01.2026 00:04
+08.01.2026 00:11
