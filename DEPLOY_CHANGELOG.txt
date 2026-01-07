@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Auto-run SQL migration files on startup
 • Исправлено: Add name_ru field to tags endpoint response
 • Исправлено: Allow product search without FatSecret integration
 • Добавлено: Add drill-down modal interface for tag selection in MealPlanPage
 • Добавлено: Expand recipes database to ~290 recipes
-• Добавлено: Add comprehensive debug logging to фронтенд
 
-07.01.2026 19:33
+07.01.2026 19:40
