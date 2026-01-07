@@ -12,6 +12,19 @@ import type {
   MeasurementForm,
 } from '../types'
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+
+// Debug logging
+async function sendDebug(msg: string) {
+  try {
+    await fetch(`${API_URL}/api/debug/log`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: `[Store] ${msg}` }),
+    })
+  } catch (e) { /* ignore */ }
+}
+
 interface TelegramUser {
   id: number
   first_name: string
@@ -107,19 +120,25 @@ export const useStore = create<Store>((set, get) => ({
 
   fetchUser: async (telegramId) => {
     try {
+      sendDebug(`fetchUser started for telegramId=${telegramId}`)
       set({ isLoading: true, error: null })
       const user = await api.getUser(telegramId)
+      sendDebug(`fetchUser got user: id=${user.id}, goal=${user.goal}, role=${user.role}`)
       set({ user, isLoading: false })
 
       // Загружаем остальные данные (с catch чтобы ошибка одного не ломала все)
+      sendDebug('fetchUser loading additional data...')
       const { fetchTodayCheckin, fetchStats, fetchCourseWeek, fetchNutrition } = get()
       await Promise.all([
-        fetchTodayCheckin().catch(e => console.log('fetchTodayCheckin error:', e)),
-        fetchStats().catch(e => console.log('fetchStats error:', e)),
-        fetchCourseWeek().catch(e => console.log('fetchCourseWeek error:', e)),
-        fetchNutrition().catch(e => console.log('fetchNutrition skipped:', e)),
+        fetchTodayCheckin().catch(e => { sendDebug(`fetchTodayCheckin error: ${e}`); }),
+        fetchStats().catch(e => { sendDebug(`fetchStats error: ${e}`); }),
+        fetchCourseWeek().catch(e => { sendDebug(`fetchCourseWeek error: ${e}`); }),
+        fetchNutrition().catch(e => { sendDebug(`fetchNutrition skipped: ${e}`); }),
       ])
+      sendDebug('fetchUser completed successfully')
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error)
+      sendDebug(`fetchUser FAILED: ${errorMsg}`)
       console.error('Failed to fetch user:', error)
       set({ error: 'Не удалось загрузить данные', isLoading: false })
     }

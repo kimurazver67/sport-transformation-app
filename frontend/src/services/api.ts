@@ -16,6 +16,19 @@ import type {
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
+// Debug logging - отправляет лог в телеграм
+async function sendDebugLog(message: string) {
+  try {
+    await fetch(`${API_URL}/api/debug/log`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: `[API] ${message}` }),
+    })
+  } catch (e) {
+    // ignore
+  }
+}
+
 // Получаем initData из Telegram WebApp
 function getInitData(): string {
   return window.Telegram?.WebApp?.initData || ''
@@ -26,6 +39,11 @@ async function request<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_URL}${endpoint}`
+  const method = options.method || 'GET'
+  const startTime = Date.now()
+
+  // Логируем начало запроса
+  sendDebugLog(`${method} ${endpoint} started`)
 
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
@@ -33,30 +51,43 @@ async function request<T>(
     ...options.headers,
   }
 
-  // Для локальной разработки добавляем telegram_id
-  if (!getInitData() && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
-    const telegramId = window.Telegram.WebApp.initDataUnsafe.user.id
-    const separator = endpoint.includes('?') ? '&' : '?'
-    const newUrl = `${url}${separator}telegram_id=${telegramId}`
+  try {
+    // Для локальной разработки добавляем telegram_id
+    if (!getInitData() && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
+      const telegramId = window.Telegram.WebApp.initDataUnsafe.user.id
+      const separator = endpoint.includes('?') ? '&' : '?'
+      const newUrl = `${url}${separator}telegram_id=${telegramId}`
 
-    const response = await fetch(newUrl, { ...options, headers })
+      const response = await fetch(newUrl, { ...options, headers })
+      const data: ApiResponse<T> = await response.json()
+      const duration = Date.now() - startTime
+
+      if (!data.success) {
+        sendDebugLog(`${method} ${endpoint} FAILED (${duration}ms): ${data.error}`)
+        throw new Error(data.error || 'Request failed')
+      }
+
+      sendDebugLog(`${method} ${endpoint} OK (${duration}ms)`)
+      return data.data as T
+    }
+
+    const response = await fetch(url, { ...options, headers })
     const data: ApiResponse<T> = await response.json()
+    const duration = Date.now() - startTime
 
     if (!data.success) {
+      sendDebugLog(`${method} ${endpoint} FAILED (${duration}ms): ${data.error}`)
       throw new Error(data.error || 'Request failed')
     }
 
+    sendDebugLog(`${method} ${endpoint} OK (${duration}ms)`)
     return data.data as T
+  } catch (error) {
+    const duration = Date.now() - startTime
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    sendDebugLog(`${method} ${endpoint} ERROR (${duration}ms): ${errorMessage}`)
+    throw error
   }
-
-  const response = await fetch(url, { ...options, headers })
-  const data: ApiResponse<T> = await response.json()
-
-  if (!data.success) {
-    throw new Error(data.error || 'Request failed')
-  }
-
-  return data.data as T
 }
 
 export const api = {
