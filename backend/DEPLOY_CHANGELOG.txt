@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Update деплойment configuration for monorepo structure
 • Исправлено: Add Railway configuration files for monorepo деплойment
 • Обслуживание: Update список изменений
 • Исправлено: Make nutrition migration 014 idempotent (IF NOT EXISTS)
 • Документация: Add urgent fix instructions for Railway 502 error
-• Обслуживание: Trigger Railway reдеплой to fix 502 error
 
-07.01.2026 13:32
+07.01.2026 13:44
