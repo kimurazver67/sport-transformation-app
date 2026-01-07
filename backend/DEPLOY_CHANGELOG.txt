@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Allow product search without FatSecret integration
 • Добавлено: Add drill-down modal interface for tag selection in MealPlanPage
 • Добавлено: Expand recipes database to ~290 recipes
 • Добавлено: Add comprehensive debug logging to фронтенд
 • Обслуживание: Update деплой список изменений
-• Исправлено: Handle missing goal/nutrition for new users gracefully
 
-07.01.2026 18:04
+07.01.2026 18:06

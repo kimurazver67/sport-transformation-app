@@ -129,7 +129,7 @@ router.get('/tags', async (req: Request, res: Response) => {
   try {
     // Загружаем теги напрямую из БД
     const result = await pool.query(`
-      SELECT id, name, type, description
+      SELECT id, name, name_ru, type, description
       FROM tags
       ORDER BY type, name
     `);
