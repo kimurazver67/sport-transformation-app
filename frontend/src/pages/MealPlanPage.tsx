@@ -1,6 +1,7 @@
 // frontend/src/pages/MealPlanPage.tsx
 
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../store';
 import { api } from '../services/api';
 import ProductSearchModal from '../components/ProductSearchModal';
@@ -34,12 +35,139 @@ function calculateKBJU(weight: number, goal: UserGoal) {
   return { calories, protein, fat, carbs };
 }
 
+// Tag Selection Modal Component
+interface TagSelectionModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  icon: string;
+  tags: Tag[];
+  excludedTags: Tag[];
+  onToggle: (tagId: string) => void;
+  accentColor: string;
+}
+
+const TagSelectionModal = ({
+  isOpen,
+  onClose,
+  title,
+  icon,
+  tags,
+  excludedTags,
+  onToggle,
+  accentColor,
+}: TagSelectionModalProps) => {
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black/80 z-50 flex items-end justify-center"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ y: '100%' }}
+          animate={{ y: 0 }}
+          exit={{ y: '100%' }}
+          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+          className="w-full max-w-lg bg-void-200 border-t-2 border-void-400 max-h-[85vh] overflow-hidden flex flex-col"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="p-4 border-b border-void-400 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">{icon}</span>
+              <h2 className="font-display font-bold text-xl text-steel-100 uppercase">
+                {title}
+              </h2>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-10 h-10 flex items-center justify-center text-steel-400 hover:text-steel-100 text-2xl"
+            >
+              ×
+            </button>
+          </div>
+
+          {/* Tag List */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-2">
+            {tags.map((tag) => {
+              const isExcluded = excludedTags.some((t) => t.id === tag.id);
+              return (
+                <button
+                  key={tag.id}
+                  onClick={() => onToggle(tag.id)}
+                  className={`w-full p-4 border-2 flex items-center justify-between transition-all ${
+                    isExcluded
+                      ? `border-${accentColor} bg-${accentColor}/10`
+                      : 'border-void-400 bg-void-300 hover:border-steel-500'
+                  }`}
+                  style={isExcluded ? {
+                    borderColor: accentColor === 'neon-red' ? '#FF4444' :
+                                 accentColor === 'neon-lime' ? '#BFFF00' :
+                                 accentColor === 'neon-cyan' ? '#00FFFF' : '#666',
+                    backgroundColor: accentColor === 'neon-red' ? 'rgba(255,68,68,0.1)' :
+                                     accentColor === 'neon-lime' ? 'rgba(191,255,0,0.1)' :
+                                     accentColor === 'neon-cyan' ? 'rgba(0,255,255,0.1)' : 'transparent',
+                  } : {}}
+                >
+                  <div className="text-left">
+                    <div className="font-mono text-base text-steel-100">
+                      {tag.name_ru}
+                    </div>
+                    {tag.description && (
+                      <div className="font-mono text-xs text-steel-500 mt-1">
+                        {tag.description}
+                      </div>
+                    )}
+                  </div>
+                  <div
+                    className={`w-6 h-6 border-2 flex items-center justify-center ${
+                      isExcluded ? 'border-current' : 'border-steel-600'
+                    }`}
+                    style={isExcluded ? {
+                      borderColor: accentColor === 'neon-red' ? '#FF4444' :
+                                   accentColor === 'neon-lime' ? '#BFFF00' :
+                                   accentColor === 'neon-cyan' ? '#00FFFF' : '#666',
+                      color: accentColor === 'neon-red' ? '#FF4444' :
+                             accentColor === 'neon-lime' ? '#BFFF00' :
+                             accentColor === 'neon-cyan' ? '#00FFFF' : '#666',
+                    } : {}}
+                  >
+                    {isExcluded && <span className="text-sm">✓</span>}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Footer */}
+          <div className="p-4 border-t border-void-400">
+            <button
+              onClick={onClose}
+              className="brutal-button w-full"
+            >
+              ГОТОВО
+            </button>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
 const MealPlanPage = () => {
   const { user } = useStore();
   const [excludedProducts, setExcludedProducts] = useState<Product[]>([]);
   const [excludedTags, setExcludedTags] = useState<Tag[]>([]);
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [allergensModalOpen, setAllergensModalOpen] = useState(false);
+  const [dietsModalOpen, setDietsModalOpen] = useState(false);
+  const [preferencesModalOpen, setPreferencesModalOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [generationParams, setGenerationParams] = useState({
     weeks: 4,
@@ -157,160 +285,185 @@ const MealPlanPage = () => {
   const dietTags = allTags.filter(t => t.type === 'diet');
   const preferenceTags = allTags.filter(t => t.type === 'preference');
 
+  // Count selected items
+  const selectedAllergens = excludedTags.filter(t => t.type === 'allergen');
+  const selectedDiets = excludedTags.filter(t => t.type === 'diet');
+  const selectedPreferences = excludedTags.filter(t => t.type === 'preference');
+
   // Calculate KBJU from user's weight and goal
   const kbju = user.start_weight && user.goal
     ? calculateKBJU(user.start_weight, user.goal)
     : null;
 
   return (
-    <div className="min-h-screen bg-void p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-void p-4 pb-24">
+      <div className="max-w-4xl mx-auto space-y-4">
         {/* Header */}
-        <div className="brutal-card p-6">
-          <h1 className="font-display font-bold text-3xl text-steel-100 uppercase mb-2">
-            🍽️ План питания
+        <div className="brutal-card p-4">
+          <h1 className="font-display font-bold text-2xl text-steel-100 uppercase mb-1">
+            План питания
           </h1>
-          <p className="font-mono text-sm text-steel-400">
-            Настройте ваши предпочтения и исключения
+          <p className="font-mono text-xs text-steel-500">
+            Настройте предпочтения и исключения
           </p>
         </div>
 
         {/* КБЖУ Info */}
         {kbju && (
-          <div className="brutal-card p-6">
-            <h2 className="font-mono font-bold text-sm text-steel-100 mb-4 uppercase">
-              📊 Ваши целевые КБЖУ
+          <div className="brutal-card p-4">
+            <h2 className="font-mono font-bold text-xs text-steel-500 mb-3 uppercase">
+              Ваши целевые КБЖУ
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-void-300 p-3 border border-void-400">
-                <div className="font-mono text-xs text-steel-500 mb-1">Калории</div>
-                <div className="font-display text-2xl text-neon-lime">
+            <div className="grid grid-cols-4 gap-2">
+              <div className="bg-void-300 p-2 border border-void-400 text-center">
+                <div className="font-display text-lg text-neon-lime">
                   {kbju.calories}
                 </div>
-                <div className="font-mono text-xs text-steel-500">ккал/день</div>
+                <div className="font-mono text-[10px] text-steel-500">ккал</div>
               </div>
-              <div className="bg-void-300 p-3 border border-void-400">
-                <div className="font-mono text-xs text-steel-500 mb-1">Белки</div>
-                <div className="font-display text-2xl text-neon-cyan">
+              <div className="bg-void-300 p-2 border border-void-400 text-center">
+                <div className="font-display text-lg text-neon-cyan">
                   {kbju.protein}
                 </div>
-                <div className="font-mono text-xs text-steel-500">г</div>
+                <div className="font-mono text-[10px] text-steel-500">белки</div>
               </div>
-              <div className="bg-void-300 p-3 border border-void-400">
-                <div className="font-mono text-xs text-steel-500 mb-1">Жиры</div>
-                <div className="font-display text-2xl text-neon-orange">
+              <div className="bg-void-300 p-2 border border-void-400 text-center">
+                <div className="font-display text-lg text-neon-orange">
                   {kbju.fat}
                 </div>
-                <div className="font-mono text-xs text-steel-500">г</div>
+                <div className="font-mono text-[10px] text-steel-500">жиры</div>
               </div>
-              <div className="bg-void-300 p-3 border border-void-400">
-                <div className="font-mono text-xs text-steel-500 mb-1">Углеводы</div>
-                <div className="font-display text-2xl text-neon-purple">
+              <div className="bg-void-300 p-2 border border-void-400 text-center">
+                <div className="font-display text-lg text-neon-purple">
                   {kbju.carbs}
                 </div>
-                <div className="font-mono text-xs text-steel-500">г</div>
+                <div className="font-mono text-[10px] text-steel-500">углев.</div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Allergens */}
-        <div className="brutal-card p-6">
-          <h2 className="font-mono font-bold text-sm text-steel-100 mb-4 uppercase">
-            🚫 Аллергены и непереносимости
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {allergenTags.map(tag => {
-              const isExcluded = excludedTags.some(t => t.id === tag.id);
-              return (
-                <button
-                  key={tag.id}
-                  onClick={() => handleToggleTagExclusion(tag.id)}
-                  className={`px-4 py-2 border font-mono text-sm ${
-                    isExcluded
-                      ? 'border-neon-red text-neon-red bg-neon-red/10'
-                      : 'border-steel-600 text-steel-400'
-                  }`}
-                >
-                  {isExcluded && '✓ '}
-                  {tag.name_ru}
-                </button>
-              );
-            })}
-          </div>
+        {/* Selection Cards */}
+        <div className="space-y-3">
+          {/* Allergens Card */}
+          <button
+            onClick={() => setAllergensModalOpen(true)}
+            className="w-full brutal-card p-4 flex items-center justify-between hover:border-steel-500 transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🚫</span>
+              <div className="text-left">
+                <div className="font-mono font-bold text-sm text-steel-100 uppercase">
+                  Аллергены
+                </div>
+                <div className="font-mono text-xs text-steel-500">
+                  {selectedAllergens.length > 0
+                    ? selectedAllergens.map(t => t.name_ru).join(', ')
+                    : 'Не выбрано'}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {selectedAllergens.length > 0 && (
+                <span className="px-2 py-1 bg-neon-red/20 text-neon-red font-mono text-xs">
+                  {selectedAllergens.length}
+                </span>
+              )}
+              <span className="text-steel-500">→</span>
+            </div>
+          </button>
+
+          {/* Diets Card */}
+          <button
+            onClick={() => setDietsModalOpen(true)}
+            className="w-full brutal-card p-4 flex items-center justify-between hover:border-steel-500 transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🌱</span>
+              <div className="text-left">
+                <div className="font-mono font-bold text-sm text-steel-100 uppercase">
+                  Тип питания
+                </div>
+                <div className="font-mono text-xs text-steel-500">
+                  {selectedDiets.length > 0
+                    ? selectedDiets.map(t => t.name_ru).join(', ')
+                    : 'Не выбрано'}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {selectedDiets.length > 0 && (
+                <span className="px-2 py-1 bg-neon-lime/20 text-neon-lime font-mono text-xs">
+                  {selectedDiets.length}
+                </span>
+              )}
+              <span className="text-steel-500">→</span>
+            </div>
+          </button>
+
+          {/* Preferences Card */}
+          <button
+            onClick={() => setPreferencesModalOpen(true)}
+            className="w-full brutal-card p-4 flex items-center justify-between hover:border-steel-500 transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">⚙️</span>
+              <div className="text-left">
+                <div className="font-mono font-bold text-sm text-steel-100 uppercase">
+                  Предпочтения
+                </div>
+                <div className="font-mono text-xs text-steel-500">
+                  {selectedPreferences.length > 0
+                    ? selectedPreferences.map(t => t.name_ru).join(', ')
+                    : 'Не выбрано'}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {selectedPreferences.length > 0 && (
+                <span className="px-2 py-1 bg-neon-cyan/20 text-neon-cyan font-mono text-xs">
+                  {selectedPreferences.length}
+                </span>
+              )}
+              <span className="text-steel-500">→</span>
+            </div>
+          </button>
+
+          {/* Excluded Products Card */}
+          <button
+            onClick={() => setSearchModalOpen(true)}
+            className="w-full brutal-card p-4 flex items-center justify-between hover:border-steel-500 transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🍎</span>
+              <div className="text-left">
+                <div className="font-mono font-bold text-sm text-steel-100 uppercase">
+                  Исключённые продукты
+                </div>
+                <div className="font-mono text-xs text-steel-500">
+                  {excludedProducts.length > 0
+                    ? `${excludedProducts.length} продуктов`
+                    : 'Не выбрано'}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {excludedProducts.length > 0 && (
+                <span className="px-2 py-1 bg-neon-magenta/20 text-neon-magenta font-mono text-xs">
+                  {excludedProducts.length}
+                </span>
+              )}
+              <span className="text-steel-500">→</span>
+            </div>
+          </button>
         </div>
 
-        {/* Diets */}
-        <div className="brutal-card p-6">
-          <h2 className="font-mono font-bold text-sm text-steel-100 mb-4 uppercase">
-            🌱 Типы питания
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {dietTags.map(tag => {
-              const isExcluded = excludedTags.some(t => t.id === tag.id);
-              return (
-                <button
-                  key={tag.id}
-                  onClick={() => handleToggleTagExclusion(tag.id)}
-                  className={`px-4 py-2 border font-mono text-sm ${
-                    isExcluded
-                      ? 'border-neon-lime text-neon-lime bg-neon-lime/10'
-                      : 'border-steel-600 text-steel-400'
-                  }`}
-                >
-                  {isExcluded && '✓ '}
-                  {tag.name_ru}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Preferences */}
-        <div className="brutal-card p-6">
-          <h2 className="font-mono font-bold text-sm text-steel-100 mb-4 uppercase">
-            ⚙️ Предпочтения
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {preferenceTags.map(tag => {
-              const isExcluded = excludedTags.some(t => t.id === tag.id);
-              return (
-                <button
-                  key={tag.id}
-                  onClick={() => handleToggleTagExclusion(tag.id)}
-                  className={`px-4 py-2 border font-mono text-sm ${
-                    isExcluded
-                      ? 'border-neon-cyan text-neon-cyan bg-neon-cyan/10'
-                      : 'border-steel-600 text-steel-400'
-                  }`}
-                >
-                  {isExcluded && '✓ '}
-                  {tag.name_ru}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Excluded Products */}
-        <div className="brutal-card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-mono font-bold text-sm text-steel-100 uppercase">
-              🍎 Исключённые продукты
-            </h2>
-            <button
-              onClick={() => setSearchModalOpen(true)}
-              className="brutal-button-sm"
-            >
-              + ДОБАВИТЬ
-            </button>
-          </div>
-
-          {excludedProducts.length === 0 ? (
-            <p className="font-mono text-sm text-steel-500 text-center py-4">
-              Нет исключённых продуктов
-            </p>
-          ) : (
+        {/* Excluded Products List (if any) */}
+        {excludedProducts.length > 0 && (
+          <div className="brutal-card p-4">
+            <h3 className="font-mono font-bold text-xs text-steel-500 mb-3 uppercase">
+              Исключённые продукты
+            </h3>
             <div className="space-y-2">
               {excludedProducts.map(product => (
                 <div
@@ -327,27 +480,27 @@ const MealPlanPage = () => {
                   </div>
                   <button
                     onClick={() => handleRemoveProductExclusion(product.id)}
-                    className="text-neon-red hover:text-neon-red/70 font-mono text-sm"
+                    className="text-neon-red hover:text-neon-red/70 font-mono text-sm px-2"
                   >
                     ✕
                   </button>
                 </div>
               ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Generation Settings */}
-        <div className="brutal-card p-6">
-          <h2 className="font-mono font-bold text-sm text-steel-100 mb-4 uppercase">
-            ⚙️ Параметры генерации
+        <div className="brutal-card p-4">
+          <h2 className="font-mono font-bold text-xs text-steel-500 mb-4 uppercase">
+            Параметры генерации
           </h2>
 
           <div className="space-y-4">
             {/* Weeks */}
             <div>
               <label className="font-mono text-xs text-steel-400 mb-2 block">
-                Количество недель: {generationParams.weeks}
+                Количество недель: <span className="text-steel-100">{generationParams.weeks}</span>
               </label>
               <input
                 type="range"
@@ -357,63 +510,69 @@ const MealPlanPage = () => {
                 onChange={(e) => setGenerationParams({ ...generationParams, weeks: parseInt(e.target.value) })}
                 className="w-full"
               />
-              <div className="flex justify-between font-mono text-xs text-steel-500 mt-1">
-                <span>1 неделя</span>
-                <span>4 недели</span>
-              </div>
-            </div>
-
-            {/* Repeat Days */}
-            <div>
-              <label className="font-mono text-xs text-steel-400 mb-2 block">
-                Повторять дни: {generationParams.allowRepeatDays === 0 ? 'Нет' : `${generationParams.allowRepeatDays} дней в неделю`}
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="7"
-                value={generationParams.allowRepeatDays}
-                onChange={(e) => setGenerationParams({ ...generationParams, allowRepeatDays: parseInt(e.target.value) })}
-                className="w-full"
-              />
-              <div className="flex justify-between font-mono text-xs text-steel-500 mt-1">
-                <span>Нет повторов</span>
-                <span>Макс. повторы</span>
-              </div>
             </div>
 
             {/* Prefer Simple */}
-            <div>
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={generationParams.preferSimple}
-                  onChange={(e) => setGenerationParams({ ...generationParams, preferSimple: e.target.checked })}
-                  className="w-4 h-4"
-                />
-                <span className="font-mono text-sm text-steel-100">
-                  Предпочитать простые рецепты
-                </span>
-              </label>
-            </div>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <div
+                className={`w-5 h-5 border-2 flex items-center justify-center ${
+                  generationParams.preferSimple
+                    ? 'border-neon-lime text-neon-lime'
+                    : 'border-steel-600'
+                }`}
+              >
+                {generationParams.preferSimple && <span className="text-xs">✓</span>}
+              </div>
+              <span className="font-mono text-sm text-steel-100">
+                Простые рецепты
+              </span>
+            </label>
           </div>
         </div>
 
         {/* Generate Plan Button */}
-        <div className="brutal-card p-6">
-          <button
-            className="brutal-button w-full text-lg py-4"
-            onClick={handleGeneratePlan}
-            disabled={generating}
-          >
-            {generating ? '⏳ ГЕНЕРАЦИЯ...' : '🔥 СГЕНЕРИРОВАТЬ ПЛАН'}
-          </button>
-          <p className="font-mono text-xs text-steel-500 text-center mt-2">
-            {generationParams.weeks} {generationParams.weeks === 1 ? 'неделя' : generationParams.weeks < 5 ? 'недели' : 'недель'} питания
-            с учётом ваших КБЖУ и исключений
-          </p>
-        </div>
+        <button
+          className="brutal-button w-full text-lg py-4"
+          onClick={handleGeneratePlan}
+          disabled={generating}
+        >
+          {generating ? '⏳ ГЕНЕРАЦИЯ...' : '🔥 СГЕНЕРИРОВАТЬ ПЛАН'}
+        </button>
       </div>
+
+      {/* Modals */}
+      <TagSelectionModal
+        isOpen={allergensModalOpen}
+        onClose={() => setAllergensModalOpen(false)}
+        title="Аллергены"
+        icon="🚫"
+        tags={allergenTags}
+        excludedTags={excludedTags}
+        onToggle={handleToggleTagExclusion}
+        accentColor="neon-red"
+      />
+
+      <TagSelectionModal
+        isOpen={dietsModalOpen}
+        onClose={() => setDietsModalOpen(false)}
+        title="Тип питания"
+        icon="🌱"
+        tags={dietTags}
+        excludedTags={excludedTags}
+        onToggle={handleToggleTagExclusion}
+        accentColor="neon-lime"
+      />
+
+      <TagSelectionModal
+        isOpen={preferencesModalOpen}
+        onClose={() => setPreferencesModalOpen(false)}
+        title="Предпочтения"
+        icon="⚙️"
+        tags={preferenceTags}
+        excludedTags={excludedTags}
+        onToggle={handleToggleTagExclusion}
+        accentColor="neon-cyan"
+      />
 
       {/* Product Search Modal */}
       <ProductSearchModal
