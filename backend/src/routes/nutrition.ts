@@ -1,121 +1,25 @@
 // backend/src/routes/nutrition.ts
 
 import { Router, Request, Response } from 'express';
-
-console.log('[Nutrition Routes] Module loading - step 1');
-
-// Ленивый импорт pool и config
-let pool: any = null;
-let config: any = null;
-
-async function ensureImports() {
-  if (!pool) {
-    const pg = await import('../db/postgres');
-    pool = pg.pool;
-  }
-  if (!config) {
-    const cfg = await import('../config');
-    config = cfg.config;
-  }
-}
-
-console.log('[Nutrition Routes] Module loading - step 2');
+import { NutritionDataService } from '../services/nutritionDataService';
+import { MealPlanGenerator } from '../services/mealPlanGenerator';
+import { config } from '../config';
+import { pool } from '../db/postgres';
 
 const router = Router();
 
-console.log('[Nutrition Routes] Router created');
+// Инициализируем сервис
+let nutritionService: NutritionDataService | null = null;
 
-// Middleware для ленивой загрузки зависимостей
-router.use(async (req: Request, res: Response, next: Function) => {
-  try {
-    await ensureImports();
-    next();
-  } catch (e: any) {
-    console.error('[Nutrition Routes] Failed to load dependencies:', e);
-    res.status(500).json({ error: 'Failed to initialize nutrition module', details: e.message });
-  }
-});
-
-// Простой тест (не требует БД)
-router.get('/ping', (req: Request, res: Response) => {
-  res.json({ pong: true, time: new Date().toISOString() });
-});
-
-// Ленивая загрузка сервисов (чтобы ошибки не ломали весь модуль)
-let nutritionService: any = null;
-let MealPlanGenerator: any = null;
-
-async function initServices() {
-  await ensureImports();
-
-  if (nutritionService === null && config?.fatsecret?.enabled && config?.fatsecret?.clientId && config?.fatsecret?.clientSecret) {
-    try {
-      const { NutritionDataService } = await import('../services/nutritionDataService');
-      nutritionService = new NutritionDataService(
-        config.fatsecret.clientId,
-        config.fatsecret.clientSecret
-      );
-      console.log('[Nutrition API] FatSecret integration enabled');
-    } catch (e) {
-      console.error('[Nutrition API] Failed to init FatSecret:', e);
-    }
-  }
-
-  if (MealPlanGenerator === null) {
-    try {
-      const module = await import('../services/mealPlanGenerator');
-      MealPlanGenerator = module.MealPlanGenerator;
-    } catch (e) {
-      console.error('[Nutrition API] Failed to load MealPlanGenerator:', e);
-    }
-  }
+if (config.fatsecret.enabled && config.fatsecret.clientId && config.fatsecret.clientSecret) {
+  nutritionService = new NutritionDataService(
+    config.fatsecret.clientId,
+    config.fatsecret.clientSecret
+  );
+  console.log('[Nutrition API] FatSecret integration enabled');
+} else {
+  console.log('[Nutrition API] FatSecret integration disabled (missing credentials)');
 }
-
-// Инициализируем при первом запросе
-let servicesInitialized = false;
-
-/**
- * GET /api/nutrition/debug
- * Диагностика состояния nutrition таблиц
- */
-router.get('/debug', async (req: Request, res: Response) => {
-  const debug: any = { step: 'start' };
-
-  try {
-    debug.step = 'checking tables';
-
-    // Проверяем существование таблиц
-    const tablesCheck = await pool.query(`
-      SELECT table_name
-      FROM information_schema.tables
-      WHERE table_schema = 'public'
-      AND table_name IN ('products', 'tags', 'recipes', 'recipe_items')
-    `);
-
-    debug.tables = tablesCheck.rows.map((r: any) => r.table_name);
-    debug.step = 'counting records';
-
-    // Считаем записи в каждой таблице
-    const counts: Record<string, number> = {};
-    for (const table of ['products', 'tags', 'recipes']) {
-      try {
-        const result = await pool.query(`SELECT COUNT(*) as count FROM ${table}`);
-        counts[table] = parseInt(result.rows[0].count);
-      } catch (e: any) {
-        counts[table] = -1; // таблица не существует
-      }
-    }
-
-    debug.counts = counts;
-    debug.fatsecret_enabled = !!nutritionService;
-
-    res.json(debug);
-  } catch (error: any) {
-    debug.error = error.message;
-    debug.stack = error.stack?.split('\n').slice(0, 5);
-    res.status(500).json(debug);
-  }
-});
 
 /**
  * GET /api/nutrition/products/search
@@ -123,12 +27,6 @@ router.get('/debug', async (req: Request, res: Response) => {
  */
 router.get('/products/search', async (req: Request, res: Response) => {
   try {
-    // Ленивая инициализация сервисов
-    if (!servicesInitialized) {
-      await initServices();
-      servicesInitialized = true;
-    }
-
     const query = req.query.q as string;
     const source = (req.query.source as 'local' | 'fatsecret' | 'all') || 'all';
     const limit = parseInt(req.query.limit as string) || 20;
@@ -401,12 +299,6 @@ router.delete('/exclusions/:userId/tags/:tagId', async (req: Request, res: Respo
  */
 router.post('/meal-plans/generate', async (req: Request, res: Response) => {
   try {
-    // Ленивая инициализация сервисов
-    if (!servicesInitialized) {
-      await initServices();
-      servicesInitialized = true;
-    }
-
     const { user_id, weeks, allow_repeat_days, prefer_simple } = req.body;
 
     if (!user_id) {
@@ -418,12 +310,6 @@ router.post('/meal-plans/generate', async (req: Request, res: Response) => {
     if (!weeks || weeks < 1 || weeks > 4) {
       return res.status(400).json({
         error: 'weeks must be between 1 and 4'
-      });
-    }
-
-    if (!MealPlanGenerator) {
-      return res.status(503).json({
-        error: 'MealPlanGenerator not available'
       });
     }
 
@@ -592,7 +478,5 @@ router.get('/meal-plans/:mealPlanId/shopping-list', async (req: Request, res: Re
     });
   }
 });
-
-console.log('[Nutrition Routes] All routes registered, exporting...');
 
 export default router;
