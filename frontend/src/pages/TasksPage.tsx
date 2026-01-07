@@ -28,7 +28,9 @@ export default function TasksPage() {
   }
 
   const completedCount = tasks.filter((t) => t.completed).length
+  const pendingTasks = tasks.filter((t) => !t.completed)
   const progress = tasks.length > 0 ? (completedCount / tasks.length) * 100 : 0
+  const allCompleted = tasks.length > 0 && completedCount === tasks.length
 
   return (
     <div className="min-h-screen pb-4 px-4 relative overflow-hidden">
@@ -97,91 +99,75 @@ export default function TasksPage() {
         transition={{ delay: 0.1 }}
         className="space-y-3"
       >
-        <div className="font-mono text-xs text-steel-500 uppercase tracking-widest mb-3">
-          Список_заданий
-        </div>
-
-        {tasks.map((task, index) => (
+        {/* All completed message */}
+        {allCompleted ? (
           <motion.div
-            key={task.id}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.05 * index }}
-            onClick={() => handleToggle(task.id, task.completed)}
-            className={`p-4 border-2 transition-all relative overflow-hidden ${
-              task.completed
-                ? 'border-neon-lime bg-neon-lime/5'
-                : 'border-void-400 bg-void-200 hover:border-steel-500 cursor-pointer'
-            }`}
-            style={{
-              boxShadow: task.completed ? '4px 4px 0 0 #BFFF00' : 'none'
-            }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="border-2 border-neon-lime bg-neon-lime/5 p-8 text-center"
+            style={{ boxShadow: '4px 4px 0 0 #BFFF00' }}
           >
-            <div className="flex items-start gap-4">
-              {/* Checkbox */}
-              <motion.div
-                className={`w-6 h-6 border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
-                  task.completed
-                    ? 'border-neon-lime bg-neon-lime'
-                    : 'border-steel-500 hover:border-neon-lime'
-                }`}
-                whileTap={{ scale: 0.9 }}
-              >
-                {task.completed && (
-                  <motion.svg
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="w-4 h-4 text-void"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={3}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </motion.svg>
-                )}
-              </motion.div>
-
-              {/* Task Content */}
-              <div className="flex-1">
-                <p className={`font-display font-bold uppercase ${
-                  task.completed ? 'text-steel-500 line-through' : 'text-steel-100'
-                }`}>
-                  {task.title}
-                </p>
-                {task.description && (
-                  <p className="font-mono text-xs text-steel-500 mt-1">
-                    {task.description}
-                  </p>
-                )}
-              </div>
-
-              {/* Points Badge */}
-              {task.completed && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="px-2 py-1 border border-neon-lime bg-neon-lime/10"
-                >
-                  <span className="font-mono text-xs font-bold text-neon-lime">+15</span>
-                </motion.div>
-              )}
+            <motion.span
+              className="text-5xl block mb-4"
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ repeat: Infinity, duration: 2 }}
+            >
+              🏆
+            </motion.span>
+            <p className="font-display text-xl font-bold text-neon-lime uppercase tracking-wider mb-2">
+              Все задания выполнены!
+            </p>
+            <p className="font-mono text-sm text-steel-400">
+              Отличная работа! Ты заработал <span className="text-neon-lime font-bold">{completedCount * 15} XP</span>
+            </p>
+            <p className="font-mono text-xs text-steel-500 mt-3">
+              Новые задания появятся на следующей неделе
+            </p>
+          </motion.div>
+        ) : (
+          <>
+            <div className="font-mono text-xs text-steel-500 uppercase tracking-widest mb-3">
+              Список_заданий ({pendingTasks.length} осталось)
             </div>
 
-            {/* Completed indicator line */}
-            {task.completed && (
+            {pendingTasks.map((task, index) => (
               <motion.div
-                className="absolute left-0 top-0 bottom-0 w-1 bg-neon-lime"
-                initial={{ scaleY: 0 }}
-                animate={{ scaleY: 1 }}
-              />
-            )}
-          </motion.div>
-        ))}
+                key={task.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20, height: 0 }}
+                transition={{ delay: 0.05 * index }}
+                onClick={() => handleToggle(task.id, task.completed)}
+                className="p-4 border-2 border-void-400 bg-void-200 hover:border-steel-500 cursor-pointer transition-all relative overflow-hidden"
+              >
+                <div className="flex items-start gap-4">
+                  {/* Checkbox */}
+                  <motion.div
+                    className="w-6 h-6 border-2 border-steel-500 hover:border-neon-lime flex items-center justify-center flex-shrink-0 mt-0.5 transition-all"
+                    whileTap={{ scale: 0.9 }}
+                  />
+
+                  {/* Task Content */}
+                  <div className="flex-1">
+                    <p className="font-display font-bold uppercase text-steel-100">
+                      {task.title}
+                    </p>
+                    {task.description && (
+                      <p className="font-mono text-xs text-steel-500 mt-1">
+                        {task.description}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Points Badge */}
+                  <div className="px-2 py-1 border border-steel-600 bg-void-300">
+                    <span className="font-mono text-xs text-steel-400">+15 XP</span>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </>
+        )}
 
         {tasks.length === 0 && (
           <motion.div
@@ -198,25 +184,27 @@ export default function TasksPage() {
         )}
       </motion.div>
 
-      {/* Info Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="mt-6 border-2 border-void-400 p-4 bg-void-200/50"
-      >
-        <div className="flex items-start gap-3">
-          <span className="text-xl">💡</span>
-          <div>
-            <p className="font-mono text-xs text-steel-400">
-              За каждое задание ты получаешь <span className="text-neon-lime font-bold">+15 XP</span>
-            </p>
-            <p className="font-mono text-[10px] text-steel-500 mt-1">
-              Выполни все до следующего вебинара!
-            </p>
+      {/* Info Card - hide when all completed */}
+      {!allCompleted && tasks.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mt-6 border-2 border-void-400 p-4 bg-void-200/50"
+        >
+          <div className="flex items-start gap-3">
+            <span className="text-xl">💡</span>
+            <div>
+              <p className="font-mono text-xs text-steel-400">
+                За каждое задание ты получаешь <span className="text-neon-lime font-bold">+15 XP</span>
+              </p>
+              <p className="font-mono text-[10px] text-steel-500 mt-1">
+                Выполни все до следующего вебинара!
+              </p>
+            </div>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
+      )}
     </div>
   )
 }

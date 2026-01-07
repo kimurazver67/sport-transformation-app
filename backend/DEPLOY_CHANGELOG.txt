@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Handle missing goal/nutrition for new users gracefully
+• Исправлено: Show data check stage before AI generation
 • Добавлено: Add AI Psychologist feature
 • Добавлено: Enable KBJU (nutrition) loading in store
 • Исправлено: Add comprehensive debug logging to Telegram
-• Исправлено: Add error logging to Telegram and remove nutrition dependency
-• Исправлено: Add --detach flag to Railway деплойment to prevent CI timeout
 
-07.01.2026 15:38
+07.01.2026 16:31
