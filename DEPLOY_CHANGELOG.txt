@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Add comprehensive debug logging to фронтенд
 • Обслуживание: Update деплой список изменений
 • Исправлено: Handle missing goal/nutrition for new users gracefully
 • Исправлено: Use direct node commands instead of npm workspace in nixpacks
 • Исправлено: Make migrations 014 and 015 idempotent
-• Исправлено: Use npm install instead of npm ci in nixpacks
 
-07.01.2026 16:00
+07.01.2026 16:06
