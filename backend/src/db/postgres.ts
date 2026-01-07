@@ -130,9 +130,52 @@ export async function runMigrations(): Promise<void> {
       ADD COLUMN IF NOT EXISTS target_weight DECIMAL(5,2) CHECK (target_weight > 0 AND target_weight < 500)
     `);
 
+    // Запускаем SQL-файлы миграций
+    await runSqlMigrations();
+
     console.log('✅ Миграции выполнены');
   } catch (error) {
     console.error('❌ Ошибка миграции:', error);
+  }
+}
+
+// Запуск SQL-файлов миграций
+async function runSqlMigrations(): Promise<void> {
+  const fs = await import('fs');
+  const path = await import('path');
+
+  const migrationsDir = path.join(__dirname, 'migrations');
+
+  // Проверяем существует ли директория
+  if (!fs.existsSync(migrationsDir)) {
+    console.log('📁 Директория миграций не найдена, пропускаем SQL миграции');
+    return;
+  }
+
+  const files = fs.readdirSync(migrationsDir)
+    .filter((f: string) => f.endsWith('.sql'))
+    .sort();
+
+  console.log(`📂 Найдено ${files.length} SQL миграций`);
+
+  for (const file of files) {
+    try {
+      const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
+      await query(sql);
+      console.log(`  ✅ ${file}`);
+    } catch (error: any) {
+      // Игнорируем ошибки "уже существует" - это нормально для идемпотентных миграций
+      if (error.code === '42P07' || // relation already exists
+          error.code === '42710' || // duplicate object
+          error.code === '23505' || // unique violation (для INSERT ON CONFLICT)
+          error.message?.includes('already exists') ||
+          error.message?.includes('duplicate key')) {
+        console.log(`  ⏭️  ${file} (уже применена)`);
+      } else {
+        console.error(`  ❌ ${file}: ${error.message}`);
+        // Не прерываем - продолжаем с другими миграциями
+      }
+    }
   }
 }
 
