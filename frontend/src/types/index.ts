@@ -460,6 +460,11 @@ export interface Recipe {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  ingredients?: {
+    product_name: string;
+    amount_grams: number;
+    is_optional: boolean;
+  }[];
 }
 
 // ===== ИНГРЕДИЕНТ РЕЦЕПТА =====
@@ -515,6 +520,7 @@ export interface Meal {
   recipe_id: string;
   meal_type: MealType;
   portion_multiplier: number;
+  portion_grams?: number;
   calories?: number;
   protein?: number;
   fat?: number;

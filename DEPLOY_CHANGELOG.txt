@@ -1,9 +1,9 @@
 Последние изменения:
 
+• trigger: Reдеплой фронтенд-dev
 • Добавлено: Add meal plan viewing with week tabs
 • Добавлено: Add endpoint to get user's active meal plan
 • Исправлено: Use correct table name shopping_list_items
 • Исправлено: Rename /nutrition/:userId to /user-nutrition/:userId to avoid route conflict
-• Добавлено: Add run-migrations endpoint for manual DB setup
 
-08.01.2026 01:30
+08.01.2026 01:53

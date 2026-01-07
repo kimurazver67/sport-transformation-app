@@ -328,6 +328,11 @@ router.get('/meal-plans/user/:userId', async (req: Request, res: Response) => {
             'id', m.id,
             'meal_type', m.meal_type,
             'portion_multiplier', m.portion_multiplier,
+            'portion_grams', ROUND((
+              SELECT COALESCE(SUM(ri.amount_grams), 0)
+              FROM recipe_items ri
+              WHERE ri.recipe_id = r.id
+            ) * m.portion_multiplier),
             'calories', m.calories,
             'protein', m.protein,
             'fat', m.fat,
@@ -338,7 +343,20 @@ router.get('/meal-plans/user/:userId', async (req: Request, res: Response) => {
               'name_short', r.name_short,
               'cooking_time', r.cooking_time,
               'complexity', r.complexity,
-              'instructions', r.instructions
+              'instructions', r.instructions,
+              'ingredients', (
+                SELECT json_agg(
+                  json_build_object(
+                    'product_name', p.name,
+                    'amount_grams', ROUND(ri.amount_grams * m.portion_multiplier),
+                    'is_optional', ri.is_optional
+                  )
+                  ORDER BY ri.is_optional, p.name
+                )
+                FROM recipe_items ri
+                JOIN products p ON ri.product_id = p.id
+                WHERE ri.recipe_id = r.id
+              )
             )
           )
           ORDER BY

@@ -187,7 +187,30 @@ const RecipeModal = ({ isOpen, onClose, meal }: RecipeModalProps) => {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {recipe.ingredients && recipe.ingredients.length > 0 && (
+              <div>
+                <h3 className="font-mono text-xs text-steel-500 uppercase mb-2">Состав</h3>
+                <div className="space-y-1">
+                  {recipe.ingredients.map((ingredient, idx) => (
+                    <div key={idx} className="flex justify-between items-baseline font-mono text-sm">
+                      <span className={ingredient.is_optional ? 'text-steel-500 italic' : 'text-steel-300'}>
+                        {ingredient.product_name}
+                        {ingredient.is_optional && ' (опционально)'}
+                      </span>
+                      <span className="text-neon-lime ml-2">{ingredient.amount_grams}г</span>
+                    </div>
+                  ))}
+                </div>
+                {meal.portion_grams && (
+                  <div className="mt-2 pt-2 border-t border-void-400 flex justify-between items-baseline font-mono text-sm">
+                    <span className="text-steel-400 font-bold">Общий вес порции:</span>
+                    <span className="text-neon-lime font-bold">{meal.portion_grams}г</span>
+                  </div>
+                )}
+              </div>
+            )}
+
             {recipe.instructions ? (
               <div>
                 <h3 className="font-mono text-xs text-steel-500 uppercase mb-2">Приготовление</h3>
