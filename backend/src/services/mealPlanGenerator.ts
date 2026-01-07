@@ -450,7 +450,7 @@ export class MealPlanGenerator {
       const isMonthly = !row.is_perishable; // Не портящиеся покупаем раз в месяц
 
       await this.pool.query(`
-        INSERT INTO shopping_list (
+        INSERT INTO shopping_list_items (
           meal_plan_id, product_id, total_grams, is_monthly, week_numbers
         )
         VALUES ($1, $2, $3, $4, $5)

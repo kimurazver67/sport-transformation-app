@@ -446,7 +446,7 @@ router.get('/meal-plans/:mealPlanId/shopping-list', async (req: Request, res: Re
           'unit_weight', p.unit_weight,
           'price_per_kg', p.price_per_kg
         ) as product
-      FROM shopping_list sl
+      FROM shopping_list_items sl
       JOIN products p ON sl.product_id = p.id
       WHERE sl.meal_plan_id = $1
       ORDER BY p.category, p.name
