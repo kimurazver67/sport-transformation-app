@@ -1,16 +1,42 @@
 // backend/src/routes/nutrition.ts
 
 import { Router, Request, Response } from 'express';
-import { config } from '../config';
-import { pool } from '../db/postgres';
 
-console.log('[Nutrition Routes] Module loading...');
+console.log('[Nutrition Routes] Module loading - step 1');
+
+// Ленивый импорт pool и config
+let pool: any = null;
+let config: any = null;
+
+async function ensureImports() {
+  if (!pool) {
+    const pg = await import('../db/postgres');
+    pool = pg.pool;
+  }
+  if (!config) {
+    const cfg = await import('../config');
+    config = cfg.config;
+  }
+}
+
+console.log('[Nutrition Routes] Module loading - step 2');
 
 const router = Router();
 
 console.log('[Nutrition Routes] Router created');
 
-// Простой тест
+// Middleware для ленивой загрузки зависимостей
+router.use(async (req: Request, res: Response, next: Function) => {
+  try {
+    await ensureImports();
+    next();
+  } catch (e: any) {
+    console.error('[Nutrition Routes] Failed to load dependencies:', e);
+    res.status(500).json({ error: 'Failed to initialize nutrition module', details: e.message });
+  }
+});
+
+// Простой тест (не требует БД)
 router.get('/ping', (req: Request, res: Response) => {
   res.json({ pong: true, time: new Date().toISOString() });
 });
@@ -20,7 +46,9 @@ let nutritionService: any = null;
 let MealPlanGenerator: any = null;
 
 async function initServices() {
-  if (nutritionService === null && config.fatsecret.enabled && config.fatsecret.clientId && config.fatsecret.clientSecret) {
+  await ensureImports();
+
+  if (nutritionService === null && config?.fatsecret?.enabled && config?.fatsecret?.clientId && config?.fatsecret?.clientSecret) {
     try {
       const { NutritionDataService } = await import('../services/nutritionDataService');
       nutritionService = new NutritionDataService(
@@ -64,7 +92,7 @@ router.get('/debug', async (req: Request, res: Response) => {
       AND table_name IN ('products', 'tags', 'recipes', 'recipe_items')
     `);
 
-    debug.tables = tablesCheck.rows.map(r => r.table_name);
+    debug.tables = tablesCheck.rows.map((r: any) => r.table_name);
     debug.step = 'counting records';
 
     // Считаем записи в каждой таблице

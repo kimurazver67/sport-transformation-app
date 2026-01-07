@@ -1,9 +1,9 @@
 Последние изменения:
 
+• debug: Add simple ping endpoint
 • debug: Add logging to nutrition routes
 • Исправлено: Lazy load nutrition services to prevent module crash
 • Исправлено: Improve debug endpoint error handling
 • Добавлено: Add nutrition debug endpoint
-• Исправлено: Make migrations idempotent - don't crash on "already exists"
 
 07.01.2026 23:56
