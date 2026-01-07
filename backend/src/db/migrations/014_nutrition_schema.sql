@@ -5,54 +5,70 @@
 -- ===== ENUMS =====
 
 -- Product categories
-CREATE TYPE product_category AS ENUM (
-  'meat',           -- Мясо
-  'poultry',        -- Птица
-  'fish',           -- Рыба
-  'seafood',        -- Морепродукты
-  'dairy',          -- Молочные продукты
-  'eggs',           -- Яйца
-  'grains',         -- Крупы
-  'pasta',          -- Макароны
-  'bread',          -- Хлеб
-  'vegetables',     -- Овощи
-  'fruits',         -- Фрукты
-  'nuts',           -- Орехи
-  'dried_fruits',   -- Сухофрукты
-  'oils',           -- Масла
-  'condiments',     -- Приправы/соусы
-  'legumes',        -- Бобовые
-  'beverages',      -- Напитки
-  'other'           -- Прочее
-);
+DO $$ BEGIN
+  CREATE TYPE product_category AS ENUM (
+    'meat',           -- Мясо
+    'poultry',        -- Птица
+    'fish',           -- Рыба
+    'seafood',        -- Морепродукты
+    'dairy',          -- Молочные продукты
+    'eggs',           -- Яйца
+    'grains',         -- Крупы
+    'pasta',          -- Макароны
+    'bread',          -- Хлеб
+    'vegetables',     -- Овощи
+    'fruits',         -- Фрукты
+    'nuts',           -- Орехи
+    'dried_fruits',   -- Сухофрукты
+    'oils',           -- Масла
+    'condiments',     -- Приправы/соусы
+    'legumes',        -- Бобовые
+    'beverages',      -- Напитки
+    'other'           -- Прочее
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 -- Meal types
-CREATE TYPE meal_type AS ENUM (
-  'breakfast',      -- Завтрак
-  'lunch',          -- Обед
-  'dinner',         -- Ужин
-  'snack'           -- Перекус
-);
+DO $$ BEGIN
+  CREATE TYPE meal_type AS ENUM (
+    'breakfast',      -- Завтрак
+    'lunch',          -- Обед
+    'dinner',         -- Ужин
+    'snack'           -- Перекус
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 -- Tag types
-CREATE TYPE tag_type AS ENUM (
-  'allergen',       -- Аллерген (лактоза, глютен, орехи)
-  'diet',           -- Диета (веган, вегетарианец)
-  'preference'      -- Предпочтение (без сахара, низкокалорийное)
-);
+DO $$ BEGIN
+  CREATE TYPE tag_type AS ENUM (
+    'allergen',       -- Аллерген (лактоза, глютен, орехи)
+    'diet',           -- Диета (веган, вегетарианец)
+    'preference'      -- Предпочтение (без сахара, низкокалорийное)
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 -- Meal plan status
-CREATE TYPE meal_plan_status AS ENUM (
-  'draft',          -- Черновик
-  'active',         -- Активный план
-  'completed',      -- Завершён
-  'archived'        -- Архивирован
-);
+DO $$ BEGIN
+  CREATE TYPE meal_plan_status AS ENUM (
+    'draft',          -- Черновик
+    'active',         -- Активный план
+    'completed',      -- Завершён
+    'archived'        -- Архивирован
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 
 -- ===== PRODUCTS TABLE =====
 
-CREATE TABLE products (
+CREATE TABLE IF NOT EXISTS products (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
   -- FatSecret integration
@@ -90,15 +106,15 @@ CREATE TABLE products (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX idx_products_category ON products(category);
-CREATE INDEX idx_products_fatsecret ON products(fatsecret_id);
-CREATE INDEX idx_products_name ON products(name);
-CREATE INDEX idx_products_active ON products(is_active);
+CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
+CREATE INDEX IF NOT EXISTS idx_products_fatsecret ON products(fatsecret_id);
+CREATE INDEX IF NOT EXISTS idx_products_name ON products(name);
+CREATE INDEX IF NOT EXISTS idx_products_active ON products(is_active);
 
 
 -- ===== TAGS TABLE =====
 
-CREATE TABLE tags (
+CREATE TABLE IF NOT EXISTS tags (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(50) UNIQUE NOT NULL,
   name_ru VARCHAR(100) NOT NULL,
@@ -107,24 +123,24 @@ CREATE TABLE tags (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX idx_tags_type ON tags(type);
+CREATE INDEX IF NOT EXISTS idx_tags_type ON tags(type);
 
 
 -- ===== PRODUCT TAGS (many-to-many) =====
 
-CREATE TABLE product_tags (
+CREATE TABLE IF NOT EXISTS product_tags (
   product_id UUID REFERENCES products(id) ON DELETE CASCADE,
   tag_id UUID REFERENCES tags(id) ON DELETE CASCADE,
   PRIMARY KEY (product_id, tag_id)
 );
 
-CREATE INDEX idx_product_tags_product ON product_tags(product_id);
-CREATE INDEX idx_product_tags_tag ON product_tags(tag_id);
+CREATE INDEX IF NOT EXISTS idx_product_tags_product ON product_tags(product_id);
+CREATE INDEX IF NOT EXISTS idx_product_tags_tag ON product_tags(tag_id);
 
 
 -- ===== RECIPES TABLE =====
 
-CREATE TABLE recipes (
+CREATE TABLE IF NOT EXISTS recipes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
   -- Basic info
@@ -160,14 +176,14 @@ CREATE TABLE recipes (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX idx_recipes_meal_type ON recipes(meal_type);
-CREATE INDEX idx_recipes_complexity ON recipes(complexity);
-CREATE INDEX idx_recipes_active ON recipes(is_active);
+CREATE INDEX IF NOT EXISTS idx_recipes_meal_type ON recipes(meal_type);
+CREATE INDEX IF NOT EXISTS idx_recipes_complexity ON recipes(complexity);
+CREATE INDEX IF NOT EXISTS idx_recipes_active ON recipes(is_active);
 
 
 -- ===== RECIPE ITEMS (ingredients) =====
 
-CREATE TABLE recipe_items (
+CREATE TABLE IF NOT EXISTS recipe_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   recipe_id UUID REFERENCES recipes(id) ON DELETE CASCADE,
   product_id UUID REFERENCES products(id) ON DELETE CASCADE,
@@ -179,25 +195,25 @@ CREATE TABLE recipe_items (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX idx_recipe_items_recipe ON recipe_items(recipe_id);
-CREATE INDEX idx_recipe_items_product ON recipe_items(product_id);
+CREATE INDEX IF NOT EXISTS idx_recipe_items_recipe ON recipe_items(recipe_id);
+CREATE INDEX IF NOT EXISTS idx_recipe_items_product ON recipe_items(product_id);
 
 
 -- ===== RECIPE TAGS (many-to-many) =====
 
-CREATE TABLE recipe_tags (
+CREATE TABLE IF NOT EXISTS recipe_tags (
   recipe_id UUID REFERENCES recipes(id) ON DELETE CASCADE,
   tag_id UUID REFERENCES tags(id) ON DELETE CASCADE,
   PRIMARY KEY (recipe_id, tag_id)
 );
 
-CREATE INDEX idx_recipe_tags_recipe ON recipe_tags(recipe_id);
-CREATE INDEX idx_recipe_tags_tag ON recipe_tags(tag_id);
+CREATE INDEX IF NOT EXISTS idx_recipe_tags_recipe ON recipe_tags(recipe_id);
+CREATE INDEX IF NOT EXISTS idx_recipe_tags_tag ON recipe_tags(tag_id);
 
 
 -- ===== MEAL PLANS =====
 
-CREATE TABLE meal_plans (
+CREATE TABLE IF NOT EXISTS meal_plans (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
 
@@ -226,13 +242,13 @@ CREATE TABLE meal_plans (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX idx_meal_plans_user ON meal_plans(user_id);
-CREATE INDEX idx_meal_plans_status ON meal_plans(status);
+CREATE INDEX IF NOT EXISTS idx_meal_plans_user ON meal_plans(user_id);
+CREATE INDEX IF NOT EXISTS idx_meal_plans_status ON meal_plans(status);
 
 
 -- ===== MEAL DAYS =====
 
-CREATE TABLE meal_days (
+CREATE TABLE IF NOT EXISTS meal_days (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   meal_plan_id UUID REFERENCES meal_plans(id) ON DELETE CASCADE,
 
@@ -251,13 +267,13 @@ CREATE TABLE meal_days (
   UNIQUE(meal_plan_id, week_number, day_number)
 );
 
-CREATE INDEX idx_meal_days_plan ON meal_days(meal_plan_id);
-CREATE INDEX idx_meal_days_week ON meal_days(week_number);
+CREATE INDEX IF NOT EXISTS idx_meal_days_plan ON meal_days(meal_plan_id);
+CREATE INDEX IF NOT EXISTS idx_meal_days_week ON meal_days(week_number);
 
 
 -- ===== MEALS =====
 
-CREATE TABLE meals (
+CREATE TABLE IF NOT EXISTS meals (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   meal_day_id UUID REFERENCES meal_days(id) ON DELETE CASCADE,
   recipe_id UUID REFERENCES recipes(id) ON DELETE CASCADE,
@@ -274,37 +290,37 @@ CREATE TABLE meals (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX idx_meals_day ON meals(meal_day_id);
-CREATE INDEX idx_meals_recipe ON meals(recipe_id);
-CREATE INDEX idx_meals_type ON meals(meal_type);
+CREATE INDEX IF NOT EXISTS idx_meals_day ON meals(meal_day_id);
+CREATE INDEX IF NOT EXISTS idx_meals_recipe ON meals(recipe_id);
+CREATE INDEX IF NOT EXISTS idx_meals_type ON meals(meal_type);
 
 
 -- ===== USER EXCLUSIONS =====
 
 -- Excluded tags (allergens, diets)
-CREATE TABLE user_excluded_tags (
+CREATE TABLE IF NOT EXISTS user_excluded_tags (
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   tag_id UUID REFERENCES tags(id) ON DELETE CASCADE,
   created_at TIMESTAMP DEFAULT NOW(),
   PRIMARY KEY (user_id, tag_id)
 );
 
-CREATE INDEX idx_user_excluded_tags_user ON user_excluded_tags(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_excluded_tags_user ON user_excluded_tags(user_id);
 
 -- Excluded products
-CREATE TABLE user_excluded_products (
+CREATE TABLE IF NOT EXISTS user_excluded_products (
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
   product_id UUID REFERENCES products(id) ON DELETE CASCADE,
   created_at TIMESTAMP DEFAULT NOW(),
   PRIMARY KEY (user_id, product_id)
 );
 
-CREATE INDEX idx_user_excluded_products_user ON user_excluded_products(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_excluded_products_user ON user_excluded_products(user_id);
 
 
 -- ===== SHOPPING LIST =====
 
-CREATE TABLE shopping_list_items (
+CREATE TABLE IF NOT EXISTS shopping_list_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   meal_plan_id UUID REFERENCES meal_plans(id) ON DELETE CASCADE,
   product_id UUID REFERENCES products(id) ON DELETE CASCADE,
@@ -319,13 +335,13 @@ CREATE TABLE shopping_list_items (
   created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX idx_shopping_list_plan ON shopping_list_items(meal_plan_id);
-CREATE INDEX idx_shopping_list_product ON shopping_list_items(product_id);
+CREATE INDEX IF NOT EXISTS idx_shopping_list_plan ON shopping_list_items(meal_plan_id);
+CREATE INDEX IF NOT EXISTS idx_shopping_list_product ON shopping_list_items(product_id);
 
 
 -- ===== FATSECRET CACHE =====
 
-CREATE TABLE fatsecret_search_cache (
+CREATE TABLE IF NOT EXISTS fatsecret_search_cache (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   search_query VARCHAR(255) NOT NULL,
   results JSONB NOT NULL,
@@ -333,8 +349,8 @@ CREATE TABLE fatsecret_search_cache (
   expires_at TIMESTAMP DEFAULT NOW() + INTERVAL '7 days'
 );
 
-CREATE INDEX idx_fatsecret_cache_query ON fatsecret_search_cache(search_query);
-CREATE INDEX idx_fatsecret_cache_expires ON fatsecret_search_cache(expires_at);
+CREATE INDEX IF NOT EXISTS idx_fatsecret_cache_query ON fatsecret_search_cache(search_query);
+CREATE INDEX IF NOT EXISTS idx_fatsecret_cache_expires ON fatsecret_search_cache(expires_at);
 
 
 -- ===== FUNCTIONS =====

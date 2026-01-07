@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Документация: Add urgent fix instructions for Railway 502 error
+• Обслуживание: Trigger Railway reдеплой to fix 502 error
+• Документация: Add Railway ADMIN_CHAT_ID setup instructions and test script
 • Исправлено: Remove FatSecret dependency from all core nutrition endpoints
 • Исправлено: Remove FatSecret dependency from meal plan endpoints
-• Добавлено: Expand recipe database to 500+ recipes
-• Добавлено: Phase 4 - Meal plan generation algorithm
-• Добавлено: Phase 3 - Nutrition фронтенд components
 
-07.01.2026 12:36
+07.01.2026 13:07
