@@ -17,6 +17,7 @@ const PsychologyPage = () => {
   const [selectedWeek, setSelectedWeek] = useState(courseWeek || 1)
   const [analysis, setAnalysis] = useState<PsychologyAnalysisRecord | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadingStage, setLoadingStage] = useState<'checking' | 'generating'>('checking')
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -25,15 +26,21 @@ const PsychologyPage = () => {
     const fetchAnalysis = async () => {
       try {
         setLoading(true)
+        setLoadingStage('checking')
         setError(null)
+        setAnalysis(null)
 
+        // Сначала проверяем доступность данных
         const availability = await api.checkPsychologyAvailability(user.id, selectedWeek)
 
         if (!availability.available) {
           setError(availability.reason || 'Недостаточно данных для анализа')
+          setLoading(false)
           return
         }
 
+        // Только если данных достаточно - запускаем генерацию
+        setLoadingStage('generating')
         const result = await api.getPsychologyAnalysis(user.id, selectedWeek, false)
         setAnalysis(result)
       } catch (err) {
@@ -113,7 +120,19 @@ const PsychologyPage = () => {
               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
               className="inline-block w-12 h-12 border-4 border-neon-lime border-t-transparent rounded-full"
             />
-            <p className="mt-4 font-mono text-xs text-steel-400 uppercase">Генерация_анализа...</p>
+            <p className="mt-4 font-mono text-xs text-steel-400 uppercase">
+              {loadingStage === 'checking' ? 'Проверка_данных...' : 'Генерация_анализа...'}
+            </p>
+            {loadingStage === 'checking' && (
+              <p className="mt-2 font-mono text-[10px] text-steel-500">
+                Проверяем достаточно ли чекинов для анализа
+              </p>
+            )}
+            {loadingStage === 'generating' && (
+              <p className="mt-2 font-mono text-[10px] text-steel-500">
+                AI анализирует ваше поведение за неделю
+              </p>
+            )}
           </div>
         )}
 

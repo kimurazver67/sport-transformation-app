@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Add AI Psychologist feature
 • Добавлено: Enable KBJU (nutrition) loading in store
 • Исправлено: Add comprehensive debug logging to Telegram
 • Исправлено: Add error logging to Telegram and remove nutrition dependency
 • Исправлено: Add --detach flag to Railway деплойment to prevent CI timeout
-• Обслуживание: Update деплой список изменений
 
-07.01.2026 15:29
+07.01.2026 15:38
