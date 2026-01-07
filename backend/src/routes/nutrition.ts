@@ -10,6 +10,11 @@ const router = Router();
 
 console.log('[Nutrition Routes] Router created');
 
+// Простой тест
+router.get('/ping', (req: Request, res: Response) => {
+  res.json({ pong: true, time: new Date().toISOString() });
+});
+
 // Ленивая загрузка сервисов (чтобы ошибки не ломали весь модуль)
 let nutritionService: any = null;
 let MealPlanGenerator: any = null;
