@@ -95,20 +95,19 @@ router.post('/products/import', async (req: Request, res: Response) => {
 
 /**
  * GET /api/nutrition/tags
- * Получить все теги (аллергены, диеты, предпочтения)
+ * Получить все теги (аллергены, диеты, предпочтения) - работает без FatSecret
  */
 router.get('/tags', async (req: Request, res: Response) => {
   try {
-    if (!nutritionService) {
-      return res.status(503).json({
-        error: 'Nutrition service is not available'
-      });
-    }
-
-    const tags = await nutritionService.getAllTags();
+    // Загружаем теги напрямую из БД
+    const result = await pool.query(`
+      SELECT id, name, type, description
+      FROM tags
+      ORDER BY type, name
+    `);
 
     res.json({
-      tags
+      tags: result.rows
     });
   } catch (error) {
     console.error('[Nutrition API] Get tags error:', error);
@@ -120,20 +119,32 @@ router.get('/tags', async (req: Request, res: Response) => {
 
 /**
  * GET /api/nutrition/exclusions/:userId
- * Получить исключения пользователя
+ * Получить исключения пользователя - работает без FatSecret
  */
 router.get('/exclusions/:userId', async (req: Request, res: Response) => {
   try {
-    if (!nutritionService) {
-      return res.status(503).json({
-        error: 'Nutrition service is not available'
-      });
-    }
-
     const { userId } = req.params;
-    const exclusions = await nutritionService.getUserExclusions(userId);
 
-    res.json(exclusions);
+    // Загружаем исключённые продукты
+    const productsResult = await pool.query(`
+      SELECT p.*
+      FROM user_excluded_products uep
+      JOIN products p ON uep.product_id = p.id
+      WHERE uep.user_id = $1
+    `, [userId]);
+
+    // Загружаем исключённые теги
+    const tagsResult = await pool.query(`
+      SELECT t.*
+      FROM user_excluded_tags uet
+      JOIN tags t ON uet.tag_id = t.id
+      WHERE uet.user_id = $1
+    `, [userId]);
+
+    res.json({
+      products: productsResult.rows,
+      tags: tagsResult.rows
+    });
   } catch (error) {
     console.error('[Nutrition API] Get exclusions error:', error);
     res.status(500).json({
@@ -144,16 +155,10 @@ router.get('/exclusions/:userId', async (req: Request, res: Response) => {
 
 /**
  * POST /api/nutrition/exclusions/:userId/products
- * Добавить продукт в исключения
+ * Добавить продукт в исключения - работает без FatSecret
  */
 router.post('/exclusions/:userId/products', async (req: Request, res: Response) => {
   try {
-    if (!nutritionService) {
-      return res.status(503).json({
-        error: 'Nutrition service is not available'
-      });
-    }
-
     const { userId } = req.params;
     const { product_id } = req.body;
 
@@ -163,7 +168,11 @@ router.post('/exclusions/:userId/products', async (req: Request, res: Response) 
       });
     }
 
-    await nutritionService.addProductExclusion(userId, product_id);
+    await pool.query(`
+      INSERT INTO user_excluded_products (user_id, product_id)
+      VALUES ($1, $2)
+      ON CONFLICT (user_id, product_id) DO NOTHING
+    `, [userId, product_id]);
 
     res.json({
       success: true
@@ -178,16 +187,10 @@ router.post('/exclusions/:userId/products', async (req: Request, res: Response) 
 
 /**
  * POST /api/nutrition/exclusions/:userId/tags
- * Добавить тег в исключения
+ * Добавить тег в исключения - работает без FatSecret
  */
 router.post('/exclusions/:userId/tags', async (req: Request, res: Response) => {
   try {
-    if (!nutritionService) {
-      return res.status(503).json({
-        error: 'Nutrition service is not available'
-      });
-    }
-
     const { userId } = req.params;
     const { tag_id } = req.body;
 
@@ -197,7 +200,11 @@ router.post('/exclusions/:userId/tags', async (req: Request, res: Response) => {
       });
     }
 
-    await nutritionService.addTagExclusion(userId, tag_id);
+    await pool.query(`
+      INSERT INTO user_excluded_tags (user_id, tag_id)
+      VALUES ($1, $2)
+      ON CONFLICT (user_id, tag_id) DO NOTHING
+    `, [userId, tag_id]);
 
     res.json({
       success: true
@@ -212,18 +219,16 @@ router.post('/exclusions/:userId/tags', async (req: Request, res: Response) => {
 
 /**
  * DELETE /api/nutrition/exclusions/:userId/products/:productId
- * Удалить продукт из исключений
+ * Удалить продукт из исключений - работает без FatSecret
  */
 router.delete('/exclusions/:userId/products/:productId', async (req: Request, res: Response) => {
   try {
-    if (!nutritionService) {
-      return res.status(503).json({
-        error: 'Nutrition service is not available'
-      });
-    }
-
     const { userId, productId } = req.params;
-    await nutritionService.removeProductExclusion(userId, productId);
+
+    await pool.query(`
+      DELETE FROM user_excluded_products
+      WHERE user_id = $1 AND product_id = $2
+    `, [userId, productId]);
 
     res.json({
       success: true
@@ -238,18 +243,16 @@ router.delete('/exclusions/:userId/products/:productId', async (req: Request, re
 
 /**
  * DELETE /api/nutrition/exclusions/:userId/tags/:tagId
- * Удалить тег из исключений
+ * Удалить тег из исключений - работает без FatSecret
  */
 router.delete('/exclusions/:userId/tags/:tagId', async (req: Request, res: Response) => {
   try {
-    if (!nutritionService) {
-      return res.status(503).json({
-        error: 'Nutrition service is not available'
-      });
-    }
-
     const { userId, tagId } = req.params;
-    await nutritionService.removeTagExclusion(userId, tagId);
+
+    await pool.query(`
+      DELETE FROM user_excluded_tags
+      WHERE user_id = $1 AND tag_id = $2
+    `, [userId, tagId]);
 
     res.json({
       success: true
