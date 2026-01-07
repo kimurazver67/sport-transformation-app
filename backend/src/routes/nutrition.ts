@@ -2,7 +2,9 @@
 
 import { Router, Request, Response } from 'express';
 import { NutritionDataService } from '../services/nutritionDataService';
+import { MealPlanGenerator } from '../services/mealPlanGenerator';
 import { config } from '../config';
+import { pool } from '../db/postgres';
 
 const router = Router();
 
@@ -256,6 +258,192 @@ router.delete('/exclusions/:userId/tags/:tagId', async (req: Request, res: Respo
     console.error('[Nutrition API] Remove tag exclusion error:', error);
     res.status(500).json({
       error: 'Failed to remove tag exclusion'
+    });
+  }
+});
+
+/**
+ * POST /api/nutrition/meal-plans/generate
+ * Генерация плана питания
+ */
+router.post('/meal-plans/generate', async (req: Request, res: Response) => {
+  try {
+    const { user_id, weeks, allow_repeat_days, prefer_simple } = req.body;
+
+    if (!user_id) {
+      return res.status(400).json({
+        error: 'user_id is required'
+      });
+    }
+
+    if (!weeks || weeks < 1 || weeks > 4) {
+      return res.status(400).json({
+        error: 'weeks must be between 1 and 4'
+      });
+    }
+
+    const generator = new MealPlanGenerator(pool);
+
+    const mealPlanId = await generator.generate({
+      userId: user_id,
+      weeks: weeks || 4,
+      allowRepeatDays: allow_repeat_days ?? 3,
+      preferSimple: prefer_simple ?? true,
+    });
+
+    res.json({
+      meal_plan_id: mealPlanId,
+      success: true
+    });
+  } catch (error) {
+    console.error('[Nutrition API] Generate meal plan error:', error);
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Failed to generate meal plan'
+    });
+  }
+});
+
+/**
+ * GET /api/nutrition/meal-plans/:mealPlanId
+ * Получить план питания со всеми днями и приёмами пищи
+ */
+router.get('/meal-plans/:mealPlanId', async (req: Request, res: Response) => {
+  try {
+    const { mealPlanId } = req.params;
+
+    // Получаем план питания
+    const planResult = await pool.query(
+      'SELECT * FROM meal_plans WHERE id = $1',
+      [mealPlanId]
+    );
+
+    if (planResult.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Meal plan not found'
+      });
+    }
+
+    const plan = planResult.rows[0];
+
+    // Получаем все дни с приёмами пищи
+    const daysResult = await pool.query(`
+      SELECT
+        md.*,
+        json_agg(
+          json_build_object(
+            'id', m.id,
+            'meal_type', m.meal_type,
+            'portion_multiplier', m.portion_multiplier,
+            'calories', m.calories,
+            'protein', m.protein,
+            'fat', m.fat,
+            'carbs', m.carbs,
+            'recipe', json_build_object(
+              'id', r.id,
+              'name', r.name,
+              'name_short', r.name_short,
+              'cooking_time', r.cooking_time,
+              'complexity', r.complexity,
+              'items', (
+                SELECT json_agg(
+                  json_build_object(
+                    'product_id', ri.product_id,
+                    'amount_grams', ri.amount_grams,
+                    'is_optional', ri.is_optional,
+                    'product', json_build_object(
+                      'id', p.id,
+                      'name', p.name,
+                      'calories', p.calories,
+                      'protein', p.protein,
+                      'fat', p.fat,
+                      'carbs', p.carbs,
+                      'cooking_ratio', p.cooking_ratio,
+                      'unit', p.unit
+                    )
+                  )
+                )
+                FROM recipe_items ri
+                JOIN products p ON ri.product_id = p.id
+                WHERE ri.recipe_id = r.id
+              )
+            )
+          )
+          ORDER BY
+            CASE m.meal_type
+              WHEN 'breakfast' THEN 1
+              WHEN 'lunch' THEN 2
+              WHEN 'dinner' THEN 3
+              WHEN 'snack' THEN 4
+            END
+        ) as meals
+      FROM meal_days md
+      JOIN meals m ON md.id = m.meal_day_id
+      JOIN recipes r ON m.recipe_id = r.id
+      WHERE md.meal_plan_id = $1
+      GROUP BY md.id
+      ORDER BY md.week_number, md.day_number
+    `, [mealPlanId]);
+
+    res.json({
+      plan,
+      days: daysResult.rows
+    });
+  } catch (error) {
+    console.error('[Nutrition API] Get meal plan error:', error);
+    res.status(500).json({
+      error: 'Failed to get meal plan'
+    });
+  }
+});
+
+/**
+ * GET /api/nutrition/meal-plans/:mealPlanId/shopping-list
+ * Получить список покупок для плана питания
+ */
+router.get('/meal-plans/:mealPlanId/shopping-list', async (req: Request, res: Response) => {
+  try {
+    const { mealPlanId } = req.params;
+
+    const result = await pool.query(`
+      SELECT
+        sl.*,
+        json_build_object(
+          'id', p.id,
+          'name', p.name,
+          'category', p.category,
+          'unit', p.unit,
+          'unit_weight', p.unit_weight,
+          'price_per_kg', p.price_per_kg
+        ) as product
+      FROM shopping_list sl
+      JOIN products p ON sl.product_id = p.id
+      WHERE sl.meal_plan_id = $1
+      ORDER BY p.category, p.name
+    `, [mealPlanId]);
+
+    // Группируем по месячным и недельным
+    const monthly = result.rows.filter((r: any) => r.is_monthly);
+    const weekly = result.rows.filter((r: any) => !r.is_monthly);
+
+    // Группируем недельные по неделям
+    const weeklyByWeek: Record<number, typeof weekly> = {};
+    for (const item of weekly) {
+      for (const weekNum of item.week_numbers) {
+        if (!weeklyByWeek[weekNum]) {
+          weeklyByWeek[weekNum] = [];
+        }
+        weeklyByWeek[weekNum].push(item);
+      }
+    }
+
+    res.json({
+      monthly,
+      weekly: weeklyByWeek
+    });
+  } catch (error) {
+    console.error('[Nutrition API] Get shopping list error:', error);
+    res.status(500).json({
+      error: 'Failed to get shopping list'
     });
   }
 });

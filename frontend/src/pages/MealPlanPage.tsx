@@ -40,6 +40,12 @@ const MealPlanPage = () => {
   const [excludedTags, setExcludedTags] = useState<Tag[]>([]);
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [generationParams, setGenerationParams] = useState({
+    weeks: 4,
+    allowRepeatDays: 3,
+    preferSimple: true,
+  });
 
   useEffect(() => {
     loadData();
@@ -111,6 +117,31 @@ const MealPlanPage = () => {
       await loadData();
     } catch (error) {
       console.error('Failed to toggle tag exclusion:', error);
+    }
+  };
+
+  const handleGeneratePlan = async () => {
+    if (!user?.id) return;
+
+    try {
+      setGenerating(true);
+
+      const result = await api.generateMealPlan(
+        user.id,
+        generationParams.weeks,
+        generationParams.allowRepeatDays,
+        generationParams.preferSimple
+      );
+
+      console.log('Generated meal plan:', result.meal_plan_id);
+
+      // TODO: Navigate to meal plan view page
+      alert(`План питания сгенерирован! ID: ${result.meal_plan_id}`);
+    } catch (error) {
+      console.error('Failed to generate meal plan:', error);
+      alert('Ошибка при генерации плана питания');
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -306,16 +337,80 @@ const MealPlanPage = () => {
           )}
         </div>
 
+        {/* Generation Settings */}
+        <div className="brutal-card p-6">
+          <h2 className="font-mono font-bold text-sm text-steel-100 mb-4 uppercase">
+            ⚙️ Параметры генерации
+          </h2>
+
+          <div className="space-y-4">
+            {/* Weeks */}
+            <div>
+              <label className="font-mono text-xs text-steel-400 mb-2 block">
+                Количество недель: {generationParams.weeks}
+              </label>
+              <input
+                type="range"
+                min="1"
+                max="4"
+                value={generationParams.weeks}
+                onChange={(e) => setGenerationParams({ ...generationParams, weeks: parseInt(e.target.value) })}
+                className="w-full"
+              />
+              <div className="flex justify-between font-mono text-xs text-steel-500 mt-1">
+                <span>1 неделя</span>
+                <span>4 недели</span>
+              </div>
+            </div>
+
+            {/* Repeat Days */}
+            <div>
+              <label className="font-mono text-xs text-steel-400 mb-2 block">
+                Повторять дни: {generationParams.allowRepeatDays === 0 ? 'Нет' : `${generationParams.allowRepeatDays} дней в неделю`}
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="7"
+                value={generationParams.allowRepeatDays}
+                onChange={(e) => setGenerationParams({ ...generationParams, allowRepeatDays: parseInt(e.target.value) })}
+                className="w-full"
+              />
+              <div className="flex justify-between font-mono text-xs text-steel-500 mt-1">
+                <span>Нет повторов</span>
+                <span>Макс. повторы</span>
+              </div>
+            </div>
+
+            {/* Prefer Simple */}
+            <div>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={generationParams.preferSimple}
+                  onChange={(e) => setGenerationParams({ ...generationParams, preferSimple: e.target.checked })}
+                  className="w-4 h-4"
+                />
+                <span className="font-mono text-sm text-steel-100">
+                  Предпочитать простые рецепты
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+
         {/* Generate Plan Button */}
         <div className="brutal-card p-6">
           <button
             className="brutal-button w-full text-lg py-4"
-            disabled
+            onClick={handleGeneratePlan}
+            disabled={generating}
           >
-            🚧 СГЕНЕРИРОВАТЬ ПЛАН (Coming Soon)
+            {generating ? '⏳ ГЕНЕРАЦИЯ...' : '🔥 СГЕНЕРИРОВАТЬ ПЛАН'}
           </button>
           <p className="font-mono text-xs text-steel-500 text-center mt-2">
-            Генерация планов питания будет доступна в следующей версии
+            {generationParams.weeks} {generationParams.weeks === 1 ? 'неделя' : generationParams.weeks < 5 ? 'недели' : 'недель'} питания
+            с учётом ваших КБЖУ и исключений
           </p>
         </div>
       </div>

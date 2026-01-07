@@ -510,4 +510,48 @@ export const api = {
       if (!res.ok) throw new Error(data.error || 'Failed to remove tag exclusion')
       return data
     }),
+
+  // Сгенерировать план питания
+  generateMealPlan: (userId: string, weeks: number, allowRepeatDays: number, preferSimple: boolean) =>
+    fetch(`${API_URL}/api/nutrition/meal-plans/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Telegram-Init-Data': getInitData(),
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        weeks,
+        allow_repeat_days: allowRepeatDays,
+        prefer_simple: preferSimple,
+      }),
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to generate meal plan')
+      return data
+    }),
+
+  // Получить план питания
+  getMealPlan: (mealPlanId: string) =>
+    fetch(`${API_URL}/api/nutrition/meal-plans/${mealPlanId}`, {
+      headers: {
+        'X-Telegram-Init-Data': getInitData(),
+      },
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to get meal plan')
+      return data
+    }),
+
+  // Получить список покупок
+  getShoppingList: (mealPlanId: string) =>
+    fetch(`${API_URL}/api/nutrition/meal-plans/${mealPlanId}/shopping-list`, {
+      headers: {
+        'X-Telegram-Init-Data': getInitData(),
+      },
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to get shopping list')
+      return data
+    }),
 }
