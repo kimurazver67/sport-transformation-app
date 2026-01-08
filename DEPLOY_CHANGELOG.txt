@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Replace FatSecret with OpenFoodFacts in фронтенд
 • Исправлено: Add User-Agent header for OpenFoodFacts API
 • Добавлено: Replace FatSecret with OpenFoodFacts API
 • Исправлено: Smart FatSecret search - RU region for cyrillic, fallback for empty results
 • Добавлено: Add Russian language support for FatSecret API search
-• Добавлено: Add HTTP proxy support for FatSecret API
 
-08.01.2026 22:03
+08.01.2026 22:11

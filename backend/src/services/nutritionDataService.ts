@@ -172,7 +172,12 @@ export class NutritionDataService {
     }
 
     // Получаем данные из OpenFoodFacts
-    const response = await axios.get(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
+    const response = await axios.get(`https://world.openfoodfacts.org/api/v0/product/${code}.json`, {
+      headers: {
+        'User-Agent': 'SportTransformationApp/1.0 (https://github.com/kimurazver67/sport-transformation-app)'
+      },
+      timeout: 15000
+    });
     const product = response.data.product;
 
     if (!product) {
@@ -183,9 +188,9 @@ export class NutritionDataService {
     const result = await query<{ id: string }>(`
       INSERT INTO products (
         openfoodfacts_code, name, calories, protein, fat, carbs, fiber,
-        category, is_perishable, cooking_ratio, imported_by_user_id
+        category, is_perishable, cooking_ratio, imported_by_user_id, unit
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING id
     `, [
       code,
@@ -198,7 +203,8 @@ export class NutritionDataService {
       this.detectCategory(product.categories_tags || []),
       true,
       1.0,
-      userId || null
+      userId || null,
+      'г'
     ]);
 
     console.log('[Import] Продукт импортирован:', product.product_name, '→', result.rows[0].id);
