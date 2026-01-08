@@ -215,7 +215,7 @@ export class MealPlanGenerator {
 
   /**
    * Генерация одного дня питания
-   * Порции рассчитываются по КАЛОРИЯМ чтобы точно попасть в целевой КБЖУ
+   * Подбираем комбинацию рецептов, чтобы итоговые БЖУ были максимально близки к целевым
    */
   private async generateDay(
     recipesByMeal: Record<MealType, RecipeWithItems[]>,
@@ -223,7 +223,12 @@ export class MealPlanGenerator {
     preferSimple: boolean,
     existingDays: DayPlan[]
   ): Promise<DayPlan> {
-    // Целевые КАЛОРИИ для каждого приёма пищи
+    // Целевые соотношения БЖУ (в % от калорий)
+    const targetFatRatio = (targets.fat * 9) / targets.calories;      // ~18% для похудения
+    const targetCarbsRatio = (targets.carbs * 4) / targets.calories;  // ~54% для похудения
+    const targetProteinRatio = (targets.protein * 4) / targets.calories; // ~28% для похудения
+
+    // Целевые калории для каждого приёма пищи
     const mealTargetCalories = {
       breakfast: targets.calories * MEAL_DISTRIBUTION.breakfast,
       lunch: targets.calories * MEAL_DISTRIBUTION.lunch,
@@ -231,83 +236,168 @@ export class MealPlanGenerator {
       snack: targets.calories * MEAL_DISTRIBUTION.snack,
     };
 
-    // Выбираем рецепты для каждого приёма пищи
-    // Передаём целевые калории для более точного выбора
-    const breakfast = this.selectRecipe(
-      recipesByMeal.breakfast,
-      mealTargetCalories.breakfast,
-      preferSimple,
-      existingDays.map(d => d.breakfast.id)
-    );
+    // Пробуем несколько комбинаций и выбираем лучшую
+    let bestDayPlan: DayPlan | null = null;
+    let bestScore = Infinity;
+    const MAX_ATTEMPTS = 10;
 
-    const lunch = this.selectRecipe(
-      recipesByMeal.lunch,
-      mealTargetCalories.lunch,
-      preferSimple,
-      existingDays.map(d => d.lunch.id)
-    );
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      // Выбираем рецепты случайно (с учётом разнообразия)
+      const breakfast = this.selectRecipeWithBJURatio(
+        recipesByMeal.breakfast,
+        targetFatRatio,
+        targetCarbsRatio,
+        preferSimple,
+        existingDays.map(d => d.breakfast.id)
+      );
 
-    const dinner = this.selectRecipe(
-      recipesByMeal.dinner,
-      mealTargetCalories.dinner,
-      preferSimple,
-      existingDays.map(d => d.dinner.id)
-    );
+      const lunch = this.selectRecipeWithBJURatio(
+        recipesByMeal.lunch,
+        targetFatRatio,
+        targetCarbsRatio,
+        preferSimple,
+        existingDays.map(d => d.lunch.id)
+      );
 
-    const snack = this.selectRecipe(
-      recipesByMeal.snack,
-      mealTargetCalories.snack,
-      preferSimple,
-      existingDays.map(d => d.snack.id)
-    );
+      const dinner = this.selectRecipeWithBJURatio(
+        recipesByMeal.dinner,
+        targetFatRatio,
+        targetCarbsRatio,
+        preferSimple,
+        existingDays.map(d => d.dinner.id)
+      );
 
-    // Рассчитываем КБЖУ базовых рецептов (порция = 1)
-    const breakfastNutrition = this.calculateRecipeNutrition(breakfast);
-    const lunchNutrition = this.calculateRecipeNutrition(lunch);
-    const dinnerNutrition = this.calculateRecipeNutrition(dinner);
-    const snackNutrition = this.calculateRecipeNutrition(snack);
+      const snack = this.selectRecipeWithBJURatio(
+        recipesByMeal.snack,
+        targetFatRatio,
+        targetCarbsRatio,
+        preferSimple,
+        existingDays.map(d => d.snack.id)
+      );
 
-    // Рассчитываем порции по КАЛОРИЯМ (главный показатель для похудения!)
-    const breakfastPortion = this.calculatePortionByCalories(breakfastNutrition.calories, mealTargetCalories.breakfast);
-    const lunchPortion = this.calculatePortionByCalories(lunchNutrition.calories, mealTargetCalories.lunch);
-    const dinnerPortion = this.calculatePortionByCalories(dinnerNutrition.calories, mealTargetCalories.dinner);
-    const snackPortion = this.calculatePortionByCalories(snackNutrition.calories, mealTargetCalories.snack);
+      // Рассчитываем КБЖУ базовых рецептов
+      const breakfastNutrition = this.calculateRecipeNutrition(breakfast);
+      const lunchNutrition = this.calculateRecipeNutrition(lunch);
+      const dinnerNutrition = this.calculateRecipeNutrition(dinner);
+      const snackNutrition = this.calculateRecipeNutrition(snack);
 
-    // Итоговые КБЖУ дня с учётом порций
-    const totalCalories =
-      breakfastNutrition.calories * breakfastPortion +
-      lunchNutrition.calories * lunchPortion +
-      dinnerNutrition.calories * dinnerPortion +
-      snackNutrition.calories * snackPortion;
+      // Рассчитываем порции по КАЛОРИЯМ
+      const breakfastPortion = this.calculatePortionByCalories(breakfastNutrition.calories, mealTargetCalories.breakfast);
+      const lunchPortion = this.calculatePortionByCalories(lunchNutrition.calories, mealTargetCalories.lunch);
+      const dinnerPortion = this.calculatePortionByCalories(dinnerNutrition.calories, mealTargetCalories.dinner);
+      const snackPortion = this.calculatePortionByCalories(snackNutrition.calories, mealTargetCalories.snack);
 
-    const totalProtein =
-      breakfastNutrition.protein * breakfastPortion +
-      lunchNutrition.protein * lunchPortion +
-      dinnerNutrition.protein * dinnerPortion +
-      snackNutrition.protein * snackPortion;
+      // Итоговые БЖУ дня
+      const totalCalories =
+        breakfastNutrition.calories * breakfastPortion +
+        lunchNutrition.calories * lunchPortion +
+        dinnerNutrition.calories * dinnerPortion +
+        snackNutrition.calories * snackPortion;
 
-    const totalFat =
-      breakfastNutrition.fat * breakfastPortion +
-      lunchNutrition.fat * lunchPortion +
-      dinnerNutrition.fat * dinnerPortion +
-      snackNutrition.fat * snackPortion;
+      const totalProtein =
+        breakfastNutrition.protein * breakfastPortion +
+        lunchNutrition.protein * lunchPortion +
+        dinnerNutrition.protein * dinnerPortion +
+        snackNutrition.protein * snackPortion;
 
-    const totalCarbs =
-      breakfastNutrition.carbs * breakfastPortion +
-      lunchNutrition.carbs * lunchPortion +
-      dinnerNutrition.carbs * dinnerPortion +
-      snackNutrition.carbs * snackPortion;
+      const totalFat =
+        breakfastNutrition.fat * breakfastPortion +
+        lunchNutrition.fat * lunchPortion +
+        dinnerNutrition.fat * dinnerPortion +
+        snackNutrition.fat * snackPortion;
 
-    return {
-      breakfast: { ...breakfast, portion: breakfastPortion, nutrition: breakfastNutrition },
-      lunch: { ...lunch, portion: lunchPortion, nutrition: lunchNutrition },
-      dinner: { ...dinner, portion: dinnerPortion, nutrition: dinnerNutrition },
-      snack: { ...snack, portion: snackPortion, nutrition: snackNutrition },
-      totalCalories: Math.round(totalCalories),
-      totalProtein: Math.round(totalProtein),
-      totalFat: Math.round(totalFat),
-      totalCarbs: Math.round(totalCarbs),
-    } as DayPlan;
+      const totalCarbs =
+        breakfastNutrition.carbs * breakfastPortion +
+        lunchNutrition.carbs * lunchPortion +
+        dinnerNutrition.carbs * dinnerPortion +
+        snackNutrition.carbs * snackPortion;
+
+      // Оцениваем отклонение от целевых БЖУ
+      // Жиры важнее всего для похудения, потом углеводы
+      const fatDeviation = Math.abs(totalFat - targets.fat) / targets.fat;
+      const carbsDeviation = Math.abs(totalCarbs - targets.carbs) / targets.carbs;
+      const proteinDeviation = Math.abs(totalProtein - targets.protein) / targets.protein;
+
+      // Взвешенная оценка: жиры х3, углеводы х2, белки х1
+      const score = fatDeviation * 3 + carbsDeviation * 2 + proteinDeviation;
+
+      if (score < bestScore) {
+        bestScore = score;
+        bestDayPlan = {
+          breakfast: { ...breakfast, portion: breakfastPortion, nutrition: breakfastNutrition },
+          lunch: { ...lunch, portion: lunchPortion, nutrition: lunchNutrition },
+          dinner: { ...dinner, portion: dinnerPortion, nutrition: dinnerNutrition },
+          snack: { ...snack, portion: snackPortion, nutrition: snackNutrition },
+          totalCalories: Math.round(totalCalories),
+          totalProtein: Math.round(totalProtein),
+          totalFat: Math.round(totalFat),
+          totalCarbs: Math.round(totalCarbs),
+        } as DayPlan;
+      }
+
+      // Если отклонение меньше 20% - достаточно хорошо
+      if (score < 0.6) break;
+    }
+
+    return bestDayPlan!;
+  }
+
+  /**
+   * Выбор рецепта с учётом соотношения БЖУ
+   */
+  private selectRecipeWithBJURatio(
+    recipes: RecipeWithItems[],
+    targetFatRatio: number,
+    targetCarbsRatio: number,
+    preferSimple: boolean,
+    recentlyUsedIds: string[]
+  ): RecipeWithItems {
+    if (recipes.length === 0) {
+      throw new Error('No recipes available for meal type');
+    }
+
+    // Берём только последние 6 использованных
+    const last6Used = recentlyUsedIds.slice(-6);
+    let availableRecipes = recipes.filter(r => !last6Used.includes(r.id));
+
+    if (availableRecipes.length === 0) {
+      availableRecipes = recipes;
+    }
+
+    // Рассчитываем БЖУ соотношение для каждого рецепта
+    const recipesWithRatio = availableRecipes.map(r => {
+      const nutrition = this.calculateRecipeNutrition(r);
+      const totalCals = nutrition.calories || 1;
+      const fatRatio = (nutrition.fat * 9) / totalCals;
+      const carbsRatio = (nutrition.carbs * 4) / totalCals;
+
+      // Оценка близости к целевому соотношению
+      const fatDiff = Math.abs(fatRatio - targetFatRatio);
+      const carbsDiff = Math.abs(carbsRatio - targetCarbsRatio);
+      const score = fatDiff * 2 + carbsDiff; // Жиры важнее
+
+      return { recipe: r, score, nutrition };
+    });
+
+    // Перемешиваем для разнообразия
+    this.shuffleArray(recipesWithRatio);
+
+    // Сортируем по близости к целевому соотношению
+    recipesWithRatio.sort((a, b) => {
+      let scoreA = a.score;
+      let scoreB = b.score;
+
+      if (preferSimple) {
+        scoreA += (a.recipe.complexity === 'simple' ? 0 : 0.1);
+        scoreB += (b.recipe.complexity === 'simple' ? 0 : 0.1);
+      }
+
+      return scoreA - scoreB;
+    });
+
+    // Выбираем из топ-5 случайно
+    const topRecipes = recipesWithRatio.slice(0, Math.min(5, recipesWithRatio.length));
+    return topRecipes[Math.floor(Math.random() * topRecipes.length)].recipe;
   }
 
   /**
