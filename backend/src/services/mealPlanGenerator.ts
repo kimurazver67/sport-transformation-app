@@ -369,7 +369,11 @@ export class MealPlanGenerator {
    * Расчёт КБЖУ рецепта из ингредиентов
    */
   private calculateRecipeNutrition(recipe: RecipeWithItems): { calories: number; protein: number; fat: number; carbs: number } {
-    if (!recipe.items || recipe.items.length === 0) {
+    // Проверяем что items - это массив с реальными данными
+    const items = Array.isArray(recipe.items) ? recipe.items.filter(item => item && item.product) : [];
+
+    if (items.length === 0) {
+      console.log(`[MealPlanGenerator] Recipe ${recipe.name} has no valid items, using cached values`);
       return {
         calories: recipe.cached_calories || 0,
         protein: recipe.cached_protein || 0,
@@ -378,17 +382,20 @@ export class MealPlanGenerator {
       };
     }
 
-    return recipe.items.reduce((acc, item) => {
+    const nutrition = items.reduce((acc, item) => {
       const product = item.product;
-      if (!product) return acc;
-      const ratio = item.amount_grams / 100;
+      const ratio = (item.amount_grams || 0) / 100;
       return {
-        calories: acc.calories + (product.calories * ratio),
-        protein: acc.protein + (product.protein * ratio),
-        fat: acc.fat + (product.fat * ratio),
-        carbs: acc.carbs + (product.carbs * ratio),
+        calories: acc.calories + ((product.calories || 0) * ratio),
+        protein: acc.protein + ((product.protein || 0) * ratio),
+        fat: acc.fat + ((product.fat || 0) * ratio),
+        carbs: acc.carbs + ((product.carbs || 0) * ratio),
       };
     }, { calories: 0, protein: 0, fat: 0, carbs: 0 });
+
+    console.log(`[MealPlanGenerator] Recipe ${recipe.name}: ${Math.round(nutrition.calories)} kcal, ${Math.round(nutrition.protein)}g protein`);
+
+    return nutrition;
   }
 
   /**

@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Add missing migrations 018, 019 to run-migrations endpoint
 • Исправлено: Calculate meal portions by protein (БЖУ), not calories
 • temp: Add temporary endpoint to reset all points to 50
 • temp: Hide tasks until Monday and add compensation endpoint
 • Исправлено: Weekly tasks now reset properly each week
-• Добавлено: Add 021 migration to run-migrations endpoint
 
-08.01.2026 12:39
+08.01.2026 12:52
