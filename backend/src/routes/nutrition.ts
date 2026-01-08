@@ -725,4 +725,81 @@ router.get('/debug/portions', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * GET /api/nutrition/debug/recipe-test
+ * Тестовый эндпоинт: проверяем расчёт КБЖУ для одного рецепта
+ */
+router.get('/debug/recipe-test', async (req: Request, res: Response) => {
+  try {
+    // Получаем один рецепт с ингредиентами (Бутерброд с тунцом)
+    const recipeResult = await pool.query(`
+      SELECT
+        r.id,
+        r.name,
+        r.cached_calories,
+        r.cached_protein
+      FROM recipes r
+      WHERE r.name ILIKE '%тунц%'
+      LIMIT 1
+    `);
+
+    if (recipeResult.rows.length === 0) {
+      return res.json({ error: 'Recipe not found' });
+    }
+
+    const recipe = recipeResult.rows[0];
+
+    // Получаем ингредиенты этого рецепта
+    const itemsResult = await pool.query(`
+      SELECT
+        ri.id,
+        ri.amount_grams,
+        p.name as product_name,
+        p.calories as product_calories,
+        p.protein as product_protein
+      FROM recipe_items ri
+      JOIN products p ON ri.product_id = p.id
+      WHERE ri.recipe_id = $1
+    `, [recipe.id]);
+
+    // Считаем КБЖУ вручную
+    let totalCalories = 0;
+    let totalProtein = 0;
+    const itemsDebug = itemsResult.rows.map(item => {
+      const cal = (item.product_calories * item.amount_grams) / 100;
+      const prot = (item.product_protein * item.amount_grams) / 100;
+      totalCalories += cal;
+      totalProtein += prot;
+      return {
+        product: item.product_name,
+        amount_grams: item.amount_grams,
+        product_calories_per_100g: item.product_calories,
+        calculated_calories: Math.round(cal),
+        calculated_protein: Math.round(prot)
+      };
+    });
+
+    // Проверяем сколько записей в recipe_items для этого рецепта
+    const countResult = await pool.query(`
+      SELECT COUNT(*) as cnt FROM recipe_items WHERE recipe_id = $1
+    `, [recipe.id]);
+
+    res.json({
+      recipe_id: recipe.id,
+      recipe_name: recipe.name,
+      cached_calories: recipe.cached_calories,
+      cached_protein: recipe.cached_protein,
+      recipe_items_count: parseInt(countResult.rows[0].cnt),
+      items: itemsDebug,
+      calculated_total: {
+        calories: Math.round(totalCalories),
+        protein: Math.round(totalProtein)
+      }
+    });
+  } catch (error) {
+    console.error('Debug error:', error);
+    res.status(500).json({ error: 'Failed to test recipe', details: error instanceof Error ? error.message : 'Unknown' });
+  }
+});
+
 export default router;
