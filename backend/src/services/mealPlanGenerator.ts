@@ -455,13 +455,18 @@ export class MealPlanGenerator {
     ];
 
     for (const meal of meals) {
-      const portion = (meal.recipe as any).portion || 1;
+      // Получаем порцию и ЖЁСТКО ограничиваем 0.5-2.0
+      let portion = (meal.recipe as any).portion || 1;
+      portion = Math.max(0.5, Math.min(2.0, portion));
+
       const nutrition = (meal.recipe as any).nutrition || {
         calories: meal.recipe.cached_calories || 0,
         protein: meal.recipe.cached_protein || 0,
         fat: meal.recipe.cached_fat || 0,
         carbs: meal.recipe.cached_carbs || 0,
       };
+
+      console.log(`[MealPlanGenerator] Saving ${meal.type}: ${meal.recipe.name}, portion=${portion}, calories=${Math.round(nutrition.calories * portion)}`);
 
       await this.pool.query(`
         INSERT INTO meals (

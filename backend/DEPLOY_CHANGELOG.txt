@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Explicitly delete recipe_items before recreating recipes
 • Исправлено: Add logging and null-safety to recipe nutrition calculation
 • Исправлено: Add missing migrations 018, 019 to run-migrations endpoint
 • Исправлено: Calculate meal portions by protein (БЖУ), not calories
 • temp: Add temporary endpoint to reset all points to 50
-• temp: Hide tasks until Monday and add compensation endpoint
 
-08.01.2026 12:57
+08.01.2026 13:05
