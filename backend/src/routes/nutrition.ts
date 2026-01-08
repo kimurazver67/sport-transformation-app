@@ -872,7 +872,14 @@ router.post('/debug/fix-duplicates', async (req: Request, res: Response) => {
       results.push('021_replace_recipes.sql OK');
     }
 
-    // 6. Проверяем результат
+    // 6. Запускаем миграцию 022 (инвентарь пользователя)
+    const file022 = path.join(migrationsDir, '022_user_inventory.sql');
+    if (fs.existsSync(file022)) {
+      await pool.query(fs.readFileSync(file022, 'utf8'));
+      results.push('022_user_inventory.sql OK');
+    }
+
+    // 7. Проверяем результат
     const countProducts = await pool.query('SELECT COUNT(*) FROM products');
     const countRecipes = await pool.query('SELECT COUNT(*) FROM recipes');
     const countItems = await pool.query('SELECT COUNT(*) FROM recipe_items');
