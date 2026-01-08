@@ -141,7 +141,7 @@ export class MealPlanGenerator {
     for (const item of recipe.items) {
       const haveGrams = inventoryMap.get(item.product_id) || 0;
       // Считаем покрытым если есть хотя бы 50% нужного количества
-      if (haveGrams >= item.grams * 0.5) {
+      if (haveGrams >= (item.amount_grams || 0) * 0.5) {
         coveredItems++;
       }
     }
