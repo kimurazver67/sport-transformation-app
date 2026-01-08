@@ -148,10 +148,9 @@ export class NutritionDataService {
    */
   async searchLocal(searchQuery: string, limit: number = 20): Promise<Product[]> {
     const result = await query<Product>(`
-      SELECT * FROM products
+      SELECT DISTINCT ON (name) * FROM products
       WHERE name ILIKE $1
-        AND is_active = true
-      ORDER BY name ASC
+      ORDER BY name ASC, id ASC
       LIMIT $2
     `, [`%${searchQuery}%`, limit]);
 
