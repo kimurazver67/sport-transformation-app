@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Make migration idempotent
 • Исправлено: Fix OpenFoodFacts product import
 • Добавлено: Replace FatSecret with OpenFoodFacts in фронтенд
 • Исправлено: Add User-Agent header for OpenFoodFacts API
 • Добавлено: Replace FatSecret with OpenFoodFacts API
-• Исправлено: Smart FatSecret search - RU region for cyrillic, fallback for empty results
 
-08.01.2026 23:12
+08.01.2026 23:20

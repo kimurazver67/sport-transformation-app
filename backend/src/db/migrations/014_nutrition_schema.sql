@@ -71,8 +71,8 @@ END $$;
 CREATE TABLE IF NOT EXISTS products (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-  -- FatSecret integration
-  fatsecret_id VARCHAR(50) UNIQUE,
+  -- OpenFoodFacts integration
+  openfoodfacts_code VARCHAR(50) UNIQUE,
   imported_by_user_id UUID REFERENCES users(id),
 
   -- Basic info
@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS products (
 );
 
 CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
-CREATE INDEX IF NOT EXISTS idx_products_fatsecret ON products(fatsecret_id);
+CREATE INDEX IF NOT EXISTS idx_products_openfoodfacts ON products(openfoodfacts_code);
 CREATE INDEX IF NOT EXISTS idx_products_name ON products(name);
 CREATE INDEX IF NOT EXISTS idx_products_active ON products(is_active);
 
@@ -339,9 +339,9 @@ CREATE INDEX IF NOT EXISTS idx_shopping_list_plan ON shopping_list_items(meal_pl
 CREATE INDEX IF NOT EXISTS idx_shopping_list_product ON shopping_list_items(product_id);
 
 
--- ===== FATSECRET CACHE =====
+-- ===== OPENFOODFACTS CACHE =====
 
-CREATE TABLE IF NOT EXISTS fatsecret_search_cache (
+CREATE TABLE IF NOT EXISTS openfoodfacts_search_cache (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   search_query VARCHAR(255) NOT NULL,
   results JSONB NOT NULL,
@@ -349,8 +349,8 @@ CREATE TABLE IF NOT EXISTS fatsecret_search_cache (
   expires_at TIMESTAMP DEFAULT NOW() + INTERVAL '7 days'
 );
 
-CREATE INDEX IF NOT EXISTS idx_fatsecret_cache_query ON fatsecret_search_cache(search_query);
-CREATE INDEX IF NOT EXISTS idx_fatsecret_cache_expires ON fatsecret_search_cache(expires_at);
+CREATE INDEX IF NOT EXISTS idx_openfoodfacts_cache_query ON openfoodfacts_search_cache(search_query);
+CREATE INDEX IF NOT EXISTS idx_openfoodfacts_cache_expires ON openfoodfacts_search_cache(expires_at);
 
 
 -- ===== FUNCTIONS =====
@@ -379,7 +379,7 @@ CREATE TRIGGER update_meal_plans_updated_at BEFORE UPDATE ON meal_plans
 
 -- ===== COMMENTS =====
 
-COMMENT ON TABLE products IS 'Продукты с КБЖУ (локальная БД + FatSecret импорты)';
+COMMENT ON TABLE products IS 'Продукты с КБЖУ (локальная БД + OpenFoodFacts импорты)';
 COMMENT ON TABLE tags IS 'Теги: аллергены, диеты, предпочтения';
 COMMENT ON TABLE recipes IS 'Рецепты блюд с инструкциями';
 COMMENT ON TABLE recipe_items IS 'Ингредиенты рецептов';
@@ -389,4 +389,4 @@ COMMENT ON TABLE meals IS 'Приёмы пищи (завтрак, обед, уж
 COMMENT ON TABLE user_excluded_tags IS 'Исключения пользователя: аллергены и диеты';
 COMMENT ON TABLE user_excluded_products IS 'Исключения пользователя: конкретные продукты';
 COMMENT ON TABLE shopping_list_items IS 'Список покупок (агрегированный)';
-COMMENT ON TABLE fatsecret_search_cache IS 'Кэш результатов поиска FatSecret API';
+COMMENT ON TABLE openfoodfacts_search_cache IS 'Кэш результатов поиска OpenFoodFacts API';
