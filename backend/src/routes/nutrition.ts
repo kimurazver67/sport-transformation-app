@@ -701,4 +701,28 @@ router.post('/run-migrations', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * GET /api/nutrition/debug/portions
+ * Временный эндпоинт для проверки portion_multiplier в БД
+ */
+router.get('/debug/portions', async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        m.meal_type,
+        r.name as recipe_name,
+        m.portion_multiplier,
+        m.calories,
+        m.protein
+      FROM meals m
+      JOIN recipes r ON m.recipe_id = r.id
+      ORDER BY m.created_at DESC
+      LIMIT 20
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get portions' });
+  }
+});
+
 export default router;
