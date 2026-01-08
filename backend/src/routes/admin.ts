@@ -404,4 +404,36 @@ router.post('/reset-points', async (req: Request, res: Response) => {
   }
 });
 
+// ===== ВРЕМЕННОЕ: Компенсация за баг с еженедельными заданиями =====
+
+// Начислить всем пользователям XP за баг
+router.post('/compensate-weekly-tasks-bug', async (req: Request, res: Response) => {
+  try {
+    const { xp = 50 } = req.body;
+
+    const participants = await userService.getAllParticipants();
+    const results = [];
+
+    for (const user of participants) {
+      try {
+        await statsService.addPoints(user.id, xp);
+        results.push({ userId: user.id, name: user.first_name, xp });
+      } catch (error) {
+        console.error(`Failed to add XP for user ${user.id}:`, error);
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        message: `Added ${xp} XP to ${results.length} users as compensation`,
+        users: results
+      }
+    });
+  } catch (error) {
+    console.error('Compensate bug error:', error);
+    res.status(500).json({ success: false, error: 'Failed to compensate' });
+  }
+});
+
 export default router;
