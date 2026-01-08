@@ -1,203 +1,112 @@
 // backend/src/services/nutritionDataService.ts
 
-import axios, { AxiosRequestConfig } from 'axios';
-import { HttpsProxyAgent } from 'https-proxy-agent';
+import axios from 'axios';
 import { query } from '../db/postgres';
-import type { Product, FatSecretProduct } from '../types';
+import type { Product, ProductCategory } from '../types';
 
-interface FatSecretTokenResponse {
-  access_token: string;
-  token_type: string;
-  expires_in: number;
+// OpenFoodFacts API types
+interface OpenFoodFactsProduct {
+  code: string;
+  product_name: string;
+  product_name_ru?: string;
+  brands?: string;
+  nutriments: {
+    'energy-kcal_100g'?: number;
+    proteins_100g?: number;
+    fat_100g?: number;
+    carbohydrates_100g?: number;
+    fiber_100g?: number;
+  };
+  categories_tags?: string[];
 }
 
-interface FatSecretSearchResponse {
-  foods?: {
-    food?: FatSecretProduct[];
-  };
-}
-
-interface FatSecretFoodDetail {
-  food: {
-    food_id: string;
-    food_name: string;
-    servings: {
-      serving: Array<{
-        serving_id: string;
-        metric_serving_amount?: string;
-        metric_serving_unit?: string;
-        calories: string;
-        protein: string;
-        fat: string;
-        carbohydrate: string;
-        fiber?: string;
-      }>;
-    };
-  };
+interface OpenFoodFactsSearchResponse {
+  count: number;
+  page: number;
+  page_size: number;
+  products: OpenFoodFactsProduct[];
 }
 
 export class NutritionDataService {
-  private clientId: string;
-  private clientSecret: string;
-  private accessToken?: string;
-  private tokenExpiry?: Date;
-  private readonly baseUrl = 'https://platform.fatsecret.com/rest/server.api';
-  private readonly tokenUrl = 'https://oauth.fatsecret.com/connect/token';
-  private proxyAgent?: HttpsProxyAgent<string>;
+  private readonly openFoodFactsUrl = 'https://world.openfoodfacts.org/cgi/search.pl';
 
-  constructor(clientId: string, clientSecret: string) {
-    this.clientId = clientId;
-    this.clientSecret = clientSecret;
-
-    // Поддержка HTTP прокси для обхода IP-ограничений FatSecret
-    const proxyUrl = process.env.FATSECRET_PROXY_URL || process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
-    if (proxyUrl) {
-      this.proxyAgent = new HttpsProxyAgent(proxyUrl);
-      console.log('[FatSecret] Using proxy:', proxyUrl.replace(/:[^:@]+@/, ':***@'));
-    }
+  constructor() {
+    console.log('[NutritionDataService] Initialized with OpenFoodFacts API');
   }
 
   /**
-   * Получить конфиг axios с прокси (если настроен)
+   * Поиск продуктов в OpenFoodFacts API
    */
-  private getAxiosConfig(config: AxiosRequestConfig = {}): AxiosRequestConfig {
-    if (this.proxyAgent) {
-      return {
-        ...config,
-        httpsAgent: this.proxyAgent,
-        proxy: false // Отключаем встроенный прокси axios, используем agent
-      };
-    }
-    return config;
-  }
-
-  /**
-   * Получить OAuth 2.0 токен
-   */
-  private async getAccessToken(): Promise<string> {
-    // Проверяем кэшированный токен
-    if (this.accessToken && this.tokenExpiry && new Date() < this.tokenExpiry) {
-      return this.accessToken;
-    }
-
-    console.log('[FatSecret] Получение нового access token...');
-
-    // Получаем новый токен
-    const response = await axios.post<FatSecretTokenResponse>(
-      this.tokenUrl,
-      new URLSearchParams({
-        grant_type: 'client_credentials',
-        scope: 'basic'
-      }),
-      this.getAxiosConfig({
-        auth: {
-          username: this.clientId,
-          password: this.clientSecret
-        },
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
-      })
-    );
-
-    this.accessToken = response.data.access_token;
-    this.tokenExpiry = new Date(Date.now() + (response.data.expires_in - 60) * 1000);
-
-    console.log('[FatSecret] Access token получен, expires in', response.data.expires_in, 'секунд');
-
-    return this.accessToken;
-  }
-
-  /**
-   * Поиск продуктов в FatSecret API
-   */
-  async searchFatSecret(searchQuery: string, maxResults: number = 20): Promise<FatSecretProduct[]> {
+  async searchOpenFoodFacts(searchQuery: string, maxResults: number = 20): Promise<Array<Product & { source: 'openfoodfacts' }>> {
     try {
-      const token = await this.getAccessToken();
+      console.log('[OpenFoodFacts] Поиск продуктов:', searchQuery);
 
-      console.log('[FatSecret] Поиск продуктов:', searchQuery);
+      const response = await axios.get<OpenFoodFactsSearchResponse>(this.openFoodFactsUrl, {
+        params: {
+          search_terms: searchQuery,
+          search_simple: 1,
+          action: 'process',
+          json: 1,
+          page_size: maxResults,
+          cc: 'ru',  // Российский регион
+          lc: 'ru',  // Русский язык
+          fields: 'code,product_name,product_name_ru,brands,nutriments,categories_tags'
+        },
+        timeout: 10000
+      });
 
-      // Определяем, содержит ли запрос кириллицу
-      const hasCyrillic = /[а-яА-ЯёЁ]/.test(searchQuery);
+      const products = response.data.products || [];
+      console.log('[OpenFoodFacts] Найдено продуктов:', products.length);
 
-      // Сначала пробуем искать в US регионе (более полная база)
-      const params: Record<string, string> = {
-        method: 'foods.search',
-        search_expression: searchQuery,
-        format: 'json',
-        max_results: maxResults.toString()
-      };
-
-      // Если запрос на русском, добавляем region/language
-      if (hasCyrillic) {
-        params.region = 'RU';
-        params.language = 'ru';
-      }
-
-      const response = await axios.post<FatSecretSearchResponse>(
-        this.baseUrl,
-        new URLSearchParams(params),
-        this.getAxiosConfig({
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/x-www-form-urlencoded'
-          }
-        })
-      );
-
-      let foods = response.data.foods?.food || [];
-
-      // Если на русском ничего не нашли, пробуем без региона
-      if (foods.length === 0 && hasCyrillic) {
-        console.log('[FatSecret] Не найдено в RU, пробуем без региона...');
-        const fallbackResponse = await axios.post<FatSecretSearchResponse>(
-          this.baseUrl,
-          new URLSearchParams({
-            method: 'foods.search',
-            search_expression: searchQuery,
-            format: 'json',
-            max_results: maxResults.toString()
-          }),
-          this.getAxiosConfig({
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/x-www-form-urlencoded'
-            }
-          })
-        );
-        foods = fallbackResponse.data.foods?.food || [];
-      }
-
-      console.log('[FatSecret] Найдено продуктов:', foods.length);
-
-      return foods;
+      // Преобразуем в формат Product
+      return products
+        .filter(p => p.product_name && p.nutriments) // Только с названием и КБЖУ
+        .map(p => ({
+          id: '',
+          openfoodfacts_code: p.code,
+          name: p.product_name_ru || p.product_name,
+          brand: p.brands || null,
+          calories: Math.round(p.nutriments['energy-kcal_100g'] || 0),
+          protein: Math.round((p.nutriments.proteins_100g || 0) * 10) / 10,
+          fat: Math.round((p.nutriments.fat_100g || 0) * 10) / 10,
+          carbs: Math.round((p.nutriments.carbohydrates_100g || 0) * 10) / 10,
+          fiber: Math.round((p.nutriments.fiber_100g || 0) * 10) / 10,
+          category: this.detectCategory(p.categories_tags || []),
+          is_perishable: true,
+          cooking_ratio: 1.0,
+          unit: 'г',
+          is_active: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          source: 'openfoodfacts' as const
+        }));
     } catch (error) {
-      console.error('[FatSecret] Ошибка поиска:', error);
-      throw new Error('Failed to search FatSecret API');
+      console.error('[OpenFoodFacts] Ошибка поиска:', error);
+      return [];
     }
   }
 
   /**
-   * Парсинг КБЖУ из food_description
-   * "Per 100g - Calories: 165kcal | Fat: 3.6g | Carbs: 0g | Protein: 31g"
+   * Определить категорию по тегам OpenFoodFacts
    */
-  private parseFoodDescription(description: string): {
-    calories: number;
-    protein: number;
-    fat: number;
-    carbs: number;
-  } {
-    const caloriesMatch = description.match(/Calories:\s*([\d.]+)kcal/i);
-    const proteinMatch = description.match(/Protein:\s*([\d.]+)g/i);
-    const fatMatch = description.match(/Fat:\s*([\d.]+)g/i);
-    const carbsMatch = description.match(/Carbs:\s*([\d.]+)g/i);
+  private detectCategory(tags: string[]): ProductCategory {
+    const tagStr = tags.join(' ').toLowerCase();
 
-    return {
-      calories: caloriesMatch ? parseFloat(caloriesMatch[1]) : 0,
-      protein: proteinMatch ? parseFloat(proteinMatch[1]) : 0,
-      fat: fatMatch ? parseFloat(fatMatch[1]) : 0,
-      carbs: carbsMatch ? parseFloat(carbsMatch[1]) : 0,
-    };
+    if (tagStr.includes('poultry') || tagStr.includes('chicken') || tagStr.includes('курица')) return 'poultry';
+    if (tagStr.includes('meat') || tagStr.includes('beef') || tagStr.includes('pork') || tagStr.includes('мясо')) return 'meat';
+    if (tagStr.includes('fish') || tagStr.includes('рыба') || tagStr.includes('seafood')) return 'fish';
+    if (tagStr.includes('dairy') || tagStr.includes('milk') || tagStr.includes('молоко') || tagStr.includes('молочн')) return 'dairy';
+    if (tagStr.includes('egg') || tagStr.includes('яйц')) return 'eggs';
+    if (tagStr.includes('grain') || tagStr.includes('cereal') || tagStr.includes('круп')) return 'grains';
+    if (tagStr.includes('pasta') || tagStr.includes('макарон')) return 'pasta';
+    if (tagStr.includes('bread') || tagStr.includes('хлеб')) return 'bread';
+    if (tagStr.includes('fruit') || tagStr.includes('фрукт')) return 'fruits';
+    if (tagStr.includes('vegetable') || tagStr.includes('овощ')) return 'vegetables';
+    if (tagStr.includes('nut') || tagStr.includes('орех')) return 'nuts';
+    if (tagStr.includes('oil') || tagStr.includes('масло')) return 'oils';
+    if (tagStr.includes('beverage') || tagStr.includes('напиток')) return 'beverages';
+
+    return 'other';
   }
 
   /**
@@ -215,14 +124,14 @@ export class NutritionDataService {
   }
 
   /**
-   * Комбинированный поиск (локальная БД + FatSecret)
+   * Комбинированный поиск (локальная БД + OpenFoodFacts)
    */
   async searchProducts(
     searchQuery: string,
-    source: 'local' | 'fatsecret' | 'all' = 'all',
+    source: 'local' | 'openfoodfacts' | 'all' = 'all',
     limit: number = 20
-  ): Promise<{ products: Array<Product & { source: 'local' | 'fatsecret' }>; cached: boolean }> {
-    const results: Array<Product & { source: 'local' | 'fatsecret' }> = [];
+  ): Promise<{ products: Array<Product & { source: 'local' | 'openfoodfacts' }>; cached: boolean }> {
+    const results: Array<Product & { source: 'local' | 'openfoodfacts' }> = [];
 
     // Поиск в локальной БД
     if (source === 'local' || source === 'all') {
@@ -230,28 +139,10 @@ export class NutritionDataService {
       results.push(...localProducts.map(p => ({ ...p, source: 'local' as const })));
     }
 
-    // Поиск в FatSecret (только если нужно и лимит не достигнут)
-    if ((source === 'fatsecret' || source === 'all') && results.length < limit) {
-      const fsProducts = await this.searchFatSecret(searchQuery, limit - results.length);
-
-      for (const fsProduct of fsProducts) {
-        const macros = this.parseFoodDescription(fsProduct.food_description);
-        results.push({
-          id: '', // Будет заполнено при импорте
-          fatsecret_id: fsProduct.food_id,
-          name: fsProduct.food_name,
-          ...macros,
-          fiber: 0,
-          category: 'other',
-          is_perishable: true,
-          cooking_ratio: 1.0,
-          unit: 'г',
-          is_active: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          source: 'fatsecret' as const
-        } as Product & { source: 'fatsecret' });
-      }
+    // Поиск в OpenFoodFacts (только если нужно и лимит не достигнут)
+    if ((source === 'openfoodfacts' || source === 'all') && results.length < limit) {
+      const offProducts = await this.searchOpenFoodFacts(searchQuery, limit - results.length);
+      results.push(...offProducts);
     }
 
     return {
@@ -261,139 +152,58 @@ export class NutritionDataService {
   }
 
   /**
-   * Получить детальную информацию о продукте из FatSecret
+   * Импортировать продукт из OpenFoodFacts в локальную БД
    */
-  async getFatSecretFoodDetail(foodId: string): Promise<FatSecretFoodDetail['food']> {
-    try {
-      const token = await this.getAccessToken();
-
-      console.log('[FatSecret] Получение деталей продукта:', foodId);
-
-      const response = await axios.post<FatSecretFoodDetail>(
-        this.baseUrl,
-        new URLSearchParams({
-          method: 'food.get.v2',
-          food_id: foodId,
-          format: 'json'
-        }),
-        this.getAxiosConfig({
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/x-www-form-urlencoded'
-          }
-        })
-      );
-
-      return response.data.food;
-    } catch (error) {
-      console.error('[FatSecret] Ошибка получения деталей:', error);
-      throw new Error('Failed to get food details from FatSecret');
-    }
-  }
-
-  /**
-   * Импортировать продукт из FatSecret в локальную БД
-   */
-  async importProduct(fatSecretId: string, userId?: string): Promise<{ product_id: string; already_exists: boolean }> {
+  async importProduct(code: string, userId?: string): Promise<{ product_id: string; already_exists: boolean }> {
     // Проверяем, не импортирован ли уже
     const existing = await query<{ id: string }>(`
-      SELECT id FROM products WHERE fatsecret_id = $1
-    `, [fatSecretId]);
+      SELECT id FROM products WHERE openfoodfacts_code = $1
+    `, [code]);
 
     if (existing.rows.length > 0) {
-      console.log('[Import] Продукт уже существует:', fatSecretId);
+      console.log('[Import] Продукт уже существует:', code);
       return {
         product_id: existing.rows[0].id,
         already_exists: true
       };
     }
 
-    // Получаем детальную информацию
-    const food = await this.getFatSecretFoodDetail(fatSecretId);
+    // Получаем данные из OpenFoodFacts
+    const response = await axios.get(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
+    const product = response.data.product;
 
-    // Берём метрическую порцию (100г) или первую доступную
-    const servings = Array.isArray(food.servings.serving)
-      ? food.servings.serving
-      : [food.servings.serving];
-
-    const serving = servings.find(
-      (s) => s.metric_serving_amount === '100.000' && s.metric_serving_unit === 'g'
-    ) || servings[0];
+    if (!product) {
+      throw new Error('Product not found in OpenFoodFacts');
+    }
 
     // Сохраняем в БД
     const result = await query<{ id: string }>(`
       INSERT INTO products (
-        fatsecret_id, name, calories, protein, fat, carbs, fiber,
+        openfoodfacts_code, name, calories, protein, fat, carbs, fiber,
         category, is_perishable, cooking_ratio, imported_by_user_id
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING id
     `, [
-      fatSecretId,
-      food.food_name,
-      parseFloat(serving.calories),
-      parseFloat(serving.protein),
-      parseFloat(serving.fat),
-      parseFloat(serving.carbohydrate),
-      parseFloat(serving.fiber || '0'),
-      this.detectCategory(food.food_name),
-      this.detectPerishable(food.food_name),
+      code,
+      product.product_name_ru || product.product_name,
+      Math.round(product.nutriments['energy-kcal_100g'] || 0),
+      Math.round((product.nutriments.proteins_100g || 0) * 10) / 10,
+      Math.round((product.nutriments.fat_100g || 0) * 10) / 10,
+      Math.round((product.nutriments.carbohydrates_100g || 0) * 10) / 10,
+      Math.round((product.nutriments.fiber_100g || 0) * 10) / 10,
+      this.detectCategory(product.categories_tags || []),
+      true,
       1.0,
       userId || null
     ]);
 
-    console.log('[Import] Продукт импортирован:', food.food_name, '→', result.rows[0].id);
+    console.log('[Import] Продукт импортирован:', product.product_name, '→', result.rows[0].id);
 
     return {
       product_id: result.rows[0].id,
       already_exists: false
     };
-  }
-
-  /**
-   * Определить категорию продукта по названию (эвристика)
-   */
-  private detectCategory(name: string): string {
-    const lower = name.toLowerCase();
-
-    if (lower.includes('chicken') || lower.includes('курица') || lower.includes('куриц')) return 'poultry';
-    if (lower.includes('turkey') || lower.includes('индейка')) return 'poultry';
-    if (lower.includes('beef') || lower.includes('говядина') || lower.includes('говяж')) return 'meat';
-    if (lower.includes('pork') || lower.includes('свинина') || lower.includes('свин')) return 'meat';
-    if (lower.includes('lamb') || lower.includes('баранина')) return 'meat';
-    if (lower.includes('fish') || lower.includes('рыба') || lower.includes('лосось') || lower.includes('salmon')) return 'fish';
-    if (lower.includes('shrimp') || lower.includes('креветк')) return 'seafood';
-    if (lower.includes('milk') || lower.includes('молоко')) return 'dairy';
-    if (lower.includes('cheese') || lower.includes('сыр')) return 'dairy';
-    if (lower.includes('yogurt') || lower.includes('йогурт')) return 'dairy';
-    if (lower.includes('egg') || lower.includes('яйц')) return 'eggs';
-    if (lower.includes('rice') || lower.includes('рис')) return 'grains';
-    if (lower.includes('oat') || lower.includes('овс')) return 'grains';
-    if (lower.includes('pasta') || lower.includes('макарон')) return 'pasta';
-    if (lower.includes('bread') || lower.includes('хлеб')) return 'bread';
-    if (lower.includes('apple') || lower.includes('яблок')) return 'fruits';
-    if (lower.includes('banana') || lower.includes('банан')) return 'fruits';
-    if (lower.includes('orange') || lower.includes('апельсин')) return 'fruits';
-    if (lower.includes('tomato') || lower.includes('помидор')) return 'vegetables';
-    if (lower.includes('cucumber') || lower.includes('огурец')) return 'vegetables';
-    if (lower.includes('potato') || lower.includes('картофель')) return 'vegetables';
-    if (lower.includes('almond') || lower.includes('миндал')) return 'nuts';
-    if (lower.includes('walnut') || lower.includes('грецк')) return 'nuts';
-    if (lower.includes('oil') || lower.includes('масло')) return 'oils';
-
-    return 'other';
-  }
-
-  /**
-   * Определить, является ли продукт скоропортящимся
-   */
-  private detectPerishable(name: string): boolean {
-    const lower = name.toLowerCase();
-    const nonPerishable = [
-      'rice', 'pasta', 'oat', 'flour', 'sugar', 'oil', 'honey', 'dried',
-      'рис', 'макарон', 'мука', 'сахар', 'масло', 'мёд', 'суш'
-    ];
-    return !nonPerishable.some(word => lower.includes(word));
   }
 
   /**

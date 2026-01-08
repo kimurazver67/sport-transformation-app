@@ -3,32 +3,22 @@
 import { Router, Request, Response } from 'express';
 import { NutritionDataService } from '../services/nutritionDataService';
 import { MealPlanGenerator } from '../services/mealPlanGenerator';
-import { config } from '../config';
 import { pool } from '../db/postgres';
 
 const router = Router();
 
-// Инициализируем сервис
-let nutritionService: NutritionDataService | null = null;
-
-if (config.fatsecret.enabled && config.fatsecret.clientId && config.fatsecret.clientSecret) {
-  nutritionService = new NutritionDataService(
-    config.fatsecret.clientId,
-    config.fatsecret.clientSecret
-  );
-  console.log('[Nutrition API] FatSecret integration enabled');
-} else {
-  console.log('[Nutrition API] FatSecret integration disabled (missing credentials)');
-}
+// Инициализируем сервис (теперь без внешних зависимостей - OpenFoodFacts бесплатный)
+const nutritionService = new NutritionDataService();
+console.log('[Nutrition API] OpenFoodFacts integration enabled');
 
 /**
  * GET /api/nutrition/products/search
- * Поиск продуктов (локальная БД + FatSecret API)
+ * Поиск продуктов (локальная БД + OpenFoodFacts API)
  */
 router.get('/products/search', async (req: Request, res: Response) => {
   try {
     const query = req.query.q as string;
-    const source = (req.query.source as 'local' | 'fatsecret' | 'all') || 'all';
+    const source = (req.query.source as 'local' | 'openfoodfacts' | 'all') || 'all';
     const limit = parseInt(req.query.limit as string) || 20;
 
     if (!query || query.length < 2) {
@@ -37,46 +27,11 @@ router.get('/products/search', async (req: Request, res: Response) => {
       });
     }
 
-    // Если FatSecret доступен - используем nutritionService
-    if (nutritionService) {
-      const result = await nutritionService.searchProducts(query, source, limit);
-      return res.json({
-        products: result.products,
-        total: result.products.length,
-        cached: result.cached
-      });
-    }
-
-    // Fallback: только локальная БД (без FatSecret)
-    if (source === 'fatsecret') {
-      return res.json({
-        products: [],
-        total: 0,
-        cached: false,
-        note: 'FatSecret integration is disabled'
-      });
-    }
-
-    // Поиск в локальной БД
-    const result = await pool.query(`
-      SELECT
-        id, name, calories, protein, fat, carbs,
-        category, unit, unit_weight, cooking_ratio,
-        'local' as source
-      FROM products
-      WHERE
-        name ILIKE $1 OR
-        name ILIKE $2
-      ORDER BY
-        CASE WHEN name ILIKE $2 THEN 0 ELSE 1 END,
-        name
-      LIMIT $3
-    `, [`%${query}%`, `${query}%`, limit]);
-
-    res.json({
-      products: result.rows,
-      total: result.rows.length,
-      cached: false
+    const result = await nutritionService.searchProducts(query, source, limit);
+    return res.json({
+      products: result.products,
+      total: result.products.length,
+      cached: result.cached
     });
   } catch (error) {
     console.error('[Nutrition API] Search error:', error);
@@ -88,25 +43,19 @@ router.get('/products/search', async (req: Request, res: Response) => {
 
 /**
  * POST /api/nutrition/products/import
- * Импортировать продукт из FatSecret в локальную БД
+ * Импортировать продукт из OpenFoodFacts в локальную БД
  */
 router.post('/products/import', async (req: Request, res: Response) => {
   try {
-    if (!nutritionService) {
-      return res.status(503).json({
-        error: 'Nutrition service is not available'
-      });
-    }
+    const { openfoodfacts_code, user_id } = req.body;
 
-    const { fatsecret_id, user_id } = req.body;
-
-    if (!fatsecret_id) {
+    if (!openfoodfacts_code) {
       return res.status(400).json({
-        error: 'fatsecret_id is required'
+        error: 'openfoodfacts_code is required'
       });
     }
 
-    const result = await nutritionService.importProduct(fatsecret_id, user_id);
+    const result = await nutritionService.importProduct(openfoodfacts_code, user_id);
 
     res.json({
       product_id: result.product_id,
