@@ -1101,4 +1101,19 @@ router.get(
   }
 );
 
+// ВРЕМЕННЫЙ endpoint для сброса XP (удалить после использования!)
+router.post('/temp-reset-points-50', async (req: Request, res: Response) => {
+  try {
+    await query('UPDATE user_stats SET total_points = 50, weekly_points = 50');
+    const result = await query('SELECT COUNT(*) as count FROM user_stats');
+    res.json({
+      success: true,
+      message: `Reset points to 50 for ${result.rows[0].count} users`
+    });
+  } catch (error) {
+    console.error('Temp reset points error:', error);
+    res.status(500).json({ success: false, error: 'Failed to reset points' });
+  }
+});
+
 export default router;
