@@ -216,79 +216,85 @@ export class MealPlanGenerator {
     preferSimple: boolean,
     existingDays: DayPlan[]
   ): Promise<DayPlan> {
-    // Целевые калории для каждого приёма пищи
-    const targetCalories = {
-      breakfast: targets.calories * MEAL_DISTRIBUTION.breakfast,
-      lunch: targets.calories * MEAL_DISTRIBUTION.lunch,
-      dinner: targets.calories * MEAL_DISTRIBUTION.dinner,
-      snack: targets.calories * MEAL_DISTRIBUTION.snack,
+    // Целевые БЖУ для каждого приёма пищи (НЕ калории!)
+    const targetProtein = {
+      breakfast: targets.protein * MEAL_DISTRIBUTION.breakfast,
+      lunch: targets.protein * MEAL_DISTRIBUTION.lunch,
+      dinner: targets.protein * MEAL_DISTRIBUTION.dinner,
+      snack: targets.protein * MEAL_DISTRIBUTION.snack,
     };
 
     // Выбираем рецепты для каждого приёма пищи
     const breakfast = this.selectRecipe(
       recipesByMeal.breakfast,
-      targetCalories.breakfast,
+      targetProtein.breakfast,
       preferSimple,
       existingDays.map(d => d.breakfast.id)
     );
 
     const lunch = this.selectRecipe(
       recipesByMeal.lunch,
-      targetCalories.lunch,
+      targetProtein.lunch,
       preferSimple,
       existingDays.map(d => d.lunch.id)
     );
 
     const dinner = this.selectRecipe(
       recipesByMeal.dinner,
-      targetCalories.dinner,
+      targetProtein.dinner,
       preferSimple,
       existingDays.map(d => d.dinner.id)
     );
 
     const snack = this.selectRecipe(
       recipesByMeal.snack,
-      targetCalories.snack,
+      targetProtein.snack,
       preferSimple,
       existingDays.map(d => d.snack.id)
     );
 
-    // Рассчитываем порции для точного попадания в КБЖУ
-    const breakfastPortion = this.calculatePortion(breakfast, targetCalories.breakfast);
-    const lunchPortion = this.calculatePortion(lunch, targetCalories.lunch);
-    const dinnerPortion = this.calculatePortion(dinner, targetCalories.dinner);
-    const snackPortion = this.calculatePortion(snack, targetCalories.snack);
+    // Рассчитываем порции по БЕЛКУ (protein), не по калориям
+    const breakfastPortion = this.calculatePortionByProtein(breakfast, targetProtein.breakfast);
+    const lunchPortion = this.calculatePortionByProtein(lunch, targetProtein.lunch);
+    const dinnerPortion = this.calculatePortionByProtein(dinner, targetProtein.dinner);
+    const snackPortion = this.calculatePortionByProtein(snack, targetProtein.snack);
 
-    // Итоговые КБЖУ дня
+    // Рассчитываем КБЖУ из ингредиентов (не из cached значений!)
+    const breakfastNutrition = this.calculateRecipeNutrition(breakfast);
+    const lunchNutrition = this.calculateRecipeNutrition(lunch);
+    const dinnerNutrition = this.calculateRecipeNutrition(dinner);
+    const snackNutrition = this.calculateRecipeNutrition(snack);
+
+    // Итоговые КБЖУ дня с учётом порций
     const totalCalories =
-      (breakfast.cached_calories || 0) * breakfastPortion +
-      (lunch.cached_calories || 0) * lunchPortion +
-      (dinner.cached_calories || 0) * dinnerPortion +
-      (snack.cached_calories || 0) * snackPortion;
+      breakfastNutrition.calories * breakfastPortion +
+      lunchNutrition.calories * lunchPortion +
+      dinnerNutrition.calories * dinnerPortion +
+      snackNutrition.calories * snackPortion;
 
     const totalProtein =
-      (breakfast.cached_protein || 0) * breakfastPortion +
-      (lunch.cached_protein || 0) * lunchPortion +
-      (dinner.cached_protein || 0) * dinnerPortion +
-      (snack.cached_protein || 0) * snackPortion;
+      breakfastNutrition.protein * breakfastPortion +
+      lunchNutrition.protein * lunchPortion +
+      dinnerNutrition.protein * dinnerPortion +
+      snackNutrition.protein * snackPortion;
 
     const totalFat =
-      (breakfast.cached_fat || 0) * breakfastPortion +
-      (lunch.cached_fat || 0) * lunchPortion +
-      (dinner.cached_fat || 0) * dinnerPortion +
-      (snack.cached_fat || 0) * snackPortion;
+      breakfastNutrition.fat * breakfastPortion +
+      lunchNutrition.fat * lunchPortion +
+      dinnerNutrition.fat * dinnerPortion +
+      snackNutrition.fat * snackPortion;
 
     const totalCarbs =
-      (breakfast.cached_carbs || 0) * breakfastPortion +
-      (lunch.cached_carbs || 0) * lunchPortion +
-      (dinner.cached_carbs || 0) * dinnerPortion +
-      (snack.cached_carbs || 0) * snackPortion;
+      breakfastNutrition.carbs * breakfastPortion +
+      lunchNutrition.carbs * lunchPortion +
+      dinnerNutrition.carbs * dinnerPortion +
+      snackNutrition.carbs * snackPortion;
 
     return {
-      breakfast: { ...breakfast, portion: breakfastPortion },
-      lunch: { ...lunch, portion: lunchPortion },
-      dinner: { ...dinner, portion: dinnerPortion },
-      snack: { ...snack, portion: snackPortion },
+      breakfast: { ...breakfast, portion: breakfastPortion, nutrition: breakfastNutrition },
+      lunch: { ...lunch, portion: lunchPortion, nutrition: lunchNutrition },
+      dinner: { ...dinner, portion: dinnerPortion, nutrition: dinnerNutrition },
+      snack: { ...snack, portion: snackPortion, nutrition: snackNutrition },
       totalCalories: Math.round(totalCalories),
       totalProtein: Math.round(totalProtein),
       totalFat: Math.round(totalFat),
@@ -297,11 +303,11 @@ export class MealPlanGenerator {
   }
 
   /**
-   * Выбор рецепта для приёма пищи
+   * Выбор рецепта для приёма пищи (по белку)
    */
   private selectRecipe(
     recipes: RecipeWithItems[],
-    targetCalories: number,
+    targetProtein: number,
     preferSimple: boolean,
     usedRecipeIds: string[]
   ): RecipeWithItems {
@@ -317,37 +323,95 @@ export class MealPlanGenerator {
       availableRecipes = recipes;
     }
 
-    // Сортируем по близости калорий к целевым
-    availableRecipes.sort((a, b) => {
-      const diffA = Math.abs((a.cached_calories || 0) - targetCalories);
-      const diffB = Math.abs((b.cached_calories || 0) - targetCalories);
+    // Рассчитываем белок для каждого рецепта из ингредиентов
+    const recipesWithProtein = availableRecipes.map(r => {
+      const protein = this.calculateRecipeProtein(r);
+      return { recipe: r, protein };
+    });
+
+    // Сортируем по близости белка к целевому
+    recipesWithProtein.sort((a, b) => {
+      const diffA = Math.abs(a.protein - targetProtein);
+      const diffB = Math.abs(b.protein - targetProtein);
 
       // Если предпочитаем простые - учитываем сложность
       if (preferSimple) {
-        const complexityWeight = 100; // вес сложности
-        return (diffA + (a.complexity === 'simple' ? 0 : complexityWeight)) -
-               (diffB + (b.complexity === 'simple' ? 0 : complexityWeight));
+        const complexityWeight = 10; // вес сложности (в граммах белка)
+        return (diffA + (a.recipe.complexity === 'simple' ? 0 : complexityWeight)) -
+               (diffB + (b.recipe.complexity === 'simple' ? 0 : complexityWeight));
       }
 
       return diffA - diffB;
     });
 
     // Выбираем из топ-3 случайно (для разнообразия)
-    const topRecipes = availableRecipes.slice(0, Math.min(3, availableRecipes.length));
-    return topRecipes[Math.floor(Math.random() * topRecipes.length)];
+    const topRecipes = recipesWithProtein.slice(0, Math.min(3, recipesWithProtein.length));
+    return topRecipes[Math.floor(Math.random() * topRecipes.length)].recipe;
   }
 
   /**
-   * Расчёт множителя порции для попадания в целевые калории
+   * Расчёт белка рецепта из ингредиентов
    */
-  private calculatePortion(recipe: RecipeWithItems, targetCalories: number): number {
-    const recipeCalories = recipe.cached_calories || 1;
-    const portion = targetCalories / recipeCalories;
+  private calculateRecipeProtein(recipe: RecipeWithItems): number {
+    if (!recipe.items || recipe.items.length === 0) {
+      return recipe.cached_protein || 0;
+    }
 
-    // Ограничиваем порцию в пределах min_portion и max_portion
+    return recipe.items.reduce((sum, item) => {
+      const product = item.product;
+      if (!product) return sum;
+      // protein на 100г, amount_grams - граммы
+      return sum + (product.protein * item.amount_grams / 100);
+    }, 0);
+  }
+
+  /**
+   * Расчёт КБЖУ рецепта из ингредиентов
+   */
+  private calculateRecipeNutrition(recipe: RecipeWithItems): { calories: number; protein: number; fat: number; carbs: number } {
+    if (!recipe.items || recipe.items.length === 0) {
+      return {
+        calories: recipe.cached_calories || 0,
+        protein: recipe.cached_protein || 0,
+        fat: recipe.cached_fat || 0,
+        carbs: recipe.cached_carbs || 0,
+      };
+    }
+
+    return recipe.items.reduce((acc, item) => {
+      const product = item.product;
+      if (!product) return acc;
+      const ratio = item.amount_grams / 100;
+      return {
+        calories: acc.calories + (product.calories * ratio),
+        protein: acc.protein + (product.protein * ratio),
+        fat: acc.fat + (product.fat * ratio),
+        carbs: acc.carbs + (product.carbs * ratio),
+      };
+    }, { calories: 0, protein: 0, fat: 0, carbs: 0 });
+  }
+
+  /**
+   * Расчёт множителя порции по БЕЛКУ (основной показатель)
+   */
+  private calculatePortionByProtein(recipe: RecipeWithItems, targetProtein: number): number {
+    const recipeNutrition = this.calculateRecipeNutrition(recipe);
+    const recipeProtein = recipeNutrition.protein;
+
+    // Если белка нет в рецепте, ставим минимальную порцию
+    if (recipeProtein <= 0) {
+      return recipe.min_portion || 0.5;
+    }
+
+    const portion = targetProtein / recipeProtein;
+
+    // Жёстко ограничиваем порцию реалистичными значениями
+    const minPortion = recipe.min_portion || 0.5;
+    const maxPortion = Math.min(recipe.max_portion || 2.0, 2.0); // Никогда не больше 2x
+
     return Math.max(
-      recipe.min_portion,
-      Math.min(recipe.max_portion, Math.round(portion * 10) / 10)
+      minPortion,
+      Math.min(maxPortion, Math.round(portion * 10) / 10)
     );
   }
 
@@ -385,6 +449,13 @@ export class MealPlanGenerator {
 
     for (const meal of meals) {
       const portion = (meal.recipe as any).portion || 1;
+      const nutrition = (meal.recipe as any).nutrition || {
+        calories: meal.recipe.cached_calories || 0,
+        protein: meal.recipe.cached_protein || 0,
+        fat: meal.recipe.cached_fat || 0,
+        carbs: meal.recipe.cached_carbs || 0,
+      };
+
       await this.pool.query(`
         INSERT INTO meals (
           meal_day_id, recipe_id, meal_type, portion_multiplier,
@@ -396,10 +467,10 @@ export class MealPlanGenerator {
         meal.recipe.id,
         meal.type,
         portion,
-        Math.round((meal.recipe.cached_calories || 0) * portion),
-        Math.round((meal.recipe.cached_protein || 0) * portion),
-        Math.round((meal.recipe.cached_fat || 0) * portion),
-        Math.round((meal.recipe.cached_carbs || 0) * portion),
+        Math.round(nutrition.calories * portion),
+        Math.round(nutrition.protein * portion),
+        Math.round(nutrition.fat * portion),
+        Math.round(nutrition.carbs * portion),
       ]);
     }
   }
