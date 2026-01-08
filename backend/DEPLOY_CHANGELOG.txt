@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Calculate meal portions to exactly match user's target KBJU
 • Исправлено: Add product deduplication before recipe migration
 • Добавлено: Improve recipe variety - no repeats within 7 days
 • Исправлено: Completely rebuild products and recipes from scratch
 • debug: Add duplicate-products endpoint
-• Исправлено: Add endpoint to fix duplicate recipe_items
 
-08.01.2026 14:29
+08.01.2026 14:59

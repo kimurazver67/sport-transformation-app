@@ -702,6 +702,82 @@ router.post('/run-migrations', async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/nutrition/debug/user-targets/:userId
+ * Проверка целевых КБЖУ пользователя vs фактических в плане
+ */
+router.get('/debug/user-targets/:userId', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    // Получаем данные пользователя
+    const userResult = await pool.query(
+      'SELECT id, goal, start_weight FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = userResult.rows[0];
+
+    // Рассчитываем целевые КБЖУ
+    const { calculateNutrition } = await import('../services/nutritionService');
+    const targets = calculateNutrition(user.start_weight, user.goal);
+
+    // Получаем последний план питания
+    const planResult = await pool.query(`
+      SELECT
+        mp.id,
+        mp.target_calories, mp.target_protein, mp.target_fat, mp.target_carbs,
+        mp.avg_calories, mp.avg_protein, mp.avg_fat, mp.avg_carbs
+      FROM meal_plans mp
+      WHERE mp.user_id = $1 AND mp.status = 'active'
+      ORDER BY mp.created_at DESC
+      LIMIT 1
+    `, [userId]);
+
+    // Получаем первый день плана
+    let firstDay = null;
+    if (planResult.rows.length > 0) {
+      const dayResult = await pool.query(`
+        SELECT
+          md.total_calories, md.total_protein, md.total_fat, md.total_carbs,
+          json_agg(
+            json_build_object(
+              'meal_type', m.meal_type,
+              'recipe_name', r.name,
+              'portion', m.portion_multiplier,
+              'calories', m.calories,
+              'protein', m.protein
+            )
+          ) as meals
+        FROM meal_days md
+        JOIN meals m ON md.id = m.meal_day_id
+        JOIN recipes r ON m.recipe_id = r.id
+        WHERE md.meal_plan_id = $1 AND md.day_number = 1 AND md.week_number = 1
+        GROUP BY md.id
+      `, [planResult.rows[0].id]);
+      firstDay = dayResult.rows[0] || null;
+    }
+
+    res.json({
+      user: {
+        id: user.id,
+        goal: user.goal,
+        weight: user.start_weight,
+      },
+      calculated_targets: targets,
+      plan_targets: planResult.rows[0] || null,
+      first_day: firstDay,
+    });
+  } catch (error) {
+    console.error('Debug error:', error);
+    res.status(500).json({ error: 'Failed', details: error instanceof Error ? error.message : 'Unknown' });
+  }
+});
+
+/**
  * GET /api/nutrition/debug/portions
  * Временный эндпоинт для проверки portion_multiplier в БД
  */
