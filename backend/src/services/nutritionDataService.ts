@@ -123,7 +123,9 @@ export class NutritionDataService {
           method: 'foods.search',
           search_expression: searchQuery,
           format: 'json',
-          max_results: maxResults.toString()
+          max_results: maxResults.toString(),
+          region: 'RU',  // Поддержка русского языка
+          language: 'ru'
         }),
         this.getAxiosConfig({
           headers: {

@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Add HTTP proxy support for FatSecret API
 • Исправлено: Remove is_active filter and add DISTINCT to product search
 • Исправлено: Simplify inventory input - save only on blur
 • Исправлено: Allow clearing inventory quantity input field
 • Исправлено: Add debounce to inventory quantity input
-• Добавлено: Replace +/- buttons with manual input field for inventory quantity
 
-08.01.2026 21:09
+08.01.2026 21:16
