@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Allow clearing inventory quantity input field
 • Исправлено: Add debounce to inventory quantity input
 • Добавлено: Replace +/- buttons with manual input field for inventory quantity
 • Исправлено: Add button to add more products and fix nutrition field names
 • Исправлено: Use correct column names in inventory endpoints
-• Исправлено: Add 'add' mode to ProductSearchModal for inventory feature
 
-08.01.2026 20:19
+08.01.2026 20:27

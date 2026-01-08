@@ -1,6 +1,6 @@
 // frontend/src/pages/MealPlanPage.tsx
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../store';
 import { api } from '../services/api';
@@ -288,18 +288,10 @@ const MealPlanPage = () => {
 
   // Local editing state for inventory quantities (to allow typing without instant API calls)
   const [editingQuantities, setEditingQuantities] = useState<Record<string, string>>({});
-  const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
 
   useEffect(() => {
     loadData();
   }, [user?.id]);
-
-  // Cleanup debounce timers on unmount
-  useEffect(() => {
-    return () => {
-      Object.values(debounceTimers.current).forEach(timer => clearTimeout(timer));
-    };
-  }, []);
 
   const loadData = async () => {
     if (!user?.id) return;
@@ -366,42 +358,20 @@ const MealPlanPage = () => {
     }
   };
 
-  // Handle quantity input change with debounce
+  // Handle quantity input change - just update local state, no debounce
   const handleQuantityInputChange = useCallback((itemId: string, value: string) => {
-    // Allow only digits
+    // Allow only digits (and empty string)
     const cleanValue = value.replace(/[^0-9]/g, '');
-
-    // Update local state immediately for responsive UI (allow empty string while typing)
     setEditingQuantities(prev => ({ ...prev, [itemId]: cleanValue }));
+  }, []);
 
-    // Clear previous timer for this item
-    if (debounceTimers.current[itemId]) {
-      clearTimeout(debounceTimers.current[itemId]);
-    }
+  // Save quantity on blur only
+  const handleQuantityBlur = useCallback((itemId: string) => {
+    const value = editingQuantities[itemId];
+    // Only save if we have an editing value
+    if (value === undefined) return;
 
-    // Set new timer to save after 800ms of no typing
-    debounceTimers.current[itemId] = setTimeout(() => {
-      const numValue = cleanValue === '' ? 0 : parseInt(cleanValue);
-      handleUpdateInventoryQuantity(itemId, Math.max(0, numValue));
-      // Clear editing state after save
-      setEditingQuantities(prev => {
-        const newState = { ...prev };
-        delete newState[itemId];
-        return newState;
-      });
-    }, 800);
-  }, [user?.id]);
-
-  // Save quantity on blur (immediate save)
-  const handleQuantityBlur = useCallback((itemId: string, value: string) => {
-    // Clear any pending timer
-    if (debounceTimers.current[itemId]) {
-      clearTimeout(debounceTimers.current[itemId]);
-      delete debounceTimers.current[itemId];
-    }
-
-    const cleanValue = value.replace(/[^0-9]/g, '');
-    const numValue = cleanValue === '' ? 0 : parseInt(cleanValue);
+    const numValue = value === '' ? 0 : parseInt(value);
     handleUpdateInventoryQuantity(itemId, Math.max(0, numValue));
     // Clear editing state
     setEditingQuantities(prev => {
@@ -409,7 +379,7 @@ const MealPlanPage = () => {
       delete newState[itemId];
       return newState;
     });
-  }, [user?.id]);
+  }, [editingQuantities, user?.id]);
 
   const handleUpdateInventoryQuantity = async (itemId: string, newGrams: number) => {
     if (!user?.id) return;
@@ -745,7 +715,7 @@ const MealPlanPage = () => {
                             pattern="[0-9]*"
                             value={editingQuantities[item.id] ?? String(item.quantity_grams || 0)}
                             onChange={(e) => handleQuantityInputChange(item.id, e.target.value)}
-                            onBlur={(e) => handleQuantityBlur(item.id, e.target.value)}
+                            onBlur={() => handleQuantityBlur(item.id)}
                             className="w-20 h-8 bg-void-200 border border-void-400 text-center font-mono text-sm text-neon-orange focus:border-neon-orange outline-none"
                           />
                           <span className="ml-1 font-mono text-xs text-steel-500">г</span>
