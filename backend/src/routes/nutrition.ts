@@ -727,35 +727,67 @@ router.get('/debug/portions', async (req: Request, res: Response) => {
 
 /**
  * POST /api/nutrition/debug/fix-duplicates
- * Исправляет дубликаты в recipe_items - полностью пересоздаёт рецепты
+ * ПОЛНОСТЬЮ пересоздаёт все данные: products, recipes, recipe_items
  */
 router.post('/debug/fix-duplicates', async (req: Request, res: Response) => {
   try {
-    // 1. Удаляем ВСЕ записи из recipe_items
-    await pool.query('DELETE FROM recipe_items');
-
-    // 2. Удаляем ВСЕ записи из recipe_tags
-    await pool.query('DELETE FROM recipe_tags');
-
-    // 3. Удаляем ВСЕ рецепты
-    await pool.query('DELETE FROM recipes');
-
-    // 4. Запускаем миграцию 021 заново
     const fs = await import('fs');
     const path = await import('path');
     const migrationsDir = path.join(__dirname, '../db/migrations');
-    const replaceRecipesFile = path.join(migrationsDir, '021_replace_recipes.sql');
 
-    if (fs.existsSync(replaceRecipesFile)) {
-      const sql = fs.readFileSync(replaceRecipesFile, 'utf8');
-      await pool.query(sql);
+    // 1. Очищаем ВСЁ в правильном порядке (учитываем FK)
+    await pool.query('DELETE FROM shopping_list_items');
+    await pool.query('DELETE FROM meals');
+    await pool.query('DELETE FROM meal_days');
+    await pool.query('DELETE FROM meal_plans');
+    await pool.query('DELETE FROM recipe_items');
+    await pool.query('DELETE FROM recipe_tags');
+    await pool.query('DELETE FROM recipes');
+    await pool.query('DELETE FROM product_tags');
+    await pool.query('DELETE FROM user_excluded_products');
+    await pool.query('DELETE FROM products');
+
+    const results: string[] = [];
+
+    // 2. Запускаем миграцию 016 (базовые продукты)
+    const file016 = path.join(migrationsDir, '016_seed_products.sql');
+    if (fs.existsSync(file016)) {
+      await pool.query(fs.readFileSync(file016, 'utf8'));
+      results.push('016_seed_products.sql OK');
     }
 
-    // 5. Проверяем результат
+    // 3. Запускаем миграцию 018 (расширенные продукты)
+    const file018 = path.join(migrationsDir, '018_expand_products.sql');
+    if (fs.existsSync(file018)) {
+      await pool.query(fs.readFileSync(file018, 'utf8'));
+      results.push('018_expand_products.sql OK');
+    }
+
+    // 4. Запускаем миграцию 019 (финальные продукты)
+    const file019 = path.join(migrationsDir, '019_final_products.sql');
+    if (fs.existsSync(file019)) {
+      await pool.query(fs.readFileSync(file019, 'utf8'));
+      results.push('019_final_products.sql OK');
+    }
+
+    // 5. Запускаем миграцию 021 (рецепты)
+    const file021 = path.join(migrationsDir, '021_replace_recipes.sql');
+    if (fs.existsSync(file021)) {
+      await pool.query(fs.readFileSync(file021, 'utf8'));
+      results.push('021_replace_recipes.sql OK');
+    }
+
+    // 6. Проверяем результат
+    const countProducts = await pool.query('SELECT COUNT(*) FROM products');
     const countRecipes = await pool.query('SELECT COUNT(*) FROM recipes');
     const countItems = await pool.query('SELECT COUNT(*) FROM recipe_items');
 
-    // 6. Проверяем рецепт с тунцом
+    // Проверяем дубликаты продуктов
+    const duplicates = await pool.query(`
+      SELECT name, COUNT(*) as cnt FROM products GROUP BY name HAVING COUNT(*) > 1 LIMIT 5
+    `);
+
+    // Проверяем рецепт с тунцом
     const testRecipe = await pool.query(`
       SELECT r.name, COUNT(ri.id) as items_count
       FROM recipes r
@@ -766,8 +798,11 @@ router.post('/debug/fix-duplicates', async (req: Request, res: Response) => {
 
     res.json({
       success: true,
+      migrations: results,
+      products_count: parseInt(countProducts.rows[0].count),
       recipes_count: parseInt(countRecipes.rows[0].count),
       recipe_items_count: parseInt(countItems.rows[0].count),
+      duplicate_products: duplicates.rows,
       test_recipe: testRecipe.rows[0] || null
     });
   } catch (error) {
