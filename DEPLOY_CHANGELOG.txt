@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Use correct column names in inventory endpoints
 • Исправлено: Add 'add' mode to ProductSearchModal for inventory feature
 • Исправлено: Use amount_grams instead of grams in calculateInventoryCoverage
 • Исправлено: Add 022_user_inventory migration to fix-duplicates endpoint
 • Добавлено: Add user inventory for meal plan generation
-• Добавлено: Select recipes by BJU ratio with multi-attempt optimization
 
-08.01.2026 19:39
+08.01.2026 19:47

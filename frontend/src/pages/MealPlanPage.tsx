@@ -45,10 +45,11 @@ interface InventoryItem {
   quantity_units: number | null;
   location: 'fridge' | 'freezer' | 'pantry' | 'other';
   expiry_date: string | null;
-  calories_per_100g: number;
-  protein_per_100g: number;
-  fat_per_100g: number;
-  carbs_per_100g: number;
+  calories: number;
+  protein: number;
+  fat: number;
+  carbs: number;
+  category: string;
 }
 
 interface InventoryData {
@@ -668,7 +669,7 @@ const MealPlanPage = () => {
                       <div className="flex-1">
                         <div className="font-mono text-sm text-steel-100">{item.product_name}</div>
                         <div className="font-mono text-[10px] text-steel-500 mt-1">
-                          {item.calories_per_100g} ккал · {item.protein_per_100g}Б · {item.fat_per_100g}Ж · {item.carbs_per_100g}У / 100г
+                          {item.calories} ккал · {item.protein}Б · {item.fat}Ж · {item.carbs}У / 100г
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -698,6 +699,13 @@ const MealPlanPage = () => {
                       </div>
                     </div>
                   ))}
+                  {/* Add more button */}
+                  <button
+                    onClick={() => setInventorySearchOpen(true)}
+                    className="w-full mt-2 px-4 py-3 border-2 border-dashed border-void-400 text-steel-500 font-mono text-xs uppercase hover:border-neon-orange hover:text-neon-orange transition-colors"
+                  >
+                    + Добавить ещё
+                  </button>
                 </div>
               )}
             </div>
