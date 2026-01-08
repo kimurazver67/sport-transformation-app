@@ -110,46 +110,52 @@ export class MealPlanGenerator {
    * Получение доступных рецептов (исключая user exclusions)
    */
   private async getAvailableRecipes(userId: string, goal: UserGoal): Promise<RecipeWithItems[]> {
+    // Используем подзапрос чтобы избежать дублирования items
     const result = await this.pool.query(`
       SELECT
         r.*,
-        json_agg(
-          json_build_object(
-            'id', ri.id,
-            'recipe_id', ri.recipe_id,
-            'product_id', ri.product_id,
-            'amount_grams', ri.amount_grams,
-            'is_optional', ri.is_optional,
-            'product', json_build_object(
-              'id', p.id,
-              'name', p.name,
-              'calories', p.calories,
-              'protein', p.protein,
-              'fat', p.fat,
-              'carbs', p.carbs,
-              'fiber', p.fiber,
-              'category', p.category,
-              'cooking_ratio', p.cooking_ratio
-            )
-          )
+        (
+          SELECT json_agg(item_data)
+          FROM (
+            SELECT DISTINCT ON (ri.id)
+              json_build_object(
+                'id', ri.id,
+                'recipe_id', ri.recipe_id,
+                'product_id', ri.product_id,
+                'amount_grams', ri.amount_grams,
+                'is_optional', ri.is_optional,
+                'product', json_build_object(
+                  'id', p.id,
+                  'name', p.name,
+                  'calories', p.calories,
+                  'protein', p.protein,
+                  'fat', p.fat,
+                  'carbs', p.carbs,
+                  'fiber', p.fiber,
+                  'category', p.category,
+                  'cooking_ratio', p.cooking_ratio
+                )
+              ) as item_data
+            FROM recipe_items ri
+            JOIN products p ON ri.product_id = p.id
+            WHERE ri.recipe_id = r.id AND p.is_active = true
+          ) sub
         ) as items
       FROM recipes r
-      JOIN recipe_items ri ON r.id = ri.recipe_id
-      JOIN products p ON ri.product_id = p.id
       WHERE r.is_active = true
-        AND p.is_active = true
         -- Исключаем рецепты с продуктами в user exclusions
         AND NOT EXISTS (
-          SELECT 1 FROM user_excluded_products uep
-          WHERE uep.user_id = $1 AND uep.product_id = ri.product_id
+          SELECT 1 FROM recipe_items ri2
+          JOIN user_excluded_products uep ON uep.product_id = ri2.product_id
+          WHERE ri2.recipe_id = r.id AND uep.user_id = $1
         )
         -- Исключаем рецепты с тегами в user exclusions
         AND NOT EXISTS (
-          SELECT 1 FROM product_tags pt
-          JOIN user_excluded_tags uet ON pt.tag_id = uet.tag_id
-          WHERE uet.user_id = $1 AND pt.product_id = ri.product_id
+          SELECT 1 FROM recipe_items ri3
+          JOIN product_tags pt ON pt.product_id = ri3.product_id
+          JOIN user_excluded_tags uet ON uet.tag_id = pt.tag_id
+          WHERE ri3.recipe_id = r.id AND uet.user_id = $1
         )
-      GROUP BY r.id
       ORDER BY r.complexity, r.cooking_time
     `, [userId]);
 
