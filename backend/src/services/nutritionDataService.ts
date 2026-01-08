@@ -117,16 +117,26 @@ export class NutritionDataService {
 
       console.log('[FatSecret] Поиск продуктов:', searchQuery);
 
+      // Определяем, содержит ли запрос кириллицу
+      const hasCyrillic = /[а-яА-ЯёЁ]/.test(searchQuery);
+
+      // Сначала пробуем искать в US регионе (более полная база)
+      const params: Record<string, string> = {
+        method: 'foods.search',
+        search_expression: searchQuery,
+        format: 'json',
+        max_results: maxResults.toString()
+      };
+
+      // Если запрос на русском, добавляем region/language
+      if (hasCyrillic) {
+        params.region = 'RU';
+        params.language = 'ru';
+      }
+
       const response = await axios.post<FatSecretSearchResponse>(
         this.baseUrl,
-        new URLSearchParams({
-          method: 'foods.search',
-          search_expression: searchQuery,
-          format: 'json',
-          max_results: maxResults.toString(),
-          region: 'RU',  // Поддержка русского языка
-          language: 'ru'
-        }),
+        new URLSearchParams(params),
         this.getAxiosConfig({
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -135,7 +145,29 @@ export class NutritionDataService {
         })
       );
 
-      const foods = response.data.foods?.food || [];
+      let foods = response.data.foods?.food || [];
+
+      // Если на русском ничего не нашли, пробуем без региона
+      if (foods.length === 0 && hasCyrillic) {
+        console.log('[FatSecret] Не найдено в RU, пробуем без региона...');
+        const fallbackResponse = await axios.post<FatSecretSearchResponse>(
+          this.baseUrl,
+          new URLSearchParams({
+            method: 'foods.search',
+            search_expression: searchQuery,
+            format: 'json',
+            max_results: maxResults.toString()
+          }),
+          this.getAxiosConfig({
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/x-www-form-urlencoded'
+            }
+          })
+        );
+        foods = fallbackResponse.data.foods?.food || [];
+      }
+
       console.log('[FatSecret] Найдено продуктов:', foods.length);
 
       return foods;
