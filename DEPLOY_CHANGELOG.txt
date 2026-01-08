@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Add endpoint to fix duplicate recipe_items
 • debug: Add recipe-test endpoint to diagnose calorie calculation
 • debug: Add detailed logging to recipe nutrition calculation
 • temp: Add debug endpoint to check portion_multiplier values
 • Исправлено: Use DISTINCT subquery to prevent duplicate recipe items
-• Исправлено: Force portion_multiplier limit 0.5-2.0 when saving meals
 
-08.01.2026 13:58
+08.01.2026 14:01

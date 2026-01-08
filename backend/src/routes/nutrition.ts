@@ -780,6 +780,29 @@ router.post('/debug/fix-duplicates', async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/nutrition/debug/duplicate-products
+ * Проверяем дубликаты продуктов
+ */
+router.get('/debug/duplicate-products', async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(`
+      SELECT name, COUNT(*) as cnt
+      FROM products
+      GROUP BY name
+      HAVING COUNT(*) > 1
+      ORDER BY cnt DESC
+      LIMIT 20
+    `);
+    res.json({
+      duplicate_products: result.rows,
+      total_products: (await pool.query('SELECT COUNT(*) FROM products')).rows[0].count
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed' });
+  }
+});
+
+/**
  * GET /api/nutrition/debug/recipe-test
  * Тестовый эндпоинт: проверяем расчёт КБЖУ для одного рецепта
  */
