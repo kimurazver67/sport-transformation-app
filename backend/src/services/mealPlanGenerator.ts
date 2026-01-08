@@ -310,23 +310,34 @@ export class MealPlanGenerator {
 
   /**
    * Выбор рецепта для приёма пищи (по белку)
+   * Рецепт не должен повторяться в течение 7 дней
    */
   private selectRecipe(
     recipes: RecipeWithItems[],
     targetProtein: number,
     preferSimple: boolean,
-    usedRecipeIds: string[]
+    recentlyUsedIds: string[] // ID рецептов за последние 6 дней
   ): RecipeWithItems {
     if (recipes.length === 0) {
       throw new Error('No recipes available for meal type');
     }
 
-    // Фильтруем неиспользованные рецепты (для разнообразия)
-    let availableRecipes = recipes.filter(r => !usedRecipeIds.includes(r.id));
+    // Берём только последние 6 использованных (чтобы не повторяться 7 дней)
+    const last6Used = recentlyUsedIds.slice(-6);
 
-    // Если все рецепты уже использованы, берём все
+    // Фильтруем рецепты которые НЕ использовались последние 6 дней
+    let availableRecipes = recipes.filter(r => !last6Used.includes(r.id));
+
+    // Если все рецепты использованы за последние 6 дней, берём наименее недавние
     if (availableRecipes.length === 0) {
-      availableRecipes = recipes;
+      // Берём рецепты которые использовались раньше всех
+      const oldestUsed = recentlyUsedIds.slice(0, Math.max(1, recentlyUsedIds.length - 3));
+      availableRecipes = recipes.filter(r => oldestUsed.includes(r.id));
+
+      // Если всё ещё пусто, берём все
+      if (availableRecipes.length === 0) {
+        availableRecipes = recipes;
+      }
     }
 
     // Рассчитываем белок для каждого рецепта из ингредиентов
@@ -335,14 +346,17 @@ export class MealPlanGenerator {
       return { recipe: r, protein };
     });
 
-    // Сортируем по близости белка к целевому
+    // Перемешиваем для случайности
+    this.shuffleArray(recipesWithProtein);
+
+    // Сортируем по близости белка к целевому (но с элементом случайности)
     recipesWithProtein.sort((a, b) => {
       const diffA = Math.abs(a.protein - targetProtein);
       const diffB = Math.abs(b.protein - targetProtein);
 
       // Если предпочитаем простые - учитываем сложность
       if (preferSimple) {
-        const complexityWeight = 10; // вес сложности (в граммах белка)
+        const complexityWeight = 5; // вес сложности (в граммах белка)
         return (diffA + (a.recipe.complexity === 'simple' ? 0 : complexityWeight)) -
                (diffB + (b.recipe.complexity === 'simple' ? 0 : complexityWeight));
       }
@@ -350,9 +364,19 @@ export class MealPlanGenerator {
       return diffA - diffB;
     });
 
-    // Выбираем из топ-3 случайно (для разнообразия)
-    const topRecipes = recipesWithProtein.slice(0, Math.min(3, recipesWithProtein.length));
+    // Выбираем из топ-5 случайно (больше разнообразия)
+    const topRecipes = recipesWithProtein.slice(0, Math.min(5, recipesWithProtein.length));
     return topRecipes[Math.floor(Math.random() * topRecipes.length)].recipe;
+  }
+
+  /**
+   * Перемешивание массива (Fisher-Yates)
+   */
+  private shuffleArray<T>(array: T[]): void {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
   }
 
   /**
@@ -390,10 +414,7 @@ export class MealPlanGenerator {
 
     const items = Array.isArray(rawItems) ? rawItems.filter(item => item && item.product) : [];
 
-    console.log(`[MealPlanGenerator] Recipe ${recipe.name}: items count = ${items.length}, raw type = ${typeof recipe.items}`);
-
     if (items.length === 0) {
-      console.log(`[MealPlanGenerator] Recipe ${recipe.name} has no valid items, using cached: cal=${recipe.cached_calories}, prot=${recipe.cached_protein}`);
       return {
         calories: recipe.cached_calories || 0,
         protein: recipe.cached_protein || 0,
@@ -401,13 +422,6 @@ export class MealPlanGenerator {
         carbs: recipe.cached_carbs || 0,
       };
     }
-
-    // Логируем каждый ингредиент
-    items.forEach((item, idx) => {
-      const p = item.product;
-      const cal = (p?.calories || 0) * (item.amount_grams || 0) / 100;
-      console.log(`[MealPlanGenerator]   ${idx}: ${p?.name} ${item.amount_grams}g = ${Math.round(cal)} kcal`);
-    });
 
     const nutrition = items.reduce((acc, item) => {
       const product = item.product;
@@ -419,8 +433,6 @@ export class MealPlanGenerator {
         carbs: acc.carbs + ((product.carbs || 0) * ratio),
       };
     }, { calories: 0, protein: 0, fat: 0, carbs: 0 });
-
-    console.log(`[MealPlanGenerator] Recipe ${recipe.name} TOTAL: ${Math.round(nutrition.calories)} kcal, ${Math.round(nutrition.protein)}g protein`);
 
     return nutrition;
   }
@@ -492,8 +504,6 @@ export class MealPlanGenerator {
         fat: meal.recipe.cached_fat || 0,
         carbs: meal.recipe.cached_carbs || 0,
       };
-
-      console.log(`[MealPlanGenerator] Saving ${meal.type}: ${meal.recipe.name}, portion=${portion}, calories=${Math.round(nutrition.calories * portion)}`);
 
       await this.pool.query(`
         INSERT INTO meals (
