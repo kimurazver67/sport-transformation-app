@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Add button to add more products and fix nutrition field names
 • Исправлено: Use correct column names in inventory endpoints
 • Исправлено: Add 'add' mode to ProductSearchModal for inventory feature
 • Исправлено: Use amount_grams instead of grams in calculateInventoryCoverage
 • Исправлено: Add 022_user_inventory migration to fix-duplicates endpoint
-• Добавлено: Add user inventory for meal plan generation
 
-08.01.2026 19:47
+08.01.2026 19:54

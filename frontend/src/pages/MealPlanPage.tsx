@@ -673,22 +673,17 @@ const MealPlanPage = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="flex items-center border border-void-400 bg-void-200">
-                          <button
-                            onClick={() => handleUpdateInventoryQuantity(item.id, Math.max(0, (item.quantity_grams || 0) - 100))}
-                            className="w-8 h-8 flex items-center justify-center text-steel-400 hover:text-neon-orange hover:bg-void-300"
-                          >
-                            -
-                          </button>
-                          <span className="w-16 text-center font-mono text-sm text-neon-orange">
-                            {item.quantity_grams || 0}г
-                          </span>
-                          <button
-                            onClick={() => handleUpdateInventoryQuantity(item.id, (item.quantity_grams || 0) + 100)}
-                            className="w-8 h-8 flex items-center justify-center text-steel-400 hover:text-neon-orange hover:bg-void-300"
-                          >
-                            +
-                          </button>
+                        <div className="flex items-center">
+                          <input
+                            type="number"
+                            value={item.quantity_grams || 0}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value) || 0;
+                              handleUpdateInventoryQuantity(item.id, Math.max(0, val));
+                            }}
+                            className="w-20 h-8 bg-void-200 border border-void-400 text-center font-mono text-sm text-neon-orange focus:border-neon-orange outline-none"
+                          />
+                          <span className="ml-1 font-mono text-xs text-steel-500">г</span>
                         </div>
                         <button
                           onClick={() => handleDeleteInventoryItem(item.id)}
