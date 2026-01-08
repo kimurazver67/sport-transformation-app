@@ -1,9 +1,9 @@
 Последние изменения:
 
+• temp: Hide weekly tasks until Monday & add compensation endpoint
+• Update деплой список изменений
 • Исправлено: Weekly tasks now reset properly each week
 • Обслуживание: Remove temporary reset endpoint
 • temp: Add temporary endpoint for task reset
-• Добавлено: Add endpoint to reset all task completions
-• Добавлено: Hide completed tasks, show completion message
 
-08.01.2026 10:13
+08.01.2026 10:26
