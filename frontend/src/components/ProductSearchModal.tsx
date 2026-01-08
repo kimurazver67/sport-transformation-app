@@ -8,7 +8,7 @@ interface ProductSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (product: Product & { source: 'local' | 'fatsecret' }) => void;
-  mode: 'exclude' | 'replace';
+  mode: 'exclude' | 'replace' | 'add';
   title?: string;
 }
 
@@ -179,7 +179,7 @@ const ProductSearchModal = ({
                   onClick={() => handleSelect(product)}
                   className="brutal-button-sm ml-4"
                 >
-                  {mode === 'exclude' ? '+ ИСКЛЮЧИТЬ' : '✓ ЗАМЕНИТЬ'}
+                  {mode === 'exclude' ? '+ ИСКЛЮЧИТЬ' : mode === 'replace' ? '✓ ЗАМЕНИТЬ' : '+ ДОБАВИТЬ'}
                 </button>
               </div>
             </div>
