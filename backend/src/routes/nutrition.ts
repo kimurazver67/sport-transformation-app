@@ -1304,4 +1304,96 @@ router.get('/inventory/:userId/shopping-diff/:mealPlanId', async (req: Request, 
   }
 });
 
+/**
+ * POST /api/nutrition/debug/reseed-products
+ * Принудительный ресид продуктов (для дебага)
+ */
+router.post('/debug/reseed-products', async (req: Request, res: Response) => {
+  try {
+    console.log('[Debug] Reseeding products...');
+
+    // Проверяем количество продуктов
+    const countResult = await pool.query('SELECT COUNT(*) FROM products');
+    const currentCount = parseInt(countResult.rows[0].count);
+
+    if (currentCount >= 50) {
+      return res.json({
+        message: 'Products already exist',
+        count: currentCount
+      });
+    }
+
+    // Вставляем продукты
+    await pool.query(`
+      INSERT INTO products (name, calories, protein, fat, carbs, fiber, category, is_perishable, cooking_ratio) VALUES
+      ('Говядина (вырезка)', 250, 26.0, 16.0, 0, 0, 'meat', true, 0.75),
+      ('Говядина (фарш)', 254, 17.2, 20.0, 0, 0, 'meat', true, 0.70),
+      ('Свинина (вырезка)', 316, 16.0, 27.8, 0, 0, 'meat', true, 0.70),
+      ('Куриная грудка', 165, 31.0, 3.6, 0, 0, 'poultry', true, 0.75),
+      ('Куриное бедро', 211, 18.4, 15.3, 0, 0, 'poultry', true, 0.70),
+      ('Индейка (грудка)', 157, 29.9, 3.5, 0, 0, 'poultry', true, 0.75),
+      ('Лосось', 142, 19.8, 6.3, 0, 0, 'fish', true, 0.80),
+      ('Треска', 82, 17.7, 0.7, 0, 0, 'fish', true, 0.80),
+      ('Тунец', 144, 23.3, 4.9, 0, 0, 'fish', true, 0.80),
+      ('Креветки', 99, 20.9, 1.7, 0.2, 0, 'seafood', true, 0.85),
+      ('Молоко 2.5%', 52, 2.8, 2.5, 4.7, 0, 'dairy', true, 1.0),
+      ('Молоко 3.2%', 60, 2.9, 3.2, 4.7, 0, 'dairy', true, 1.0),
+      ('Кефир 1%', 40, 3.0, 1.0, 4.0, 0, 'dairy', true, 1.0),
+      ('Творог 5%', 121, 17.2, 5.0, 1.8, 0, 'dairy', true, 1.0),
+      ('Творог 9%', 159, 16.7, 9.0, 2.0, 0, 'dairy', true, 1.0),
+      ('Сметана 20%', 206, 2.8, 20.0, 3.2, 0, 'dairy', true, 1.0),
+      ('Греческий йогурт 2%', 66, 5.0, 2.0, 5.5, 0, 'dairy', true, 1.0),
+      ('Сыр моцарелла', 280, 28.0, 17.0, 2.2, 0, 'dairy', true, 1.0),
+      ('Сыр пармезан', 431, 38.0, 29.0, 4.1, 0, 'dairy', true, 1.0),
+      ('Гречка', 313, 12.6, 3.3, 62.1, 11.3, 'grains', false, 2.5),
+      ('Овсянка', 366, 11.9, 7.2, 69.3, 10.6, 'grains', false, 2.5),
+      ('Рис белый', 344, 6.7, 0.7, 78.9, 0.4, 'grains', false, 2.3),
+      ('Рис бурый', 337, 7.4, 1.8, 72.9, 3.5, 'grains', false, 2.5),
+      ('Киноа', 368, 14.1, 6.1, 57.2, 7.0, 'grains', false, 2.5),
+      ('Макароны из твердых сортов', 344, 10.7, 1.1, 71.5, 3.7, 'pasta', false, 2.2),
+      ('Хлеб белый', 266, 7.6, 2.9, 50.1, 2.7, 'bread', true, 1.0),
+      ('Хлеб ржаной', 250, 6.6, 1.2, 49.8, 8.3, 'bread', true, 1.0),
+      ('Брокколи', 34, 2.8, 0.4, 6.6, 2.6, 'vegetables', true, 0.90),
+      ('Помидоры', 20, 0.9, 0.2, 4.2, 1.2, 'vegetables', true, 0.95),
+      ('Огурцы', 15, 0.8, 0.1, 2.8, 0.5, 'vegetables', true, 0.98),
+      ('Морковь', 41, 0.9, 0.2, 9.6, 2.8, 'vegetables', true, 0.85),
+      ('Шпинат', 23, 2.9, 0.4, 3.6, 2.2, 'vegetables', true, 0.90),
+      ('Авокадо', 160, 2.0, 14.7, 8.5, 6.7, 'vegetables', true, 1.0),
+      ('Яблоко', 52, 0.4, 0.4, 13.8, 2.4, 'fruits', true, 1.0),
+      ('Банан', 89, 1.1, 0.3, 22.8, 2.6, 'fruits', true, 1.0),
+      ('Апельсин', 47, 0.9, 0.2, 11.8, 2.4, 'fruits', true, 1.0),
+      ('Миндаль', 579, 21.2, 49.9, 21.6, 12.5, 'nuts', false, 1.0),
+      ('Грецкий орех', 654, 15.2, 65.2, 13.7, 6.7, 'nuts', false, 1.0),
+      ('Оливковое масло Extra Virgin', 884, 0, 100.0, 0, 0, 'oils', false, 1.0),
+      ('Чечевица красная', 318, 24.0, 1.5, 56.3, 11.5, 'legumes', false, 2.5),
+      ('Нут', 364, 19.0, 6.0, 60.7, 17.4, 'legumes', false, 2.5),
+      ('Вода', 0, 0, 0, 0, 0, 'beverages', false, 1.0),
+      ('Кофе черный (без сахара)', 2, 0.2, 0, 0, 0, 'beverages', false, 1.0)
+      ON CONFLICT DO NOTHING
+    `);
+
+    // Добавляем яйца с unit
+    await pool.query(`
+      INSERT INTO products (name, calories, protein, fat, carbs, fiber, category, is_perishable, cooking_ratio, unit, unit_weight) VALUES
+      ('Яйцо куриное С1', 157, 12.7, 11.5, 0.7, 0, 'eggs', true, 0.95, 'шт', 55),
+      ('Яйцо куриное С0', 157, 12.7, 11.5, 0.7, 0, 'eggs', true, 0.95, 'шт', 65)
+      ON CONFLICT DO NOTHING
+    `);
+
+    const newCountResult = await pool.query('SELECT COUNT(*) FROM products');
+    const newCount = parseInt(newCountResult.rows[0].count);
+
+    console.log('[Debug] Products reseeded:', newCount);
+
+    res.json({
+      message: 'Products reseeded successfully',
+      previous_count: currentCount,
+      new_count: newCount
+    });
+  } catch (error) {
+    console.error('[Debug] Reseed error:', error);
+    res.status(500).json({ error: 'Failed to reseed products' });
+  }
+});
+
 export default router;
