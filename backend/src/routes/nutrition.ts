@@ -726,6 +726,60 @@ router.get('/debug/portions', async (req: Request, res: Response) => {
 });
 
 /**
+ * POST /api/nutrition/debug/fix-duplicates
+ * Исправляет дубликаты в recipe_items - полностью пересоздаёт рецепты
+ */
+router.post('/debug/fix-duplicates', async (req: Request, res: Response) => {
+  try {
+    // 1. Удаляем ВСЕ записи из recipe_items
+    await pool.query('DELETE FROM recipe_items');
+
+    // 2. Удаляем ВСЕ записи из recipe_tags
+    await pool.query('DELETE FROM recipe_tags');
+
+    // 3. Удаляем ВСЕ рецепты
+    await pool.query('DELETE FROM recipes');
+
+    // 4. Запускаем миграцию 021 заново
+    const fs = await import('fs');
+    const path = await import('path');
+    const migrationsDir = path.join(__dirname, '../db/migrations');
+    const replaceRecipesFile = path.join(migrationsDir, '021_replace_recipes.sql');
+
+    if (fs.existsSync(replaceRecipesFile)) {
+      const sql = fs.readFileSync(replaceRecipesFile, 'utf8');
+      await pool.query(sql);
+    }
+
+    // 5. Проверяем результат
+    const countRecipes = await pool.query('SELECT COUNT(*) FROM recipes');
+    const countItems = await pool.query('SELECT COUNT(*) FROM recipe_items');
+
+    // 6. Проверяем рецепт с тунцом
+    const testRecipe = await pool.query(`
+      SELECT r.name, COUNT(ri.id) as items_count
+      FROM recipes r
+      LEFT JOIN recipe_items ri ON r.id = ri.recipe_id
+      WHERE r.name ILIKE '%тунц%'
+      GROUP BY r.id, r.name
+    `);
+
+    res.json({
+      success: true,
+      recipes_count: parseInt(countRecipes.rows[0].count),
+      recipe_items_count: parseInt(countItems.rows[0].count),
+      test_recipe: testRecipe.rows[0] || null
+    });
+  } catch (error) {
+    console.error('Fix duplicates error:', error);
+    res.status(500).json({
+      error: 'Failed to fix duplicates',
+      details: error instanceof Error ? error.message : 'Unknown'
+    });
+  }
+});
+
+/**
  * GET /api/nutrition/debug/recipe-test
  * Тестовый эндпоинт: проверяем расчёт КБЖУ для одного рецепта
  */
