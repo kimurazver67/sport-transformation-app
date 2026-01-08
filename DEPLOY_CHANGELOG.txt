@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Remove is_active filter and add DISTINCT to product search
 • Исправлено: Simplify inventory input - save only on blur
 • Исправлено: Allow clearing inventory quantity input field
 • Исправлено: Add debounce to inventory quantity input
 • Добавлено: Replace +/- buttons with manual input field for inventory quantity
-• Исправлено: Add button to add more products and fix nutrition field names
 
-08.01.2026 20:39
+08.01.2026 21:09

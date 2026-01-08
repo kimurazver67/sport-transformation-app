@@ -1,6 +1,7 @@
 // backend/src/services/nutritionDataService.ts
 
-import axios from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 import { query } from '../db/postgres';
 import type { Product, FatSecretProduct } from '../types';
 
@@ -42,10 +43,32 @@ export class NutritionDataService {
   private tokenExpiry?: Date;
   private readonly baseUrl = 'https://platform.fatsecret.com/rest/server.api';
   private readonly tokenUrl = 'https://oauth.fatsecret.com/connect/token';
+  private proxyAgent?: HttpsProxyAgent<string>;
 
   constructor(clientId: string, clientSecret: string) {
     this.clientId = clientId;
     this.clientSecret = clientSecret;
+
+    // Поддержка HTTP прокси для обхода IP-ограничений FatSecret
+    const proxyUrl = process.env.FATSECRET_PROXY_URL || process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
+    if (proxyUrl) {
+      this.proxyAgent = new HttpsProxyAgent(proxyUrl);
+      console.log('[FatSecret] Using proxy:', proxyUrl.replace(/:[^:@]+@/, ':***@'));
+    }
+  }
+
+  /**
+   * Получить конфиг axios с прокси (если настроен)
+   */
+  private getAxiosConfig(config: AxiosRequestConfig = {}): AxiosRequestConfig {
+    if (this.proxyAgent) {
+      return {
+        ...config,
+        httpsAgent: this.proxyAgent,
+        proxy: false // Отключаем встроенный прокси axios, используем agent
+      };
+    }
+    return config;
   }
 
   /**
@@ -66,7 +89,7 @@ export class NutritionDataService {
         grant_type: 'client_credentials',
         scope: 'basic'
       }),
-      {
+      this.getAxiosConfig({
         auth: {
           username: this.clientId,
           password: this.clientSecret
@@ -74,7 +97,7 @@ export class NutritionDataService {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
         }
-      }
+      })
     );
 
     this.accessToken = response.data.access_token;
@@ -102,12 +125,12 @@ export class NutritionDataService {
           format: 'json',
           max_results: maxResults.toString()
         }),
-        {
+        this.getAxiosConfig({
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/x-www-form-urlencoded'
           }
-        }
+        })
       );
 
       const foods = response.data.foods?.food || [];
@@ -219,12 +242,12 @@ export class NutritionDataService {
           food_id: foodId,
           format: 'json'
         }),
-        {
+        this.getAxiosConfig({
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/x-www-form-urlencoded'
           }
-        }
+        })
       );
 
       return response.data.food;
