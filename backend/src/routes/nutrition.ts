@@ -400,7 +400,7 @@ router.get('/meal-plans/user/:userId', async (req: Request, res: Response) => {
  */
 router.post('/meal-plans/generate', async (req: Request, res: Response) => {
   try {
-    const { user_id, weeks, allow_repeat_days, prefer_simple } = req.body;
+    const { user_id, weeks, allow_repeat_days, prefer_simple, use_inventory } = req.body;
 
     if (!user_id) {
       return res.status(400).json({
@@ -421,6 +421,7 @@ router.post('/meal-plans/generate', async (req: Request, res: Response) => {
       weeks: weeks || 4,
       allowRepeatDays: allow_repeat_days ?? 3,
       preferSimple: prefer_simple ?? true,
+      useInventory: use_inventory ?? false,  // Использовать продукты из инвентаря
     });
 
     res.json({
@@ -1005,6 +1006,346 @@ router.get('/debug/recipe-test', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Debug error:', error);
     res.status(500).json({ error: 'Failed to test recipe', details: error instanceof Error ? error.message : 'Unknown' });
+  }
+});
+
+// ==========================================
+// INVENTORY ENDPOINTS (Инвентарь пользователя)
+// ==========================================
+
+/**
+ * GET /api/nutrition/inventory/:userId
+ * Получить инвентарь пользователя (продукты в холодильнике/на полках)
+ */
+router.get('/inventory/:userId', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    const result = await pool.query(`
+      SELECT
+        ui.id,
+        ui.product_id,
+        ui.quantity_grams,
+        ui.quantity_units,
+        ui.location,
+        ui.expiry_date,
+        ui.updated_at,
+        p.name as product_name,
+        p.calories_per_100g,
+        p.protein_per_100g,
+        p.fat_per_100g,
+        p.carbs_per_100g,
+        p.unit_type,
+        p.unit_grams
+      FROM user_inventory ui
+      JOIN products p ON ui.product_id = p.id
+      WHERE ui.user_id = $1
+      ORDER BY
+        CASE ui.location
+          WHEN 'fridge' THEN 1
+          WHEN 'freezer' THEN 2
+          WHEN 'pantry' THEN 3
+          ELSE 4
+        END,
+        p.name
+    `, [userId]);
+
+    // Группируем по местоположению
+    const inventory = {
+      fridge: result.rows.filter(r => r.location === 'fridge'),
+      freezer: result.rows.filter(r => r.location === 'freezer'),
+      pantry: result.rows.filter(r => r.location === 'pantry'),
+      other: result.rows.filter(r => r.location === 'other'),
+    };
+
+    res.json({
+      inventory,
+      total_items: result.rows.length
+    });
+  } catch (error) {
+    console.error('Get inventory error:', error);
+    res.status(500).json({ error: 'Failed to get inventory' });
+  }
+});
+
+/**
+ * POST /api/nutrition/inventory/:userId/items
+ * Добавить продукт в инвентарь
+ */
+router.post('/inventory/:userId/items', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const {
+      productId,
+      quantityGrams,
+      quantityUnits,
+      location = 'fridge',
+      expiryDate
+    } = req.body;
+
+    if (!productId) {
+      return res.status(400).json({ error: 'productId is required' });
+    }
+
+    // Используем UPSERT - если продукт уже есть, обновляем количество
+    const result = await pool.query(`
+      INSERT INTO user_inventory (user_id, product_id, quantity_grams, quantity_units, location, expiry_date)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      ON CONFLICT (user_id, product_id)
+      DO UPDATE SET
+        quantity_grams = COALESCE(user_inventory.quantity_grams, 0) + COALESCE(EXCLUDED.quantity_grams, 0),
+        quantity_units = COALESCE(user_inventory.quantity_units, 0) + COALESCE(EXCLUDED.quantity_units, 0),
+        location = EXCLUDED.location,
+        expiry_date = COALESCE(EXCLUDED.expiry_date, user_inventory.expiry_date),
+        updated_at = NOW()
+      RETURNING *
+    `, [userId, productId, quantityGrams || null, quantityUnits || null, location, expiryDate || null]);
+
+    // Получаем информацию о продукте
+    const productInfo = await pool.query(
+      'SELECT name FROM products WHERE id = $1',
+      [productId]
+    );
+
+    res.json({
+      success: true,
+      item: {
+        ...result.rows[0],
+        product_name: productInfo.rows[0]?.name
+      }
+    });
+  } catch (error) {
+    console.error('Add inventory item error:', error);
+    res.status(500).json({ error: 'Failed to add item to inventory' });
+  }
+});
+
+/**
+ * PUT /api/nutrition/inventory/:userId/items/:itemId
+ * Обновить количество продукта в инвентаре
+ */
+router.put('/inventory/:userId/items/:itemId', async (req: Request, res: Response) => {
+  try {
+    const { userId, itemId } = req.params;
+    const { quantityGrams, quantityUnits, location, expiryDate } = req.body;
+
+    const result = await pool.query(`
+      UPDATE user_inventory
+      SET
+        quantity_grams = COALESCE($3, quantity_grams),
+        quantity_units = COALESCE($4, quantity_units),
+        location = COALESCE($5, location),
+        expiry_date = COALESCE($6, expiry_date),
+        updated_at = NOW()
+      WHERE id = $1 AND user_id = $2
+      RETURNING *
+    `, [itemId, userId, quantityGrams, quantityUnits, location, expiryDate]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    res.json({ success: true, item: result.rows[0] });
+  } catch (error) {
+    console.error('Update inventory item error:', error);
+    res.status(500).json({ error: 'Failed to update inventory item' });
+  }
+});
+
+/**
+ * DELETE /api/nutrition/inventory/:userId/items/:itemId
+ * Удалить продукт из инвентаря
+ */
+router.delete('/inventory/:userId/items/:itemId', async (req: Request, res: Response) => {
+  try {
+    const { userId, itemId } = req.params;
+
+    const result = await pool.query(
+      'DELETE FROM user_inventory WHERE id = $1 AND user_id = $2 RETURNING *',
+      [itemId, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    res.json({ success: true, deleted: result.rows[0] });
+  } catch (error) {
+    console.error('Delete inventory item error:', error);
+    res.status(500).json({ error: 'Failed to delete inventory item' });
+  }
+});
+
+/**
+ * POST /api/nutrition/inventory/:userId/use
+ * Использовать продукты из инвентаря (вычесть количество)
+ */
+router.post('/inventory/:userId/use', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const { items } = req.body; // [{ productId, grams }]
+
+    if (!items || !Array.isArray(items)) {
+      return res.status(400).json({ error: 'items array is required' });
+    }
+
+    const results = [];
+    for (const item of items) {
+      const { productId, grams } = item;
+
+      // Получаем текущее количество
+      const current = await pool.query(
+        'SELECT * FROM user_inventory WHERE user_id = $1 AND product_id = $2',
+        [userId, productId]
+      );
+
+      if (current.rows.length === 0) {
+        results.push({ productId, status: 'not_found' });
+        continue;
+      }
+
+      const currentGrams = parseFloat(current.rows[0].quantity_grams) || 0;
+      const newGrams = Math.max(0, currentGrams - grams);
+
+      if (newGrams <= 0) {
+        // Удаляем если закончилось
+        await pool.query(
+          'DELETE FROM user_inventory WHERE user_id = $1 AND product_id = $2',
+          [userId, productId]
+        );
+        results.push({ productId, status: 'depleted' });
+      } else {
+        // Обновляем количество
+        await pool.query(
+          'UPDATE user_inventory SET quantity_grams = $3, updated_at = NOW() WHERE user_id = $1 AND product_id = $2',
+          [userId, productId, newGrams]
+        );
+        results.push({ productId, status: 'updated', remaining: newGrams });
+      }
+    }
+
+    res.json({ success: true, results });
+  } catch (error) {
+    console.error('Use inventory items error:', error);
+    res.status(500).json({ error: 'Failed to use inventory items' });
+  }
+});
+
+/**
+ * POST /api/nutrition/inventory/:userId/bulk
+ * Массовое добавление продуктов в инвентарь
+ */
+router.post('/inventory/:userId/bulk', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const { items } = req.body; // [{ productId, quantityGrams, location }]
+
+    if (!items || !Array.isArray(items)) {
+      return res.status(400).json({ error: 'items array is required' });
+    }
+
+    const results = [];
+    for (const item of items) {
+      const { productId, quantityGrams, quantityUnits, location = 'fridge' } = item;
+
+      const result = await pool.query(`
+        INSERT INTO user_inventory (user_id, product_id, quantity_grams, quantity_units, location)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (user_id, product_id)
+        DO UPDATE SET
+          quantity_grams = COALESCE(user_inventory.quantity_grams, 0) + COALESCE(EXCLUDED.quantity_grams, 0),
+          quantity_units = COALESCE(user_inventory.quantity_units, 0) + COALESCE(EXCLUDED.quantity_units, 0),
+          location = EXCLUDED.location,
+          updated_at = NOW()
+        RETURNING *
+      `, [userId, productId, quantityGrams || null, quantityUnits || null, location]);
+
+      results.push(result.rows[0]);
+    }
+
+    res.json({ success: true, added: results.length });
+  } catch (error) {
+    console.error('Bulk add inventory error:', error);
+    res.status(500).json({ error: 'Failed to add items' });
+  }
+});
+
+/**
+ * GET /api/nutrition/inventory/:userId/shopping-diff/:mealPlanId
+ * Получить разницу между списком покупок и инвентарём
+ * (что нужно докупить)
+ */
+router.get('/inventory/:userId/shopping-diff/:mealPlanId', async (req: Request, res: Response) => {
+  try {
+    const { userId, mealPlanId } = req.params;
+
+    // Получаем список покупок из плана
+    const shoppingList = await pool.query(`
+      SELECT
+        sli.product_id,
+        sli.total_grams as needed_grams,
+        p.name as product_name,
+        p.calories_per_100g,
+        p.protein_per_100g,
+        p.unit_type
+      FROM shopping_list_items sli
+      JOIN products p ON sli.product_id = p.id
+      WHERE sli.meal_plan_id = $1
+    `, [mealPlanId]);
+
+    // Получаем инвентарь пользователя
+    const inventory = await pool.query(`
+      SELECT product_id, quantity_grams, quantity_units
+      FROM user_inventory
+      WHERE user_id = $1
+    `, [userId]);
+
+    // Создаём map инвентаря для быстрого поиска
+    const inventoryMap = new Map();
+    for (const item of inventory.rows) {
+      inventoryMap.set(item.product_id, {
+        grams: parseFloat(item.quantity_grams) || 0,
+        units: parseInt(item.quantity_units) || 0
+      });
+    }
+
+    // Рассчитываем что нужно докупить
+    const toBuy = [];
+    const haveEnough = [];
+
+    for (const item of shoppingList.rows) {
+      const needed = parseFloat(item.needed_grams);
+      const have = inventoryMap.get(item.product_id);
+      const haveGrams = have?.grams || 0;
+
+      if (haveGrams >= needed) {
+        haveEnough.push({
+          ...item,
+          have_grams: haveGrams,
+          status: 'have_enough'
+        });
+      } else {
+        toBuy.push({
+          ...item,
+          have_grams: haveGrams,
+          need_to_buy_grams: Math.ceil(needed - haveGrams),
+          status: haveGrams > 0 ? 'partial' : 'need_all'
+        });
+      }
+    }
+
+    res.json({
+      to_buy: toBuy,
+      have_enough: haveEnough,
+      summary: {
+        total_items: shoppingList.rows.length,
+        need_to_buy: toBuy.length,
+        already_have: haveEnough.length
+      }
+    });
+  } catch (error) {
+    console.error('Shopping diff error:', error);
+    res.status(500).json({ error: 'Failed to calculate shopping diff' });
   }
 });
 

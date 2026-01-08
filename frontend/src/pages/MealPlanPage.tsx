@@ -34,7 +34,36 @@ function calculateKBJU(weight: number, goal: UserGoal) {
   return { calories, protein, fat, carbs };
 }
 
-type TabType = 'menu' | 'settings';
+type TabType = 'menu' | 'inventory' | 'settings';
+
+// Inventory Item type
+interface InventoryItem {
+  id: string;
+  product_id: string;
+  product_name: string;
+  quantity_grams: number | null;
+  quantity_units: number | null;
+  location: 'fridge' | 'freezer' | 'pantry' | 'other';
+  expiry_date: string | null;
+  calories_per_100g: number;
+  protein_per_100g: number;
+  fat_per_100g: number;
+  carbs_per_100g: number;
+}
+
+interface InventoryData {
+  fridge: InventoryItem[];
+  freezer: InventoryItem[];
+  pantry: InventoryItem[];
+  other: InventoryItem[];
+}
+
+const LOCATION_LABELS: Record<string, { label: string; emoji: string }> = {
+  fridge: { label: 'Холодильник', emoji: '🧊' },
+  freezer: { label: 'Морозилка', emoji: '❄️' },
+  pantry: { label: 'Полка', emoji: '🗄️' },
+  other: { label: 'Другое', emoji: '📦' },
+};
 
 // Tag Selection Modal
 interface TagSelectionModalProps {
@@ -241,7 +270,7 @@ const MealPlanPage = () => {
   const [dietsModalOpen, setDietsModalOpen] = useState(false);
   const [preferencesModalOpen, setPreferencesModalOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [generationParams, setGenerationParams] = useState({ weeks: 4, allowRepeatDays: 3, preferSimple: true });
+  const [generationParams, setGenerationParams] = useState({ weeks: 4, allowRepeatDays: 3, preferSimple: true, useInventory: false });
 
   // Meal plan state
   const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
@@ -249,6 +278,12 @@ const MealPlanPage = () => {
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [selectedRecipe, setSelectedRecipe] = useState<Meal | null>(null);
   const [loadingPlan, setLoadingPlan] = useState(true);
+
+  // Inventory state
+  const [inventory, setInventory] = useState<InventoryData>({ fridge: [], freezer: [], pantry: [], other: [] });
+  const [inventorySearchOpen, setInventorySearchOpen] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<'fridge' | 'freezer' | 'pantry' | 'other'>('fridge');
+  const [loadingInventory, setLoadingInventory] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -259,15 +294,17 @@ const MealPlanPage = () => {
 
     try {
       setLoadingPlan(true);
-      const [tags, exclusions, planData] = await Promise.all([
+      const [tags, exclusions, planData, inventoryData] = await Promise.all([
         api.getTags(),
         api.getUserExclusions(user.id),
-        api.getUserMealPlan(user.id)
+        api.getUserMealPlan(user.id),
+        api.getInventory(user.id)
       ]);
 
       setAllTags(tags || []);
       setExcludedProducts(exclusions.products || []);
       setExcludedTags(exclusions.tags || []);
+      setInventory(inventoryData.inventory || { fridge: [], freezer: [], pantry: [], other: [] });
 
       if (planData.plan) {
         setMealPlan(planData.plan);
@@ -280,6 +317,60 @@ const MealPlanPage = () => {
       console.error('Failed to load nutrition data:', error);
     } finally {
       setLoadingPlan(false);
+    }
+  };
+
+  const loadInventory = async () => {
+    if (!user?.id) return;
+    try {
+      setLoadingInventory(true);
+      const data = await api.getInventory(user.id);
+      setInventory(data.inventory || { fridge: [], freezer: [], pantry: [], other: [] });
+    } catch (error) {
+      console.error('Failed to load inventory:', error);
+    } finally {
+      setLoadingInventory(false);
+    }
+  };
+
+  const handleAddInventoryItem = async (product: Product & { source: 'local' | 'fatsecret' }) => {
+    if (!user?.id) return;
+    try {
+      let productId = product.id;
+      if (product.source === 'fatsecret' && product.fatsecret_id) {
+        const imported = await api.importProduct(product.fatsecret_id, user.id);
+        productId = imported.product_id;
+      }
+      // По умолчанию добавляем 500г
+      await api.addInventoryItem(user.id, {
+        productId,
+        quantityGrams: 500,
+        location: selectedLocation,
+      });
+      await loadInventory();
+      setInventorySearchOpen(false);
+    } catch (error) {
+      console.error('Failed to add inventory item:', error);
+    }
+  };
+
+  const handleUpdateInventoryQuantity = async (itemId: string, newGrams: number) => {
+    if (!user?.id) return;
+    try {
+      await api.updateInventoryItem(user.id, itemId, { quantityGrams: newGrams });
+      await loadInventory();
+    } catch (error) {
+      console.error('Failed to update inventory item:', error);
+    }
+  };
+
+  const handleDeleteInventoryItem = async (itemId: string) => {
+    if (!user?.id) return;
+    try {
+      await api.deleteInventoryItem(user.id, itemId);
+      await loadInventory();
+    } catch (error) {
+      console.error('Failed to delete inventory item:', error);
     }
   };
 
@@ -327,7 +418,7 @@ const MealPlanPage = () => {
     if (!user?.id) return;
     try {
       setGenerating(true);
-      await api.generateMealPlan(user.id, generationParams.weeks, generationParams.allowRepeatDays, generationParams.preferSimple);
+      await api.generateMealPlan(user.id, generationParams.weeks, generationParams.allowRepeatDays, generationParams.preferSimple, generationParams.useInventory);
       await loadData();
       setSelectedWeek(1);
       setActiveTab('menu');
@@ -338,6 +429,9 @@ const MealPlanPage = () => {
       setGenerating(false);
     }
   };
+
+  // Подсчёт количества продуктов в инвентаре
+  const totalInventoryItems = inventory.fridge.length + inventory.freezer.length + inventory.pantry.length + inventory.other.length;
 
   if (!user) {
     return (
@@ -366,15 +460,26 @@ const MealPlanPage = () => {
           <div className="flex gap-2">
             <button
               onClick={() => setActiveTab('menu')}
-              className={`flex-1 py-2 px-3 font-mono text-sm uppercase border-2 transition-all ${
+              className={`flex-1 py-2 px-2 font-mono text-xs uppercase border-2 transition-all ${
                 activeTab === 'menu' ? 'border-neon-lime bg-neon-lime/10 text-neon-lime' : 'border-void-400 text-steel-500 hover:border-steel-500'
               }`}
             >
               🍽️ Меню
             </button>
             <button
+              onClick={() => setActiveTab('inventory')}
+              className={`flex-1 py-2 px-2 font-mono text-xs uppercase border-2 transition-all relative ${
+                activeTab === 'inventory' ? 'border-neon-orange bg-neon-orange/10 text-neon-orange' : 'border-void-400 text-steel-500 hover:border-steel-500'
+              }`}
+            >
+              🧊 Продукты
+              {totalInventoryItems > 0 && (
+                <span className="absolute -top-1 -right-1 bg-neon-orange text-void-100 text-[10px] w-4 h-4 flex items-center justify-center font-bold">{totalInventoryItems}</span>
+              )}
+            </button>
+            <button
               onClick={() => setActiveTab('settings')}
-              className={`flex-1 py-2 px-3 font-mono text-sm uppercase border-2 transition-all ${
+              className={`flex-1 py-2 px-2 font-mono text-xs uppercase border-2 transition-all ${
                 activeTab === 'settings' ? 'border-neon-cyan bg-neon-cyan/10 text-neon-cyan' : 'border-void-400 text-steel-500 hover:border-steel-500'
               }`}
             >
@@ -499,6 +604,130 @@ const MealPlanPage = () => {
           </>
         )}
 
+        {/* INVENTORY TAB */}
+        {activeTab === 'inventory' && (
+          <>
+            {/* Добавить продукт */}
+            <div className="brutal-card p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="font-mono font-bold text-sm text-steel-100 uppercase">Мои продукты</h2>
+                <button
+                  onClick={() => setInventorySearchOpen(true)}
+                  className="px-3 py-1 border-2 border-neon-orange text-neon-orange font-mono text-xs uppercase hover:bg-neon-orange/10"
+                >
+                  + Добавить
+                </button>
+              </div>
+              <p className="font-mono text-xs text-steel-500">
+                Добавьте продукты, которые у вас уже есть. Они будут учтены при генерации плана.
+              </p>
+            </div>
+
+            {/* Location Tabs */}
+            <div className="flex gap-1 px-1">
+              {(['fridge', 'freezer', 'pantry', 'other'] as const).map((loc) => (
+                <button
+                  key={loc}
+                  onClick={() => setSelectedLocation(loc)}
+                  className={`flex-1 py-2 px-1 font-mono text-[10px] uppercase border-2 transition-all ${
+                    selectedLocation === loc
+                      ? 'border-neon-orange bg-neon-orange/10 text-neon-orange'
+                      : 'border-void-400 text-steel-500 hover:border-steel-500'
+                  }`}
+                >
+                  {LOCATION_LABELS[loc].emoji} {LOCATION_LABELS[loc].label}
+                  {inventory[loc].length > 0 && <span className="ml-1 text-steel-400">({inventory[loc].length})</span>}
+                </button>
+              ))}
+            </div>
+
+            {/* Product List */}
+            <div className="brutal-card p-4">
+              {loadingInventory ? (
+                <div className="text-center py-8 font-mono text-steel-500">Загрузка...</div>
+              ) : inventory[selectedLocation].length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-3xl mb-2">{LOCATION_LABELS[selectedLocation].emoji}</div>
+                  <div className="font-mono text-sm text-steel-500">
+                    {LOCATION_LABELS[selectedLocation].label} пуст
+                  </div>
+                  <button
+                    onClick={() => setInventorySearchOpen(true)}
+                    className="mt-4 px-4 py-2 border-2 border-neon-orange text-neon-orange font-mono text-xs uppercase hover:bg-neon-orange/10"
+                  >
+                    + Добавить продукт
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {inventory[selectedLocation].map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between p-3 bg-void-300 border border-void-400"
+                    >
+                      <div className="flex-1">
+                        <div className="font-mono text-sm text-steel-100">{item.product_name}</div>
+                        <div className="font-mono text-[10px] text-steel-500 mt-1">
+                          {item.calories_per_100g} ккал · {item.protein_per_100g}Б · {item.fat_per_100g}Ж · {item.carbs_per_100g}У / 100г
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center border border-void-400 bg-void-200">
+                          <button
+                            onClick={() => handleUpdateInventoryQuantity(item.id, Math.max(0, (item.quantity_grams || 0) - 100))}
+                            className="w-8 h-8 flex items-center justify-center text-steel-400 hover:text-neon-orange hover:bg-void-300"
+                          >
+                            -
+                          </button>
+                          <span className="w-16 text-center font-mono text-sm text-neon-orange">
+                            {item.quantity_grams || 0}г
+                          </span>
+                          <button
+                            onClick={() => handleUpdateInventoryQuantity(item.id, (item.quantity_grams || 0) + 100)}
+                            className="w-8 h-8 flex items-center justify-center text-steel-400 hover:text-neon-orange hover:bg-void-300"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteInventoryItem(item.id)}
+                          className="w-8 h-8 flex items-center justify-center text-steel-500 hover:text-neon-red hover:bg-void-300 border border-void-400"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Info about inventory usage */}
+            {totalInventoryItems > 0 && (
+              <div className="brutal-card p-4 border-neon-orange/30">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">💡</span>
+                  <div>
+                    <div className="font-mono text-sm text-steel-100 mb-1">Использование при генерации</div>
+                    <div className="font-mono text-xs text-steel-500">
+                      Включите опцию "Использовать мои продукты" в настройках генерации, чтобы план питания учитывал ваши продукты.
+                    </div>
+                    <button
+                      onClick={() => {
+                        setGenerationParams(p => ({ ...p, useInventory: true }));
+                        setActiveTab('settings');
+                      }}
+                      className="mt-2 px-3 py-1 border border-neon-orange/50 text-neon-orange font-mono text-xs hover:bg-neon-orange/10"
+                    >
+                      Перейти в настройки →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
         {/* SETTINGS TAB */}
         {activeTab === 'settings' && (
           <>
@@ -617,6 +846,23 @@ const MealPlanPage = () => {
                   </div>
                   <span className="font-mono text-sm text-steel-100">Простые рецепты</span>
                 </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <div
+                    className={`w-5 h-5 border-2 flex items-center justify-center ${generationParams.useInventory ? 'border-neon-orange text-neon-orange' : 'border-steel-600'}`}
+                    onClick={() => setGenerationParams({ ...generationParams, useInventory: !generationParams.useInventory })}
+                  >
+                    {generationParams.useInventory && <span className="text-xs">✓</span>}
+                  </div>
+                  <div>
+                    <span className="font-mono text-sm text-steel-100">Использовать мои продукты</span>
+                    {totalInventoryItems > 0 && (
+                      <span className="ml-2 text-neon-orange text-xs">({totalInventoryItems} шт.)</span>
+                    )}
+                    {totalInventoryItems === 0 && (
+                      <span className="ml-2 text-steel-500 text-xs">(нет продуктов)</span>
+                    )}
+                  </div>
+                </label>
               </div>
             </div>
 
@@ -632,6 +878,7 @@ const MealPlanPage = () => {
       <TagSelectionModal isOpen={dietsModalOpen} onClose={() => setDietsModalOpen(false)} title="Тип питания" icon="🌱" tags={dietTags} excludedTags={excludedTags} onToggle={handleToggleTagExclusion} accentColor="neon-lime" />
       <TagSelectionModal isOpen={preferencesModalOpen} onClose={() => setPreferencesModalOpen(false)} title="Предпочтения" icon="⚙️" tags={preferenceTags} excludedTags={excludedTags} onToggle={handleToggleTagExclusion} accentColor="neon-cyan" />
       <ProductSearchModal isOpen={searchModalOpen} onClose={() => setSearchModalOpen(false)} onSelect={handleAddProductExclusion} mode="exclude" title="Добавить продукт в исключения" />
+      <ProductSearchModal isOpen={inventorySearchOpen} onClose={() => setInventorySearchOpen(false)} onSelect={handleAddInventoryItem} mode="add" title={`Добавить в ${LOCATION_LABELS[selectedLocation].label.toLowerCase()}`} />
       <RecipeModal isOpen={!!selectedRecipe} onClose={() => setSelectedRecipe(null)} meal={selectedRecipe} />
     </div>
   );

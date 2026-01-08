@@ -9,6 +9,13 @@ interface GenerateMealPlanParams {
   weeks: number;
   allowRepeatDays: number;
   preferSimple: boolean;
+  useInventory?: boolean;  // Использовать продукты из инвентаря пользователя
+}
+
+interface InventoryItem {
+  product_id: string;
+  quantity_grams: number;
+  product_name: string;
 }
 
 interface RecipeWithItems extends Recipe {
@@ -40,7 +47,7 @@ export class MealPlanGenerator {
    * Генерация плана питания
    */
   async generate(params: GenerateMealPlanParams): Promise<string> {
-    const { userId, weeks, allowRepeatDays, preferSimple } = params;
+    const { userId, weeks, allowRepeatDays, preferSimple, useInventory = false } = params;
 
     // 1. Получаем данные пользователя
     const user = await this.getUserData(userId);
@@ -51,6 +58,13 @@ export class MealPlanGenerator {
 
     // 3. Получаем доступные рецепты (исключая user exclusions)
     const availableRecipes = await this.getAvailableRecipes(userId, user.goal);
+
+    // 3.5 Если useInventory - получаем инвентарь и ранжируем рецепты
+    let userInventory: InventoryItem[] = [];
+    if (useInventory) {
+      userInventory = await this.getUserInventory(userId);
+      console.log(`[MealPlanGenerator] User inventory: ${userInventory.length} items`);
+    }
 
     // 4. Группируем рецепты по типу приёма пищи
     const recipesByMeal = this.groupRecipesByMealType(availableRecipes);
@@ -77,7 +91,7 @@ export class MealPlanGenerator {
         dayPlan = sourceDay;
       } else {
         // Генерируем новый день
-        dayPlan = await this.generateDay(recipesByMeal, targets, preferSimple, generatedDays);
+        dayPlan = await this.generateDay(recipesByMeal, targets, preferSimple, generatedDays, userInventory);
       }
 
       // Сохраняем день в БД
@@ -89,10 +103,50 @@ export class MealPlanGenerator {
     // 7. Обновляем средние значения КБЖУ плана
     await this.updateMealPlanAverages(mealPlanId, generatedDays);
 
-    // 8. Генерируем список покупок
-    await this.generateShoppingList(mealPlanId, weeks);
+    // 8. Генерируем список покупок (с учётом инвентаря)
+    await this.generateShoppingList(mealPlanId, weeks, useInventory ? userId : undefined);
 
     return mealPlanId;
+  }
+
+  /**
+   * Получение инвентаря пользователя
+   */
+  private async getUserInventory(userId: string): Promise<InventoryItem[]> {
+    const result = await this.pool.query(`
+      SELECT
+        ui.product_id,
+        ui.quantity_grams,
+        p.name as product_name
+      FROM user_inventory ui
+      JOIN products p ON ui.product_id = p.id
+      WHERE ui.user_id = $1 AND ui.quantity_grams > 0
+    `, [userId]);
+    return result.rows;
+  }
+
+  /**
+   * Рассчитать насколько рецепт можно приготовить из инвентаря
+   * Возвращает число от 0 до 1 (1 = все ингредиенты есть)
+   */
+  private calculateInventoryCoverage(recipe: RecipeWithItems, inventory: InventoryItem[]): number {
+    if (!recipe.items || recipe.items.length === 0) return 0;
+
+    const inventoryMap = new Map<string, number>();
+    for (const item of inventory) {
+      inventoryMap.set(item.product_id, item.quantity_grams);
+    }
+
+    let coveredItems = 0;
+    for (const item of recipe.items) {
+      const haveGrams = inventoryMap.get(item.product_id) || 0;
+      // Считаем покрытым если есть хотя бы 50% нужного количества
+      if (haveGrams >= item.grams * 0.5) {
+        coveredItems++;
+      }
+    }
+
+    return coveredItems / recipe.items.length;
   }
 
   /**
@@ -221,7 +275,8 @@ export class MealPlanGenerator {
     recipesByMeal: Record<MealType, RecipeWithItems[]>,
     targets: { calories: number; protein: number; fat: number; carbs: number },
     preferSimple: boolean,
-    existingDays: DayPlan[]
+    existingDays: DayPlan[],
+    inventory: InventoryItem[] = []
   ): Promise<DayPlan> {
     // Целевые соотношения БЖУ (в % от калорий)
     const targetFatRatio = (targets.fat * 9) / targets.calories;      // ~18% для похудения
@@ -242,13 +297,14 @@ export class MealPlanGenerator {
     const MAX_ATTEMPTS = 10;
 
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-      // Выбираем рецепты случайно (с учётом разнообразия)
+      // Выбираем рецепты случайно (с учётом разнообразия и инвентаря)
       const breakfast = this.selectRecipeWithBJURatio(
         recipesByMeal.breakfast,
         targetFatRatio,
         targetCarbsRatio,
         preferSimple,
-        existingDays.map(d => d.breakfast.id)
+        existingDays.map(d => d.breakfast.id),
+        inventory
       );
 
       const lunch = this.selectRecipeWithBJURatio(
@@ -256,7 +312,8 @@ export class MealPlanGenerator {
         targetFatRatio,
         targetCarbsRatio,
         preferSimple,
-        existingDays.map(d => d.lunch.id)
+        existingDays.map(d => d.lunch.id),
+        inventory
       );
 
       const dinner = this.selectRecipeWithBJURatio(
@@ -264,7 +321,8 @@ export class MealPlanGenerator {
         targetFatRatio,
         targetCarbsRatio,
         preferSimple,
-        existingDays.map(d => d.dinner.id)
+        existingDays.map(d => d.dinner.id),
+        inventory
       );
 
       const snack = this.selectRecipeWithBJURatio(
@@ -272,7 +330,8 @@ export class MealPlanGenerator {
         targetFatRatio,
         targetCarbsRatio,
         preferSimple,
-        existingDays.map(d => d.snack.id)
+        existingDays.map(d => d.snack.id),
+        inventory
       );
 
       // Рассчитываем КБЖУ базовых рецептов
@@ -343,14 +402,15 @@ export class MealPlanGenerator {
   }
 
   /**
-   * Выбор рецепта с учётом соотношения БЖУ
+   * Выбор рецепта с учётом соотношения БЖУ и инвентаря
    */
   private selectRecipeWithBJURatio(
     recipes: RecipeWithItems[],
     targetFatRatio: number,
     targetCarbsRatio: number,
     preferSimple: boolean,
-    recentlyUsedIds: string[]
+    recentlyUsedIds: string[],
+    inventory: InventoryItem[] = []
   ): RecipeWithItems {
     if (recipes.length === 0) {
       throw new Error('No recipes available for meal type');
@@ -364,7 +424,7 @@ export class MealPlanGenerator {
       availableRecipes = recipes;
     }
 
-    // Рассчитываем БЖУ соотношение для каждого рецепта
+    // Рассчитываем БЖУ соотношение и покрытие инвентарём для каждого рецепта
     const recipesWithRatio = availableRecipes.map(r => {
       const nutrition = this.calculateRecipeNutrition(r);
       const totalCals = nutrition.calories || 1;
@@ -374,15 +434,24 @@ export class MealPlanGenerator {
       // Оценка близости к целевому соотношению
       const fatDiff = Math.abs(fatRatio - targetFatRatio);
       const carbsDiff = Math.abs(carbsRatio - targetCarbsRatio);
-      const score = fatDiff * 2 + carbsDiff; // Жиры важнее
+      let score = fatDiff * 2 + carbsDiff; // Жиры важнее
 
-      return { recipe: r, score, nutrition };
+      // Бонус за использование продуктов из инвентаря (если инвентарь не пустой)
+      let inventoryCoverage = 0;
+      if (inventory.length > 0) {
+        inventoryCoverage = this.calculateInventoryCoverage(r, inventory);
+        // Чем больше покрытие инвентарём, тем меньше score (лучше)
+        // Покрытие 100% даёт бонус -0.5 к score
+        score -= inventoryCoverage * 0.5;
+      }
+
+      return { recipe: r, score, nutrition, inventoryCoverage };
     });
 
     // Перемешиваем для разнообразия
     this.shuffleArray(recipesWithRatio);
 
-    // Сортируем по близости к целевому соотношению
+    // Сортируем по близости к целевому соотношению (с учётом инвентаря)
     recipesWithRatio.sort((a, b) => {
       let scoreA = a.score;
       let scoreB = b.score;
@@ -611,9 +680,9 @@ export class MealPlanGenerator {
   }
 
   /**
-   * Генерация списка покупок
+   * Генерация списка покупок (с учётом инвентаря если userId передан)
    */
-  private async generateShoppingList(mealPlanId: string, weeks: number): Promise<void> {
+  private async generateShoppingList(mealPlanId: string, weeks: number, userId?: string): Promise<void> {
     // Агрегируем все продукты из всех приёмов пищи
     const result = await this.pool.query(`
       SELECT
@@ -629,9 +698,33 @@ export class MealPlanGenerator {
       GROUP BY ri.product_id, p.is_perishable
     `, [mealPlanId]);
 
+    // Если есть userId - получаем инвентарь для вычитания
+    let inventoryMap = new Map<string, number>();
+    if (userId) {
+      const inventoryResult = await this.pool.query(`
+        SELECT product_id, quantity_grams
+        FROM user_inventory
+        WHERE user_id = $1 AND quantity_grams > 0
+      `, [userId]);
+      for (const item of inventoryResult.rows) {
+        inventoryMap.set(item.product_id, parseFloat(item.quantity_grams) || 0);
+      }
+      console.log(`[MealPlanGenerator] Subtracting inventory: ${inventoryMap.size} items`);
+    }
+
     // Сохраняем в shopping_list
     for (const row of result.rows) {
       const isMonthly = !row.is_perishable; // Не портящиеся покупаем раз в месяц
+      let totalGrams = parseFloat(row.total_grams);
+
+      // Вычитаем то что есть в инвентаре
+      const haveInInventory = inventoryMap.get(row.product_id) || 0;
+      totalGrams = Math.max(0, totalGrams - haveInInventory);
+
+      // Не добавляем продукты которые уже есть в достаточном количестве
+      if (totalGrams <= 0) {
+        continue;
+      }
 
       await this.pool.query(`
         INSERT INTO shopping_list_items (
@@ -641,7 +734,7 @@ export class MealPlanGenerator {
       `, [
         mealPlanId,
         row.product_id,
-        Math.ceil(row.total_grams),
+        Math.ceil(totalGrams),
         isMonthly,
         row.week_numbers
       ]);

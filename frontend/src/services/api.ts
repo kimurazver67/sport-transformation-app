@@ -543,7 +543,7 @@ export const api = {
     }),
 
   // Сгенерировать план питания
-  generateMealPlan: (userId: string, weeks: number, allowRepeatDays: number, preferSimple: boolean) =>
+  generateMealPlan: (userId: string, weeks: number, allowRepeatDays: number, preferSimple: boolean, useInventory: boolean = false) =>
     fetch(`${API_URL}/api/nutrition/meal-plans/generate`, {
       method: 'POST',
       headers: {
@@ -555,6 +555,7 @@ export const api = {
         weeks,
         allow_repeat_days: allowRepeatDays,
         prefer_simple: preferSimple,
+        use_inventory: useInventory,
       }),
     }).then(async (res) => {
       const data = await res.json()
@@ -595,6 +596,108 @@ export const api = {
     }).then(async (res) => {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to get shopping list')
+      return data
+    }),
+
+  // ==========================================
+  // INVENTORY (Инвентарь пользователя)
+  // ==========================================
+
+  // Получить инвентарь пользователя
+  getInventory: (userId: string) =>
+    fetch(`${API_URL}/api/nutrition/inventory/${userId}`, {
+      headers: {
+        'X-Telegram-Init-Data': getInitData(),
+      },
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to get inventory')
+      return data
+    }),
+
+  // Добавить продукт в инвентарь
+  addInventoryItem: (userId: string, item: {
+    productId: string;
+    quantityGrams?: number;
+    quantityUnits?: number;
+    location?: 'fridge' | 'freezer' | 'pantry' | 'other';
+    expiryDate?: string;
+  }) =>
+    fetch(`${API_URL}/api/nutrition/inventory/${userId}/items`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Telegram-Init-Data': getInitData(),
+      },
+      body: JSON.stringify(item),
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to add inventory item')
+      return data
+    }),
+
+  // Обновить продукт в инвентаре
+  updateInventoryItem: (userId: string, itemId: string, updates: {
+    quantityGrams?: number;
+    quantityUnits?: number;
+    location?: string;
+    expiryDate?: string;
+  }) =>
+    fetch(`${API_URL}/api/nutrition/inventory/${userId}/items/${itemId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Telegram-Init-Data': getInitData(),
+      },
+      body: JSON.stringify(updates),
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to update inventory item')
+      return data
+    }),
+
+  // Удалить продукт из инвентаря
+  deleteInventoryItem: (userId: string, itemId: string) =>
+    fetch(`${API_URL}/api/nutrition/inventory/${userId}/items/${itemId}`, {
+      method: 'DELETE',
+      headers: {
+        'X-Telegram-Init-Data': getInitData(),
+      },
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to delete inventory item')
+      return data
+    }),
+
+  // Массовое добавление продуктов в инвентарь
+  bulkAddInventory: (userId: string, items: Array<{
+    productId: string;
+    quantityGrams?: number;
+    quantityUnits?: number;
+    location?: string;
+  }>) =>
+    fetch(`${API_URL}/api/nutrition/inventory/${userId}/bulk`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Telegram-Init-Data': getInitData(),
+      },
+      body: JSON.stringify({ items }),
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to bulk add inventory')
+      return data
+    }),
+
+  // Получить разницу между списком покупок и инвентарём
+  getShoppingDiff: (userId: string, mealPlanId: string) =>
+    fetch(`${API_URL}/api/nutrition/inventory/${userId}/shopping-diff/${mealPlanId}`, {
+      headers: {
+        'X-Telegram-Init-Data': getInitData(),
+      },
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to get shopping diff')
       return data
     }),
 }

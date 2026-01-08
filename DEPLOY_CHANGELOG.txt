@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Select recipes by BJU ratio with multi-attempt optimization
 • Исправлено: Calculate portions by CALORIES instead of protein
 • debug: Add user-targets endpoint to compare calculated vs actual KBJU
 • Исправлено: Calculate meal portions to exactly match user's target KBJU
 • Исправлено: Add product deduplication before recipe migration
-• Добавлено: Improve recipe variety - no repeats within 7 days
 
-08.01.2026 16:18
+08.01.2026 16:32
