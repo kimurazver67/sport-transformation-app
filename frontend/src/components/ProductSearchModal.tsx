@@ -7,7 +7,7 @@ import type { Product } from '../types';
 interface ProductSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (product: Product & { source: 'local' | 'fatsecret' }) => void;
+  onSelect: (product: Product & { source: 'local' | 'openfoodfacts' }) => void;
   mode: 'exclude' | 'replace' | 'add';
   title?: string;
 }
@@ -20,9 +20,9 @@ const ProductSearchModal = ({
   title = 'Поиск продуктов'
 }: ProductSearchModalProps) => {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Array<Product & { source: 'local' | 'fatsecret' }>>([]);
+  const [results, setResults] = useState<Array<Product & { source: 'local' | 'openfoodfacts' }>>([]);
   const [loading, setLoading] = useState(false);
-  const [source, setSource] = useState<'all' | 'local' | 'fatsecret'>('all');
+  const [source, setSource] = useState<'all' | 'local' | 'openfoodfacts'>('all');
   const [error, setError] = useState<string | null>(null);
 
   const handleSearch = async () => {
@@ -46,7 +46,7 @@ const ProductSearchModal = ({
     }
   };
 
-  const handleSelect = async (product: Product & { source: 'local' | 'fatsecret' }) => {
+  const handleSelect = async (product: Product & { source: 'local' | 'openfoodfacts' }) => {
     onSelect(product);
     onClose();
   };
@@ -87,7 +87,7 @@ const ProductSearchModal = ({
               disabled={loading}
               className="brutal-button px-6"
             >
-              {loading ? 'ПОИСК...' : '🔍 ПОИСК'}
+              {loading ? 'ПОИСК...' : 'ПОИСК'}
             </button>
           </div>
 
@@ -114,21 +114,21 @@ const ProductSearchModal = ({
               ЛОКАЛЬНАЯ_БД
             </button>
             <button
-              onClick={() => setSource('fatsecret')}
+              onClick={() => setSource('openfoodfacts')}
               className={`font-mono text-xs px-3 py-1 border ${
-                source === 'fatsecret'
+                source === 'openfoodfacts'
                   ? 'border-neon-lime text-neon-lime'
                   : 'border-steel-600 text-steel-500'
               }`}
             >
-              FATSECRET
+              OPENFOODFACTS
             </button>
           </div>
 
           {/* Error Message */}
           {error && (
             <div className="mt-3 p-2 bg-red-900/20 border border-red-500 text-red-400 font-mono text-xs">
-              ⚠️ {error}
+              {error}
             </div>
           )}
         </div>
@@ -151,7 +151,7 @@ const ProductSearchModal = ({
 
           {results.map((product, index) => (
             <div
-              key={product.id || product.fatsecret_id || index}
+              key={product.id || product.openfoodfacts_code || index}
               className="bg-void-300 border border-void-400 p-3 hover:border-neon-lime transition-colors"
             >
               <div className="flex items-start justify-between">
@@ -160,26 +160,31 @@ const ProductSearchModal = ({
                     <h3 className="font-mono text-sm font-bold text-steel-100">
                       {product.name}
                     </h3>
+                    {product.brand && (
+                      <span className="font-mono text-xs text-steel-500">
+                        ({product.brand})
+                      </span>
+                    )}
                     <span className={`font-mono text-xs px-2 py-0.5 ${
                       product.source === 'local'
                         ? 'bg-neon-lime/20 text-neon-lime'
                         : 'bg-neon-cyan/20 text-neon-cyan'
                     }`}>
-                      {product.source === 'local' ? 'БД' : 'API'}
+                      {product.source === 'local' ? 'БД' : 'OFF'}
                     </span>
                   </div>
                   <p className="font-mono text-xs text-steel-400 mt-1">
-                    {Math.round(product.calories)} ккал |
-                    Б: {Math.round(product.protein)}г |
-                    Ж: {Math.round(product.fat)}г |
-                    У: {Math.round(product.carbs)}г
+                    {Math.round(Number(product.calories))} ккал |
+                    Б: {Math.round(Number(product.protein))}г |
+                    Ж: {Math.round(Number(product.fat))}г |
+                    У: {Math.round(Number(product.carbs))}г
                   </p>
                 </div>
                 <button
                   onClick={() => handleSelect(product)}
                   className="brutal-button-sm ml-4"
                 >
-                  {mode === 'exclude' ? '+ ИСКЛЮЧИТЬ' : mode === 'replace' ? '✓ ЗАМЕНИТЬ' : '+ ДОБАВИТЬ'}
+                  {mode === 'exclude' ? '+ ИСКЛЮЧИТЬ' : mode === 'replace' ? 'ЗАМЕНИТЬ' : '+ ДОБАВИТЬ'}
                 </button>
               </div>
             </div>

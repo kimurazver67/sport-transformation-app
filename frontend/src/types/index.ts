@@ -408,10 +408,11 @@ export type MealPlanStatus = 'draft' | 'active' | 'completed' | 'archived';
 // ===== ПРОДУКТ =====
 export interface Product {
   id: string;
-  fatsecret_id?: string;
+  openfoodfacts_code?: string;
   imported_by_user_id?: string;
   name: string;
   name_short?: string;
+  brand?: string;
   calories: number;
   protein: number;
   fat: number;
@@ -426,7 +427,7 @@ export interface Product {
   is_active: boolean;
   created_at: string;
   updated_at: string;
-  source?: 'local' | 'fatsecret'; // для UI
+  source?: 'local' | 'openfoodfacts'; // для UI
 }
 
 // ===== ТЕГ =====
@@ -541,17 +542,25 @@ export interface ShoppingListItem {
   product?: Product; // для UI
 }
 
-// ===== FATSECRET API =====
+// ===== OPENFOODFACTS API =====
 
-export interface FatSecretProduct {
-  food_id: string;
-  food_name: string;
-  food_description: string;
+export interface OpenFoodFactsProduct {
+  code: string;
+  product_name: string;
+  product_name_ru?: string;
+  brands?: string;
+  nutriments: {
+    'energy-kcal_100g'?: number;
+    proteins_100g?: number;
+    fat_100g?: number;
+    carbohydrates_100g?: number;
+    fiber_100g?: number;
+  };
+  categories_tags?: string[];
 }
 
-export interface FatSecretSearchResult {
+export interface OpenFoodFactsSearchResult {
   products: Product[];
-  total: number;
   cached: boolean;
 }
 

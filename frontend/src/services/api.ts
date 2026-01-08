@@ -436,7 +436,7 @@ export const api = {
   // ===== NUTRITION (Питание) =====
 
   // Поиск продуктов
-  searchProducts: (query: string, source: 'local' | 'fatsecret' | 'all' = 'all', limit = 20) =>
+  searchProducts: (query: string, source: 'local' | 'openfoodfacts' | 'all' = 'all', limit = 20) =>
     fetch(`${API_URL}/api/nutrition/products/search?q=${encodeURIComponent(query)}&source=${source}&limit=${limit}`, {
       headers: {
         'X-Telegram-Init-Data': getInitData(),
@@ -447,15 +447,15 @@ export const api = {
       return data
     }),
 
-  // Импортировать продукт из FatSecret
-  importProduct: (fatSecretId: string, userId?: string) =>
+  // Импортировать продукт из OpenFoodFacts
+  importProduct: (openFoodFactsCode: string, userId?: string) =>
     fetch(`${API_URL}/api/nutrition/products/import`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-Telegram-Init-Data': getInitData(),
       },
-      body: JSON.stringify({ fatsecret_id: fatSecretId, user_id: userId }),
+      body: JSON.stringify({ openfoodfacts_code: openFoodFactsCode, user_id: userId }),
     }).then(async (res) => {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Import failed')

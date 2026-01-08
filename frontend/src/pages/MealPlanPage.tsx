@@ -337,12 +337,12 @@ const MealPlanPage = () => {
     }
   };
 
-  const handleAddInventoryItem = async (product: Product & { source: 'local' | 'fatsecret' }) => {
+  const handleAddInventoryItem = async (product: Product & { source: 'local' | 'openfoodfacts' }) => {
     if (!user?.id) return;
     try {
       let productId = product.id;
-      if (product.source === 'fatsecret' && product.fatsecret_id) {
-        const imported = await api.importProduct(product.fatsecret_id, user.id);
+      if (product.source === 'openfoodfacts' && product.openfoodfacts_code) {
+        const imported = await api.importProduct(product.openfoodfacts_code, user.id);
         productId = imported.product_id;
       }
       // По умолчанию добавляем 500г
@@ -410,12 +410,12 @@ const MealPlanPage = () => {
     }
   };
 
-  const handleAddProductExclusion = async (product: Product & { source: 'local' | 'fatsecret' }) => {
+  const handleAddProductExclusion = async (product: Product & { source: 'local' | 'openfoodfacts' }) => {
     if (!user?.id) return;
     try {
       let productId = product.id;
-      if (product.source === 'fatsecret' && product.fatsecret_id) {
-        const imported = await api.importProduct(product.fatsecret_id, user.id);
+      if (product.source === 'openfoodfacts' && product.openfoodfacts_code) {
+        const imported = await api.importProduct(product.openfoodfacts_code, user.id);
         productId = imported.product_id;
       }
       await api.addProductExclusion(user.id, productId);
