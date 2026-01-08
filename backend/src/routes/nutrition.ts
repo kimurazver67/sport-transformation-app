@@ -770,6 +770,24 @@ router.post('/debug/fix-duplicates', async (req: Request, res: Response) => {
       results.push('019_final_products.sql OK');
     }
 
+    // 4.5 ДЕДУПЛИКАЦИЯ ПРОДУКТОВ - удаляем дубликаты, оставляя только один продукт с каждым именем
+    const dedupeResult = await pool.query(`
+      DELETE FROM products a
+      USING products b
+      WHERE a.id > b.id AND a.name = b.name
+    `);
+    results.push(`Deduplicated products: removed ${dedupeResult.rowCount} duplicates`);
+
+    // Проверяем что дубликатов нет
+    const checkDupes = await pool.query(`
+      SELECT name, COUNT(*) as cnt FROM products GROUP BY name HAVING COUNT(*) > 1
+    `);
+    if (checkDupes.rows.length > 0) {
+      results.push(`WARNING: Still have ${checkDupes.rows.length} duplicate product names`);
+    } else {
+      results.push('All products are unique');
+    }
+
     // 5. Запускаем миграцию 021 (рецепты)
     const file021 = path.join(migrationsDir, '021_replace_recipes.sql');
     if (fs.existsSync(file021)) {
