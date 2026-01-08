@@ -215,6 +215,7 @@ export class MealPlanGenerator {
 
   /**
    * Генерация одного дня питания
+   * Порции рассчитываются так, чтобы СУММА ЗА ДЕНЬ точно соответствовала целевым БЖУ
    */
   private async generateDay(
     recipesByMeal: Record<MealType, RecipeWithItems[]>,
@@ -222,54 +223,75 @@ export class MealPlanGenerator {
     preferSimple: boolean,
     existingDays: DayPlan[]
   ): Promise<DayPlan> {
-    // Целевые БЖУ для каждого приёма пищи (НЕ калории!)
-    const targetProtein = {
-      breakfast: targets.protein * MEAL_DISTRIBUTION.breakfast,
-      lunch: targets.protein * MEAL_DISTRIBUTION.lunch,
-      dinner: targets.protein * MEAL_DISTRIBUTION.dinner,
-      snack: targets.protein * MEAL_DISTRIBUTION.snack,
+    // Целевые БЖУ для каждого приёма пищи
+    const mealTargets = {
+      breakfast: {
+        protein: targets.protein * MEAL_DISTRIBUTION.breakfast,
+        fat: targets.fat * MEAL_DISTRIBUTION.breakfast,
+        carbs: targets.carbs * MEAL_DISTRIBUTION.breakfast,
+        calories: targets.calories * MEAL_DISTRIBUTION.breakfast,
+      },
+      lunch: {
+        protein: targets.protein * MEAL_DISTRIBUTION.lunch,
+        fat: targets.fat * MEAL_DISTRIBUTION.lunch,
+        carbs: targets.carbs * MEAL_DISTRIBUTION.lunch,
+        calories: targets.calories * MEAL_DISTRIBUTION.lunch,
+      },
+      dinner: {
+        protein: targets.protein * MEAL_DISTRIBUTION.dinner,
+        fat: targets.fat * MEAL_DISTRIBUTION.dinner,
+        carbs: targets.carbs * MEAL_DISTRIBUTION.dinner,
+        calories: targets.calories * MEAL_DISTRIBUTION.dinner,
+      },
+      snack: {
+        protein: targets.protein * MEAL_DISTRIBUTION.snack,
+        fat: targets.fat * MEAL_DISTRIBUTION.snack,
+        carbs: targets.carbs * MEAL_DISTRIBUTION.snack,
+        calories: targets.calories * MEAL_DISTRIBUTION.snack,
+      },
     };
 
     // Выбираем рецепты для каждого приёма пищи
     const breakfast = this.selectRecipe(
       recipesByMeal.breakfast,
-      targetProtein.breakfast,
+      mealTargets.breakfast.protein,
       preferSimple,
       existingDays.map(d => d.breakfast.id)
     );
 
     const lunch = this.selectRecipe(
       recipesByMeal.lunch,
-      targetProtein.lunch,
+      mealTargets.lunch.protein,
       preferSimple,
       existingDays.map(d => d.lunch.id)
     );
 
     const dinner = this.selectRecipe(
       recipesByMeal.dinner,
-      targetProtein.dinner,
+      mealTargets.dinner.protein,
       preferSimple,
       existingDays.map(d => d.dinner.id)
     );
 
     const snack = this.selectRecipe(
       recipesByMeal.snack,
-      targetProtein.snack,
+      mealTargets.snack.protein,
       preferSimple,
       existingDays.map(d => d.snack.id)
     );
 
-    // Рассчитываем порции по БЕЛКУ (protein), не по калориям
-    const breakfastPortion = this.calculatePortionByProtein(breakfast, targetProtein.breakfast);
-    const lunchPortion = this.calculatePortionByProtein(lunch, targetProtein.lunch);
-    const dinnerPortion = this.calculatePortionByProtein(dinner, targetProtein.dinner);
-    const snackPortion = this.calculatePortionByProtein(snack, targetProtein.snack);
-
-    // Рассчитываем КБЖУ из ингредиентов (не из cached значений!)
+    // Рассчитываем КБЖУ базовых рецептов (порция = 1)
     const breakfastNutrition = this.calculateRecipeNutrition(breakfast);
     const lunchNutrition = this.calculateRecipeNutrition(lunch);
     const dinnerNutrition = this.calculateRecipeNutrition(dinner);
     const snackNutrition = this.calculateRecipeNutrition(snack);
+
+    // Рассчитываем порции чтобы ТОЧНО попасть в целевой БЕЛОК
+    // Белок - главный показатель, остальные подстроятся
+    const breakfastPortion = this.calculateExactPortion(breakfastNutrition.protein, mealTargets.breakfast.protein);
+    const lunchPortion = this.calculateExactPortion(lunchNutrition.protein, mealTargets.lunch.protein);
+    const dinnerPortion = this.calculateExactPortion(dinnerNutrition.protein, mealTargets.dinner.protein);
+    const snackPortion = this.calculateExactPortion(snackNutrition.protein, mealTargets.snack.protein);
 
     // Итоговые КБЖУ дня с учётом порций
     const totalCalories =
@@ -306,6 +328,19 @@ export class MealPlanGenerator {
       totalFat: Math.round(totalFat),
       totalCarbs: Math.round(totalCarbs),
     } as DayPlan;
+  }
+
+  /**
+   * Расчёт точной порции для достижения целевого значения
+   * Без жёстких ограничений - порция может быть любой для точного соответствия БЖУ
+   */
+  private calculateExactPortion(recipeValue: number, targetValue: number): number {
+    if (recipeValue <= 0) return 1.0;
+
+    const portion = targetValue / recipeValue;
+
+    // Округляем до 0.1 для читаемости
+    return Math.round(portion * 10) / 10;
   }
 
   /**
@@ -438,30 +473,6 @@ export class MealPlanGenerator {
   }
 
   /**
-   * Расчёт множителя порции по БЕЛКУ (основной показатель)
-   */
-  private calculatePortionByProtein(recipe: RecipeWithItems, targetProtein: number): number {
-    const recipeNutrition = this.calculateRecipeNutrition(recipe);
-    const recipeProtein = recipeNutrition.protein;
-
-    // Если белка нет в рецепте, ставим минимальную порцию
-    if (recipeProtein <= 0) {
-      return recipe.min_portion || 0.5;
-    }
-
-    const portion = targetProtein / recipeProtein;
-
-    // Жёстко ограничиваем порцию реалистичными значениями
-    const minPortion = recipe.min_portion || 0.5;
-    const maxPortion = Math.min(recipe.max_portion || 2.0, 2.0); // Никогда не больше 2x
-
-    return Math.max(
-      minPortion,
-      Math.min(maxPortion, Math.round(portion * 10) / 10)
-    );
-  }
-
-  /**
    * Сохранение дня плана в БД
    */
   private async saveDayPlan(
@@ -494,9 +505,8 @@ export class MealPlanGenerator {
     ];
 
     for (const meal of meals) {
-      // Получаем порцию и ЖЁСТКО ограничиваем 0.5-2.0
-      let portion = (meal.recipe as any).portion || 1;
-      portion = Math.max(0.5, Math.min(2.0, portion));
+      // Получаем точную порцию для соответствия целевым БЖУ
+      const portion = (meal.recipe as any).portion || 1;
 
       const nutrition = (meal.recipe as any).nutrition || {
         calories: meal.recipe.cached_calories || 0,
