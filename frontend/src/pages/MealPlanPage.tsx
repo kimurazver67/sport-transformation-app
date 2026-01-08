@@ -368,8 +368,11 @@ const MealPlanPage = () => {
 
   // Handle quantity input change with debounce
   const handleQuantityInputChange = useCallback((itemId: string, value: string) => {
-    // Update local state immediately for responsive UI
-    setEditingQuantities(prev => ({ ...prev, [itemId]: value }));
+    // Allow only digits
+    const cleanValue = value.replace(/[^0-9]/g, '');
+
+    // Update local state immediately for responsive UI (allow empty string while typing)
+    setEditingQuantities(prev => ({ ...prev, [itemId]: cleanValue }));
 
     // Clear previous timer for this item
     if (debounceTimers.current[itemId]) {
@@ -378,7 +381,7 @@ const MealPlanPage = () => {
 
     // Set new timer to save after 800ms of no typing
     debounceTimers.current[itemId] = setTimeout(() => {
-      const numValue = parseInt(value) || 0;
+      const numValue = cleanValue === '' ? 0 : parseInt(cleanValue);
       handleUpdateInventoryQuantity(itemId, Math.max(0, numValue));
       // Clear editing state after save
       setEditingQuantities(prev => {
@@ -397,7 +400,8 @@ const MealPlanPage = () => {
       delete debounceTimers.current[itemId];
     }
 
-    const numValue = parseInt(value) || 0;
+    const cleanValue = value.replace(/[^0-9]/g, '');
+    const numValue = cleanValue === '' ? 0 : parseInt(cleanValue);
     handleUpdateInventoryQuantity(itemId, Math.max(0, numValue));
     // Clear editing state
     setEditingQuantities(prev => {

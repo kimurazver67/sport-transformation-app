@@ -1,9 +1,9 @@
 Последние изменения:
 
-• Обслуживание: Update деплой список изменений
-• Исправлено: Update nutrition formulas per new requirements
-• Обслуживание: Remove temporary reset endpoint
-• temp: Add temporary endpoint to reset all points to 50
-• Update список изменений
+• Исправлено: Add debounce to inventory quantity input
+• Добавлено: Replace +/- buttons with manual input field for inventory quantity
+• Исправлено: Add button to add more products and fix nutrition field names
+• Исправлено: Use correct column names in inventory endpoints
+• Исправлено: Add 'add' mode to ProductSearchModal for inventory feature
 
-08.01.2026 20:10
+08.01.2026 20:19
