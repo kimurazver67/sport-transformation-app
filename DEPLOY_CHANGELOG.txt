@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Update migration 014 to use openfoodfacts instead of fatsecret
 • Исправлено: Make migration idempotent
 • Исправлено: Fix OpenFoodFacts product import
 • Добавлено: Replace FatSecret with OpenFoodFacts in фронтенд
 • Исправлено: Add User-Agent header for OpenFoodFacts API
-• Добавлено: Replace FatSecret with OpenFoodFacts API
 
-08.01.2026 23:20
+08.01.2026 23:25
