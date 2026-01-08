@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Update nutrition formulas per new requirements
+• Обслуживание: Remove temporary reset endpoint
 • temp: Add temporary endpoint to reset all points to 50
 • Update список изменений
 • temp: Hide weekly tasks until Monday & add compensation endpoint
-• Update деплой список изменений
-• Исправлено: Weekly tasks now reset properly each week
 
-08.01.2026 12:15
+08.01.2026 20:09
