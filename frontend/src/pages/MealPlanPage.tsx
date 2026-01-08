@@ -1,6 +1,6 @@
 // frontend/src/pages/MealPlanPage.tsx
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../store';
 import { api } from '../services/api';
@@ -286,9 +286,20 @@ const MealPlanPage = () => {
   const [selectedLocation, setSelectedLocation] = useState<'fridge' | 'freezer' | 'pantry' | 'other'>('fridge');
   const [loadingInventory, setLoadingInventory] = useState(false);
 
+  // Local editing state for inventory quantities (to allow typing without instant API calls)
+  const [editingQuantities, setEditingQuantities] = useState<Record<string, string>>({});
+  const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
+
   useEffect(() => {
     loadData();
   }, [user?.id]);
+
+  // Cleanup debounce timers on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(debounceTimers.current).forEach(timer => clearTimeout(timer));
+    };
+  }, []);
 
   const loadData = async () => {
     if (!user?.id) return;
@@ -355,11 +366,61 @@ const MealPlanPage = () => {
     }
   };
 
+  // Handle quantity input change with debounce
+  const handleQuantityInputChange = useCallback((itemId: string, value: string) => {
+    // Update local state immediately for responsive UI
+    setEditingQuantities(prev => ({ ...prev, [itemId]: value }));
+
+    // Clear previous timer for this item
+    if (debounceTimers.current[itemId]) {
+      clearTimeout(debounceTimers.current[itemId]);
+    }
+
+    // Set new timer to save after 800ms of no typing
+    debounceTimers.current[itemId] = setTimeout(() => {
+      const numValue = parseInt(value) || 0;
+      handleUpdateInventoryQuantity(itemId, Math.max(0, numValue));
+      // Clear editing state after save
+      setEditingQuantities(prev => {
+        const newState = { ...prev };
+        delete newState[itemId];
+        return newState;
+      });
+    }, 800);
+  }, [user?.id]);
+
+  // Save quantity on blur (immediate save)
+  const handleQuantityBlur = useCallback((itemId: string, value: string) => {
+    // Clear any pending timer
+    if (debounceTimers.current[itemId]) {
+      clearTimeout(debounceTimers.current[itemId]);
+      delete debounceTimers.current[itemId];
+    }
+
+    const numValue = parseInt(value) || 0;
+    handleUpdateInventoryQuantity(itemId, Math.max(0, numValue));
+    // Clear editing state
+    setEditingQuantities(prev => {
+      const newState = { ...prev };
+      delete newState[itemId];
+      return newState;
+    });
+  }, [user?.id]);
+
   const handleUpdateInventoryQuantity = async (itemId: string, newGrams: number) => {
     if (!user?.id) return;
     try {
       await api.updateInventoryItem(user.id, itemId, { quantityGrams: newGrams });
-      await loadInventory();
+      // Update local inventory state without full reload
+      setInventory(prev => {
+        const newInventory = { ...prev };
+        for (const location of ['fridge', 'freezer', 'pantry', 'other'] as const) {
+          newInventory[location] = newInventory[location].map(item =>
+            item.id === itemId ? { ...item, quantity_grams: newGrams } : item
+          );
+        }
+        return newInventory;
+      });
     } catch (error) {
       console.error('Failed to update inventory item:', error);
     }
@@ -675,12 +736,12 @@ const MealPlanPage = () => {
                       <div className="flex items-center gap-2">
                         <div className="flex items-center">
                           <input
-                            type="number"
-                            value={item.quantity_grams || 0}
-                            onChange={(e) => {
-                              const val = parseInt(e.target.value) || 0;
-                              handleUpdateInventoryQuantity(item.id, Math.max(0, val));
-                            }}
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            value={editingQuantities[item.id] ?? String(item.quantity_grams || 0)}
+                            onChange={(e) => handleQuantityInputChange(item.id, e.target.value)}
+                            onBlur={(e) => handleQuantityBlur(item.id, e.target.value)}
                             className="w-20 h-8 bg-void-200 border border-void-400 text-center font-mono text-sm text-neon-orange focus:border-neon-orange outline-none"
                           />
                           <span className="ml-1 font-mono text-xs text-steel-500">г</span>

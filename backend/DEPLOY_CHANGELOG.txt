@@ -1,9 +1,9 @@
 Последние изменения:
 
-• Исправлено: Add button to add more products and fix nutrition field names
-• Исправлено: Use correct column names in inventory endpoints
-• Исправлено: Add 'add' mode to ProductSearchModal for inventory feature
-• Исправлено: Use amount_grams instead of grams in calculateInventoryCoverage
-• Исправлено: Add 022_user_inventory migration to fix-duplicates endpoint
+• Обслуживание: Update деплой список изменений
+• Исправлено: Update nutrition formulas per new requirements
+• Обслуживание: Remove temporary reset endpoint
+• temp: Add temporary endpoint to reset all points to 50
+• Update список изменений
 
-08.01.2026 19:54
+08.01.2026 20:10
