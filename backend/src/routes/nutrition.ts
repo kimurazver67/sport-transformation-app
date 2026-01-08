@@ -347,15 +347,22 @@ router.get('/meal-plans/user/:userId', async (req: Request, res: Response) => {
               'ingredients', (
                 SELECT json_agg(
                   json_build_object(
-                    'product_name', p.name,
-                    'amount_grams', ROUND(ri.amount_grams * m.portion_multiplier),
-                    'is_optional', ri.is_optional
+                    'product_name', product_name,
+                    'amount_grams', total_grams,
+                    'is_optional', is_optional
                   )
-                  ORDER BY ri.is_optional, p.name
+                  ORDER BY is_optional, product_name
                 )
-                FROM recipe_items ri
-                JOIN products p ON ri.product_id = p.id
-                WHERE ri.recipe_id = r.id
+                FROM (
+                  SELECT
+                    p.name as product_name,
+                    ROUND(SUM(ri.amount_grams * m.portion_multiplier)) as total_grams,
+                    bool_or(ri.is_optional) as is_optional
+                  FROM recipe_items ri
+                  JOIN products p ON ri.product_id = p.id
+                  WHERE ri.recipe_id = r.id
+                  GROUP BY p.name
+                ) grouped_ingredients
               )
             )
           )
