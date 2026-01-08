@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Replace simple recipes with 60 real dishes
 • Исправлено: Group duplicate ingredients in recipe items
 • Добавлено: Add ingredient list with portions to meal plan recipes
 • trigger: Reдеплой фронтенд-dev
 • Добавлено: Add meal plan viewing with week tabs
-• Добавлено: Add endpoint to get user's active meal plan
 
-08.01.2026 09:41
+08.01.2026 10:05

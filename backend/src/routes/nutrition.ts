@@ -647,6 +647,16 @@ router.post('/run-migrations', async (req: Request, res: Response) => {
       }
     }
 
+    // Миграция 021: Replace recipes
+    const replaceRecipesFile = path.join(migrationsDir, '021_replace_recipes.sql');
+    if (fs.existsSync(replaceRecipesFile)) {
+      const replaceRecipesSql = fs.readFileSync(replaceRecipesFile, 'utf8');
+      await pool.query(replaceRecipesSql);
+      results.push('021_replace_recipes.sql выполнена - заменены рецепты на 60 полноценных блюд');
+    } else {
+      results.push('021_replace_recipes.sql не найдена');
+    }
+
     res.json({
       success: true,
       results
