@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Calculate meal portions by protein (БЖУ), not calories
+• temp: Add temporary endpoint to reset all points to 50
+• temp: Hide tasks until Monday and add compensation endpoint
+• Исправлено: Weekly tasks now reset properly each week
 • Добавлено: Add 021 migration to run-migrations endpoint
-• Добавлено: Replace simple recipes with 60 real dishes
-• Исправлено: Group duplicate ingredients in recipe items
-• Добавлено: Add ingredient list with portions to meal plan recipes
-• trigger: Reдеплой фронтенд-dev
 
-08.01.2026 10:07
+08.01.2026 12:39

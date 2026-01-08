@@ -632,7 +632,7 @@ router.post('/run-migrations', async (req: Request, res: Response) => {
       }
     }
 
-    // Миграция 016: Seed products (небольшой файл)
+    // Миграция 016: Seed products (базовые продукты)
     const productsCount = await pool.query('SELECT COUNT(*) FROM products');
     if (parseInt(productsCount.rows[0].count) > 0) {
       results.push('Products уже заполнены, пропускаем 016_seed_products.sql');
@@ -644,6 +644,37 @@ router.post('/run-migrations', async (req: Request, res: Response) => {
         results.push('016_seed_products.sql выполнена');
       } else {
         results.push('016_seed_products.sql не найдена');
+      }
+    }
+
+    // Миграция 018: Expand products (дополнительные продукты для рецептов)
+    // Проверяем наличие специфичного продукта из 018
+    const expandProductsCheck = await pool.query("SELECT EXISTS(SELECT 1 FROM products WHERE name = 'Ячневая крупа')");
+    if (expandProductsCheck.rows[0].exists) {
+      results.push('Расширенные продукты уже есть, пропускаем 018_expand_products.sql');
+    } else {
+      const expandProductsFile = path.join(migrationsDir, '018_expand_products.sql');
+      if (fs.existsSync(expandProductsFile)) {
+        const expandProductsSql = fs.readFileSync(expandProductsFile, 'utf8');
+        await pool.query(expandProductsSql);
+        results.push('018_expand_products.sql выполнена');
+      } else {
+        results.push('018_expand_products.sql не найдена');
+      }
+    }
+
+    // Миграция 019: Final products (финальные продукты)
+    const finalProductsCheck = await pool.query("SELECT EXISTS(SELECT 1 FROM products WHERE name = 'Кедровый орех')");
+    if (finalProductsCheck.rows[0].exists) {
+      results.push('Финальные продукты уже есть, пропускаем 019_final_products.sql');
+    } else {
+      const finalProductsFile = path.join(migrationsDir, '019_final_products.sql');
+      if (fs.existsSync(finalProductsFile)) {
+        const finalProductsSql = fs.readFileSync(finalProductsFile, 'utf8');
+        await pool.query(finalProductsSql);
+        results.push('019_final_products.sql выполнена');
+      } else {
+        results.push('019_final_products.sql не найдена');
       }
     }
 
