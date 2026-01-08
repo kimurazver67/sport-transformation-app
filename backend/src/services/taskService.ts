@@ -126,10 +126,15 @@ export const taskService = {
       ? await this.getByWeekForGoal(week, userGoal)
       : await this.getByWeek(week);
 
-    // Получаем выполненные задания
+    const taskIds = tasks.map(t => t.id);
+    if (taskIds.length === 0) {
+      return [];
+    }
+
+    // Получаем выполненные задания ТОЛЬКО для заданий текущей недели
     const completionsResult = await query<{ task_id: string }>(
-      'SELECT task_id FROM task_completions WHERE user_id = $1',
-      [userId]
+      'SELECT task_id FROM task_completions WHERE user_id = $1 AND task_id = ANY($2)',
+      [userId, taskIds]
     );
 
     const completedIds = new Set(completionsResult.rows.map(c => c.task_id));
