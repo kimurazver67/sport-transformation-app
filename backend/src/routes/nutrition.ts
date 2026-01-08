@@ -1038,12 +1038,11 @@ router.get('/inventory/:userId', async (req: Request, res: Response) => {
         ui.expiry_date,
         ui.updated_at,
         p.name as product_name,
-        p.calories_per_100g,
-        p.protein_per_100g,
-        p.fat_per_100g,
-        p.carbs_per_100g,
-        p.unit_type,
-        p.unit_grams
+        p.calories,
+        p.protein,
+        p.fat,
+        p.carbs,
+        p.category
       FROM user_inventory ui
       JOIN products p ON ui.product_id = p.id
       WHERE ui.user_id = $1
@@ -1292,9 +1291,9 @@ router.get('/inventory/:userId/shopping-diff/:mealPlanId', async (req: Request, 
         sli.product_id,
         sli.total_grams as needed_grams,
         p.name as product_name,
-        p.calories_per_100g,
-        p.protein_per_100g,
-        p.unit_type
+        p.calories,
+        p.protein,
+        p.category
       FROM shopping_list_items sli
       JOIN products p ON sli.product_id = p.id
       WHERE sli.meal_plan_id = $1
