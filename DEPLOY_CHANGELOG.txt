@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Group duplicate ingredients in recipe items
 • Добавлено: Add ingredient list with portions to meal plan recipes
 • trigger: Reдеплой фронтенд-dev
 • Добавлено: Add meal plan viewing with week tabs
 • Добавлено: Add endpoint to get user's active meal plan
-• Исправлено: Use correct table name shopping_list_items
 
-08.01.2026 02:06
+08.01.2026 09:41
