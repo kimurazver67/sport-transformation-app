@@ -376,10 +376,24 @@ export class MealPlanGenerator {
    */
   private calculateRecipeNutrition(recipe: RecipeWithItems): { calories: number; protein: number; fat: number; carbs: number } {
     // Проверяем что items - это массив с реальными данными
-    const items = Array.isArray(recipe.items) ? recipe.items.filter(item => item && item.product) : [];
+    // PostgreSQL json_agg возвращает массив напрямую, но нужно убедиться
+    let rawItems = recipe.items;
+
+    // Если items - строка, парсим её
+    if (typeof rawItems === 'string') {
+      try {
+        rawItems = JSON.parse(rawItems);
+      } catch {
+        rawItems = [];
+      }
+    }
+
+    const items = Array.isArray(rawItems) ? rawItems.filter(item => item && item.product) : [];
+
+    console.log(`[MealPlanGenerator] Recipe ${recipe.name}: items count = ${items.length}, raw type = ${typeof recipe.items}`);
 
     if (items.length === 0) {
-      console.log(`[MealPlanGenerator] Recipe ${recipe.name} has no valid items, using cached values`);
+      console.log(`[MealPlanGenerator] Recipe ${recipe.name} has no valid items, using cached: cal=${recipe.cached_calories}, prot=${recipe.cached_protein}`);
       return {
         calories: recipe.cached_calories || 0,
         protein: recipe.cached_protein || 0,
@@ -387,6 +401,13 @@ export class MealPlanGenerator {
         carbs: recipe.cached_carbs || 0,
       };
     }
+
+    // Логируем каждый ингредиент
+    items.forEach((item, idx) => {
+      const p = item.product;
+      const cal = (p?.calories || 0) * (item.amount_grams || 0) / 100;
+      console.log(`[MealPlanGenerator]   ${idx}: ${p?.name} ${item.amount_grams}g = ${Math.round(cal)} kcal`);
+    });
 
     const nutrition = items.reduce((acc, item) => {
       const product = item.product;
@@ -399,7 +420,7 @@ export class MealPlanGenerator {
       };
     }, { calories: 0, protein: 0, fat: 0, carbs: 0 });
 
-    console.log(`[MealPlanGenerator] Recipe ${recipe.name}: ${Math.round(nutrition.calories)} kcal, ${Math.round(nutrition.protein)}g protein`);
+    console.log(`[MealPlanGenerator] Recipe ${recipe.name} TOTAL: ${Math.round(nutrition.calories)} kcal, ${Math.round(nutrition.protein)}g protein`);
 
     return nutrition;
   }
