@@ -52,7 +52,10 @@ export class NutritionDataService {
           lc: 'ru',  // Русский язык
           fields: 'code,product_name,product_name_ru,brands,nutriments,categories_tags'
         },
-        timeout: 10000
+        headers: {
+          'User-Agent': 'SportTransformationApp/1.0 (https://github.com/kimurazver67/sport-transformation-app)'
+        },
+        timeout: 15000
       });
 
       const products = response.data.products || [];

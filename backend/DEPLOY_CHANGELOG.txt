@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Replace FatSecret with OpenFoodFacts API
 • Исправлено: Smart FatSecret search - RU region for cyrillic, fallback for empty results
 • Добавлено: Add Russian language support for FatSecret API search
 • Добавлено: Add HTTP proxy support for FatSecret API
 • Исправлено: Remove is_active filter and add DISTINCT to product search
-• Исправлено: Simplify inventory input - save only on blur
 
-08.01.2026 21:47
+08.01.2026 21:59
