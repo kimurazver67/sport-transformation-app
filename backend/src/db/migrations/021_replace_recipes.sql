@@ -4,7 +4,10 @@
 
 -- ===== ОЧИСТКА СТАРЫХ ДАННЫХ =====
 
--- Удаляем все существующие рецепты (каскадно удалятся recipe_items и recipe_tags)
+-- Явно удаляем recipe_items и recipe_tags сначала (на случай если каскад не работает)
+DELETE FROM recipe_items;
+DELETE FROM recipe_tags;
+-- Удаляем все существующие рецепты
 DELETE FROM recipes;
 
 -- ===== ЗАВТРАКИ (15 рецептов) =====
