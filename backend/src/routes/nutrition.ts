@@ -1467,50 +1467,66 @@ router.get('/debug/check-duplicates', async (req: Request, res: Response) => {
 });
 
 /**
- * POST /api/nutrition/debug/fix-recipe-duplicates
- * Удалить дубликаты в recipe_items (оставить по одному для каждой комбинации recipe_id + product_id)
+ * POST /api/nutrition/debug/fix-all-duplicates
+ * Удалить дубликаты продуктов и обновить recipe_items
  */
-router.post('/debug/fix-recipe-duplicates', async (req: Request, res: Response) => {
+router.post('/debug/fix-all-duplicates', async (req: Request, res: Response) => {
   try {
-    // Подсчитываем до
-    const beforeCount = await pool.query('SELECT COUNT(*) FROM recipe_items');
-    const beforeUnique = await pool.query('SELECT COUNT(*) FROM (SELECT DISTINCT recipe_id, product_id FROM recipe_items) t');
+    const beforeProducts = await pool.query('SELECT COUNT(*) FROM products');
+    const beforeItems = await pool.query('SELECT COUNT(*) FROM recipe_items');
 
-    // Удаляем ВСЕ и вставляем только уникальные
-    // 1. Сохраняем уникальные в temp таблицу
+    // 1. Создаём маппинг: для каждого дублированного product_id -> первый product_id с таким именем
     await pool.query(`
-      CREATE TEMP TABLE temp_unique_items AS
-      SELECT DISTINCT ON (recipe_id, product_id)
-        id, recipe_id, product_id, amount_grams, is_optional, notes, created_at
-      FROM recipe_items
-      ORDER BY recipe_id, product_id, created_at DESC
+      CREATE TEMP TABLE product_mapping AS
+      SELECT
+        p.id as old_id,
+        first_value(p.id) OVER (PARTITION BY p.name ORDER BY p.created_at) as new_id
+      FROM products p
     `);
 
-    // 2. Удаляем все записи
-    await pool.query('DELETE FROM recipe_items');
-
-    // 3. Вставляем обратно уникальные
+    // 2. Обновляем recipe_items чтобы ссылались на "канонический" product_id
     await pool.query(`
-      INSERT INTO recipe_items (id, recipe_id, product_id, amount_grams, is_optional, notes, created_at)
-      SELECT id, recipe_id, product_id, amount_grams, is_optional, notes, created_at
-      FROM temp_unique_items
+      UPDATE recipe_items ri
+      SET product_id = pm.new_id
+      FROM product_mapping pm
+      WHERE ri.product_id = pm.old_id AND pm.old_id != pm.new_id
     `);
 
-    // 4. Удаляем temp таблицу
-    await pool.query('DROP TABLE temp_unique_items');
+    // 3. Удаляем дублированные recipe_items (теперь они могут быть)
+    await pool.query(`
+      DELETE FROM recipe_items a
+      USING recipe_items b
+      WHERE a.id > b.id
+        AND a.recipe_id = b.recipe_id
+        AND a.product_id = b.product_id
+    `);
 
-    // Подсчитываем после
-    const afterCount = await pool.query('SELECT COUNT(*) FROM recipe_items');
+    // 4. Удаляем дублированные продукты
+    await pool.query(`
+      DELETE FROM products
+      WHERE id NOT IN (
+        SELECT DISTINCT ON (name) id FROM products ORDER BY name, created_at
+      )
+    `);
+
+    await pool.query('DROP TABLE product_mapping');
+
+    const afterProducts = await pool.query('SELECT COUNT(*) FROM products');
+    const afterItems = await pool.query('SELECT COUNT(*) FROM recipe_items');
 
     res.json({
-      message: 'Duplicates removed',
-      before_total: parseInt(beforeCount.rows[0].count),
-      before_unique: parseInt(beforeUnique.rows[0].count),
-      after: parseInt(afterCount.rows[0].count),
-      removed: parseInt(beforeCount.rows[0].count) - parseInt(afterCount.rows[0].count)
+      message: 'All duplicates fixed',
+      products: {
+        before: parseInt(beforeProducts.rows[0].count),
+        after: parseInt(afterProducts.rows[0].count)
+      },
+      recipe_items: {
+        before: parseInt(beforeItems.rows[0].count),
+        after: parseInt(afterItems.rows[0].count)
+      }
     });
   } catch (error) {
-    console.error('[Debug] Fix duplicates error:', error);
+    console.error('[Debug] Fix all duplicates error:', error);
     res.status(500).json({ error: String(error) });
   }
 });
