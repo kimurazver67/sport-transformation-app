@@ -32,7 +32,7 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Грецкий орех', 20)
   ) AS items(product_name, amount)
   JOIN products ON products.name = items.product_name
-ON CONFLICT DO NOTHING;
+ON CONFLICT (recipe_id, product_id) DO NOTHING;
 
 -- 2. Омлет с овощами
 WITH recipe AS (
@@ -60,7 +60,7 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Оливковое масло Extra Virgin', 5)
   ) AS items(product_name, amount)
   JOIN products ON products.name = items.product_name
-ON CONFLICT DO NOTHING;
+ON CONFLICT (recipe_id, product_id) DO NOTHING;
 
 -- 3. Творог с ягодами и медом
 WITH recipe AS (
@@ -86,7 +86,7 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Мед', 15)
   ) AS items(product_name, amount)
   JOIN products ON products.name = items.product_name
-ON CONFLICT DO NOTHING;
+ON CONFLICT (recipe_id, product_id) DO NOTHING;
 
 -- 4. Яичница с авокадо
 WITH recipe AS (
@@ -112,7 +112,7 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Оливковое масло Extra Virgin', 5)
   ) AS items(product_name, amount)
   JOIN products ON products.name = items.product_name
-ON CONFLICT DO NOTHING;
+ON CONFLICT (recipe_id, product_id) DO NOTHING;
 
 -- ===== ОБЕДЫ (LUNCH) =====
 
@@ -143,7 +143,7 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Оливковое масло Extra Virgin', 10)
   ) AS items(product_name, amount)
   JOIN products ON products.name = items.product_name
-ON CONFLICT DO NOTHING;
+ON CONFLICT (recipe_id, product_id) DO NOTHING;
 
 -- 6. Лосось с киноа и шпинатом
 WITH recipe AS (
@@ -172,7 +172,7 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Оливковое масло Extra Virgin', 10)
   ) AS items(product_name, amount)
   JOIN products ON products.name = items.product_name
-ON CONFLICT DO NOTHING;
+ON CONFLICT (recipe_id, product_id) DO NOTHING;
 
 -- 7. Говядина с рисом и овощами
 WITH recipe AS (
@@ -201,7 +201,7 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Оливковое масло Extra Virgin', 10)
   ) AS items(product_name, amount)
   JOIN products ON products.name = items.product_name
-ON CONFLICT DO NOTHING;
+ON CONFLICT (recipe_id, product_id) DO NOTHING;
 
 -- 8. Индейка с булгуром
 WITH recipe AS (
@@ -231,7 +231,7 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Оливковое масло Extra Virgin', 10)
   ) AS items(product_name, amount)
   JOIN products ON products.name = items.product_name
-ON CONFLICT DO NOTHING;
+ON CONFLICT (recipe_id, product_id) DO NOTHING;
 
 -- 9. Чечевичный суп с курицей
 WITH recipe AS (
@@ -261,7 +261,7 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Оливковое масло Extra Virgin', 10)
   ) AS items(product_name, amount)
   JOIN products ON products.name = items.product_name
-ON CONFLICT DO NOTHING;
+ON CONFLICT (recipe_id, product_id) DO NOTHING;
 
 -- ===== УЖИНЫ (DINNER) =====
 
@@ -290,7 +290,7 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Оливковое масло Extra Virgin', 10)
   ) AS items(product_name, amount)
   JOIN products ON products.name = items.product_name
-ON CONFLICT DO NOTHING;
+ON CONFLICT (recipe_id, product_id) DO NOTHING;
 
 -- 11. Куриные котлеты с овощным салатом
 WITH recipe AS (
@@ -320,7 +320,7 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Оливковое масло Extra Virgin', 10)
   ) AS items(product_name, amount)
   JOIN products ON products.name = items.product_name
-ON CONFLICT DO NOTHING;
+ON CONFLICT (recipe_id, product_id) DO NOTHING;
 
 -- 12. Тофу с овощами
 WITH recipe AS (
@@ -349,7 +349,7 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Оливковое масло Extra Virgin', 10)
   ) AS items(product_name, amount)
   JOIN products ON products.name = items.product_name
-ON CONFLICT DO NOTHING;
+ON CONFLICT (recipe_id, product_id) DO NOTHING;
 
 -- 13. Греческий салат с курицей
 WITH recipe AS (
@@ -379,7 +379,7 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Оливковое масло Extra Virgin', 15)
   ) AS items(product_name, amount)
   JOIN products ON products.name = items.product_name
-ON CONFLICT DO NOTHING;
+ON CONFLICT (recipe_id, product_id) DO NOTHING;
 
 -- ===== ПЕРЕКУСЫ (SNACKS) =====
 
@@ -408,7 +408,7 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Молоко 2.5%', 200)
   ) AS items(product_name, amount)
   JOIN products ON products.name = items.product_name
-ON CONFLICT DO NOTHING;
+ON CONFLICT (recipe_id, product_id) DO NOTHING;
 
 -- 15. Горсть орехов с сухофруктами
 WITH recipe AS (
@@ -433,7 +433,7 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Чернослив', 15)
   ) AS items(product_name, amount)
   JOIN products ON products.name = items.product_name
-ON CONFLICT DO NOTHING;
+ON CONFLICT (recipe_id, product_id) DO NOTHING;
 
 -- 16. Греческий йогурт с орехами и медом
 WITH recipe AS (
@@ -459,7 +459,7 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Мед', 10)
   ) AS items(product_name, amount)
   JOIN products ON products.name = items.product_name
-ON CONFLICT DO NOTHING;
+ON CONFLICT (recipe_id, product_id) DO NOTHING;
 
 -- 17. Яблоко с арахисовой пастой (используем арахис)
 WITH recipe AS (
@@ -483,7 +483,7 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Арахис', 25)
   ) AS items(product_name, amount)
   JOIN products ON products.name = items.product_name
-ON CONFLICT DO NOTHING;
+ON CONFLICT (recipe_id, product_id) DO NOTHING;
 
 -- ===== ОБНОВЛЕНИЕ КЭШИРОВАННЫХ КБЖУ =====
 -- Рассчитываем КБЖУ для каждого рецепта на основе ингредиентов

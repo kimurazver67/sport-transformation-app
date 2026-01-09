@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Add ON CONFLICT to all seed migrations (018-021)
 • Исправлено: Add ON CONFLICT to seed migrations for idempotency
 • Исправлено: Remove query logging to prevent Railway log rate limiting
 • Исправлено: Add missing semicolons to seed migrations after sed removal
 • Исправлено: Use ORDER BY LIMIT 1 instead of MIN() for UUID columns
-• Исправлено: Simplify 015a migration to plain SQL statements
 
-09.01.2026 13:10
+09.01.2026 13:29

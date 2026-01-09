@@ -22,3 +22,13 @@ DO $$ BEGIN
     END IF;
   END IF;
 END $$;
+
+-- Add unique constraint on recipe_items (recipe_id, product_id)
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'recipe_items_recipe_product_unique') THEN
+    -- Check if duplicates exist
+    IF NOT EXISTS (SELECT recipe_id, product_id FROM recipe_items GROUP BY recipe_id, product_id HAVING COUNT(*) > 1) THEN
+      ALTER TABLE recipe_items ADD CONSTRAINT recipe_items_recipe_product_unique UNIQUE (recipe_id, product_id);
+    END IF;
+  END IF;
+END $$;
