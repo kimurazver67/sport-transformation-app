@@ -43,4 +43,5 @@ INSERT INTO tags (name, name_ru, type, description) VALUES
 ON CONFLICT (name) DO NOTHING;
 
 -- ===== ИНДЕКСЫ УЖЕ СОЗДАНЫ В МИГРАЦИИ 014 =====
--- CREATE INDEX idx_tags_type ON tags(type);
+-- CREATE INDEX idx_tags_type ON tags(type)
+ON CONFLICT (name) DO NOTHING;
