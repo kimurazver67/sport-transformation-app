@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Remove orphan ON CONFLICT statement in 015_seed_tags.sql
 • Исправлено: Update recipe_items/meals before deleting duplicate products/recipes
 • Исправлено: Rename 014b to 015a to ensure it runs before 016_seed_products
 • Исправлено: Add 014b migration to create UNIQUE constraints before seed migrations
 • Исправлено: Simplify migration 025 with EXISTS-based deduplication
-• Исправлено: Simplify migration 025 using temp tables instead of CTEs
 
-09.01.2026 11:13
+09.01.2026 11:20
