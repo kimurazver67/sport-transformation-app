@@ -1434,6 +1434,36 @@ router.post('/debug/reseed-products', async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/nutrition/debug/first-recipe
+ * Получить первый рецепт с калориями для отладки
+ */
+router.get('/debug/first-recipe', async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        r.id, r.name,
+        ROUND(SUM(p.calories * ri.amount_grams / 100.0)) as total_calories,
+        ROUND(SUM(p.protein * ri.amount_grams / 100.0)) as total_protein,
+        json_agg(json_build_object(
+          'product', p.name,
+          'amount', ri.amount_grams,
+          'calories_per_100g', p.calories,
+          'calc_calories', ROUND(p.calories * ri.amount_grams / 100.0)
+        )) as items
+      FROM recipes r
+      JOIN recipe_items ri ON r.id = ri.recipe_id
+      JOIN products p ON ri.product_id = p.id
+      GROUP BY r.id, r.name
+      LIMIT 1
+    `);
+    res.json(result.rows[0] || { error: 'No recipes found' });
+  } catch (error) {
+    console.error('[Debug] First recipe error:', error);
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+/**
  * GET /api/nutrition/debug/recipe-calories/:recipeId
  * Отладка расчёта калорий рецепта
  */
