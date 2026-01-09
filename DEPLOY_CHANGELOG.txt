@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Remove query logging to prevent Railway log rate limiting
 • Исправлено: Add missing semicolons to seed migrations after sed removal
 • Исправлено: Use ORDER BY LIMIT 1 instead of MIN() for UUID columns
 • Исправлено: Simplify 015a migration to plain SQL statements
 • Исправлено: Make 015a migration handle all FK references before deleting
-• Исправлено: Remove orphan ON CONFLICT statement in 015_seed_tags.sql
 
-09.01.2026 12:39
+09.01.2026 13:03

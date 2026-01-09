@@ -1,6 +1,7 @@
 -- Migration 017: Seed Recipes (15-20 Simple Recipes)
 -- Date: 2026-01-07
 -- Description: Базовые простые рецепты для генератора планов питания
+-- Note: Idempotent - uses ON CONFLICT DO NOTHING for existing recipes
 
 -- Временная таблица для хранения UUID продуктов (для удобства)
 -- Вместо UUID будем использовать subqueries для получения ID по имени
@@ -20,6 +21,7 @@ WITH recipe AS (
 2. Добавить нарезанный банан и горсть орехов.
 3. Перемешать и подавать.'
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -29,7 +31,8 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Банан', 100),
     ('Грецкий орех', 20)
   ) AS items(product_name, amount)
-  JOIN products ON products.name = items.product_name;
+  JOIN products ON products.name = items.product_name
+ON CONFLICT DO NOTHING;
 
 -- 2. Омлет с овощами
 WITH recipe AS (
@@ -44,6 +47,7 @@ WITH recipe AS (
 2. Обжарить нарезанные помидоры и шпинат на сковороде (1-2 мин).
 3. Залить яичной смесью, готовить под крышкой 5-7 минут.'
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -55,7 +59,8 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Шпинат', 50),
     ('Оливковое масло Extra Virgin', 5)
   ) AS items(product_name, amount)
-  JOIN products ON products.name = items.product_name;
+  JOIN products ON products.name = items.product_name
+ON CONFLICT DO NOTHING;
 
 -- 3. Творог с ягодами и медом
 WITH recipe AS (
@@ -70,6 +75,7 @@ WITH recipe AS (
 2. Добавить свежую клубнику.
 3. Полить медом, перемешать.'
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -79,7 +85,8 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Клубника', 100),
     ('Мед', 15)
   ) AS items(product_name, amount)
-  JOIN products ON products.name = items.product_name;
+  JOIN products ON products.name = items.product_name
+ON CONFLICT DO NOTHING;
 
 -- 4. Яичница с авокадо
 WITH recipe AS (
@@ -94,6 +101,7 @@ WITH recipe AS (
 2. Нарезать авокадо ломтиками.
 3. Подавать вместе, посыпать солью и перцем.'
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -103,7 +111,8 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Авокадо', 100),
     ('Оливковое масло Extra Virgin', 5)
   ) AS items(product_name, amount)
-  JOIN products ON products.name = items.product_name;
+  JOIN products ON products.name = items.product_name
+ON CONFLICT DO NOTHING;
 
 -- ===== ОБЕДЫ (LUNCH) =====
 
@@ -121,6 +130,7 @@ WITH recipe AS (
 3. Приготовить овощи на пару или обжарить.
 4. Подавать вместе.'
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -132,7 +142,8 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Морковь', 50),
     ('Оливковое масло Extra Virgin', 10)
   ) AS items(product_name, amount)
-  JOIN products ON products.name = items.product_name;
+  JOIN products ON products.name = items.product_name
+ON CONFLICT DO NOTHING;
 
 -- 6. Лосось с киноа и шпинатом
 WITH recipe AS (
@@ -148,6 +159,7 @@ WITH recipe AS (
 3. Обжарить шпинат на оливковом масле 2-3 минуты.
 4. Подавать вместе.'
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -159,7 +171,8 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Лук репчатый', 30),
     ('Оливковое масло Extra Virgin', 10)
   ) AS items(product_name, amount)
-  JOIN products ON products.name = items.product_name;
+  JOIN products ON products.name = items.product_name
+ON CONFLICT DO NOTHING;
 
 -- 7. Говядина с рисом и овощами
 WITH recipe AS (
@@ -175,6 +188,7 @@ WITH recipe AS (
 3. Добавить болгарский перец и кабачок, тушить 10 минут.
 4. Подавать с рисом.'
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -186,7 +200,8 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Кабачок', 100),
     ('Оливковое масло Extra Virgin', 10)
   ) AS items(product_name, amount)
-  JOIN products ON products.name = items.product_name;
+  JOIN products ON products.name = items.product_name
+ON CONFLICT DO NOTHING;
 
 -- 8. Индейка с булгуром
 WITH recipe AS (
@@ -202,6 +217,7 @@ WITH recipe AS (
 3. Приготовить салат из помидоров, огурцов и зелени.
 4. Подавать вместе.'
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -214,7 +230,8 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Салат листовой', 30),
     ('Оливковое масло Extra Virgin', 10)
   ) AS items(product_name, amount)
-  JOIN products ON products.name = items.product_name;
+  JOIN products ON products.name = items.product_name
+ON CONFLICT DO NOTHING;
 
 -- 9. Чечевичный суп с курицей
 WITH recipe AS (
@@ -230,6 +247,7 @@ WITH recipe AS (
 3. Добавить чечевицу и воду (600мл), варить 25 минут.
 4. Добавить помидоры за 5 минут до готовности.'
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -242,7 +260,8 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Помидоры', 100),
     ('Оливковое масло Extra Virgin', 10)
   ) AS items(product_name, amount)
-  JOIN products ON products.name = items.product_name;
+  JOIN products ON products.name = items.product_name
+ON CONFLICT DO NOTHING;
 
 -- ===== УЖИНЫ (DINNER) =====
 
@@ -259,6 +278,7 @@ WITH recipe AS (
 2. Сбрызнуть оливковым маслом, посыпать специями.
 3. Запекать при 180°C 20-25 минут.'
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -269,7 +289,8 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Цветная капуста', 100),
     ('Оливковое масло Extra Virgin', 10)
   ) AS items(product_name, amount)
-  JOIN products ON products.name = items.product_name;
+  JOIN products ON products.name = items.product_name
+ON CONFLICT DO NOTHING;
 
 -- 11. Куриные котлеты с овощным салатом
 WITH recipe AS (
@@ -285,6 +306,7 @@ WITH recipe AS (
 3. Приготовить салат из помидоров, огурцов и салата.
 4. Заправить маслом.'
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -297,7 +319,8 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Салат листовой', 50),
     ('Оливковое масло Extra Virgin', 10)
   ) AS items(product_name, amount)
-  JOIN products ON products.name = items.product_name;
+  JOIN products ON products.name = items.product_name
+ON CONFLICT DO NOTHING;
 
 -- 12. Тофу с овощами
 WITH recipe AS (
@@ -313,6 +336,7 @@ WITH recipe AS (
 3. Тушить 10 минут, добавить соевый соус.
 4. Подавать горячим.'
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -324,7 +348,8 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Соевый соус', 15),
     ('Оливковое масло Extra Virgin', 10)
   ) AS items(product_name, amount)
-  JOIN products ON products.name = items.product_name;
+  JOIN products ON products.name = items.product_name
+ON CONFLICT DO NOTHING;
 
 -- 13. Греческий салат с курицей
 WITH recipe AS (
@@ -340,6 +365,7 @@ WITH recipe AS (
 3. Добавить отварную куриную грудку кусочками.
 4. Заправить оливковым маслом и лимонным соком.'
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -352,7 +378,8 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Сыр моцарелла', 50),
     ('Оливковое масло Extra Virgin', 15)
   ) AS items(product_name, amount)
-  JOIN products ON products.name = items.product_name;
+  JOIN products ON products.name = items.product_name
+ON CONFLICT DO NOTHING;
 
 -- ===== ПЕРЕКУСЫ (SNACKS) =====
 
@@ -369,6 +396,7 @@ WITH recipe AS (
 2. Взбить до однородности.
 3. Подавать холодным.'
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -379,7 +407,8 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Протеин сывороточный', 30),
     ('Молоко 2.5%', 200)
   ) AS items(product_name, amount)
-  JOIN products ON products.name = items.product_name;
+  JOIN products ON products.name = items.product_name
+ON CONFLICT DO NOTHING;
 
 -- 15. Горсть орехов с сухофруктами
 WITH recipe AS (
@@ -392,6 +421,7 @@ WITH recipe AS (
     'simple',
     'Смешать миндаль, грецкие орехи, курагу и чернослив. Готово!'
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -402,7 +432,8 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Курага', 20),
     ('Чернослив', 15)
   ) AS items(product_name, amount)
-  JOIN products ON products.name = items.product_name;
+  JOIN products ON products.name = items.product_name
+ON CONFLICT DO NOTHING;
 
 -- 16. Греческий йогурт с орехами и медом
 WITH recipe AS (
@@ -417,6 +448,7 @@ WITH recipe AS (
 2. Добавить измельченные орехи и мед.
 3. Перемешать.'
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -426,7 +458,8 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Грецкий орех', 20),
     ('Мед', 10)
   ) AS items(product_name, amount)
-  JOIN products ON products.name = items.product_name;
+  JOIN products ON products.name = items.product_name
+ON CONFLICT DO NOTHING;
 
 -- 17. Яблоко с арахисовой пастой (используем арахис)
 WITH recipe AS (
@@ -440,6 +473,7 @@ WITH recipe AS (
     '1. Нарезать яблоко дольками.
 2. Подавать с горстью арахиса.'
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -448,7 +482,8 @@ SELECT recipe.id, products.id, amount FROM recipe,
     ('Яблоко', 150),
     ('Арахис', 25)
   ) AS items(product_name, amount)
-  JOIN products ON products.name = items.product_name;
+  JOIN products ON products.name = items.product_name
+ON CONFLICT DO NOTHING;
 
 -- ===== ОБНОВЛЕНИЕ КЭШИРОВАННЫХ КБЖУ =====
 -- Рассчитываем КБЖУ для каждого рецепта на основе ингредиентов
