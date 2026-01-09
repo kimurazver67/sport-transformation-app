@@ -2,100 +2,54 @@
 -- Date: 2026-01-09
 -- Description: Must run BEFORE seed migrations (016, 017) to enable ON CONFLICT
 
--- Check if constraints already exist and skip if so
-DO $$
-DECLARE
-  products_constraint_exists BOOLEAN;
-  recipes_constraint_exists BOOLEAN;
-BEGIN
-  -- Check for existing products constraint
-  SELECT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname IN ('products_name_key', 'products_name_unique')
-  ) INTO products_constraint_exists;
+-- Simple idempotent approach: try to add constraints, ignore if exists
 
-  -- Check for existing recipes constraint
-  SELECT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname IN ('recipes_name_key', 'recipes_name_unique')
-  ) INTO recipes_constraint_exists;
+-- Products: Delete duplicates if exist, add constraint if not exists
+DELETE FROM shopping_list_items WHERE product_id IN (
+  SELECT p.id FROM products p
+  WHERE EXISTS (SELECT 1 FROM products p2 WHERE p2.name = p.name AND p2.id < p.id)
+);
 
-  -- If both exist, skip migration
-  IF products_constraint_exists AND recipes_constraint_exists THEN
-    RAISE NOTICE 'UNIQUE constraints already exist, skipping migration 015a';
-    RETURN;
-  END IF;
+DELETE FROM user_excluded_products WHERE product_id IN (
+  SELECT p.id FROM products p
+  WHERE EXISTS (SELECT 1 FROM products p2 WHERE p2.name = p.name AND p2.id < p.id)
+);
 
-  -- ===== PRODUCTS DEDUPLICATION =====
-  IF NOT products_constraint_exists THEN
-    -- Delete from shopping_list_items for duplicate products
-    DELETE FROM shopping_list_items sli
-    WHERE EXISTS (
-      SELECT 1 FROM products p
-      WHERE sli.product_id = p.id
-      AND EXISTS (SELECT 1 FROM products p2 WHERE p2.name = p.name AND p2.id < p.id)
-    );
+UPDATE recipe_items ri
+SET product_id = canonical.min_id
+FROM (SELECT name, MIN(id) as min_id FROM products GROUP BY name) canonical
+JOIN products p ON p.name = canonical.name AND p.id != canonical.min_id
+WHERE ri.product_id = p.id;
 
-    -- Delete from user_excluded_products for duplicate products
-    DELETE FROM user_excluded_products uep
-    WHERE EXISTS (
-      SELECT 1 FROM products p
-      WHERE uep.product_id = p.id
-      AND EXISTS (SELECT 1 FROM products p2 WHERE p2.name = p.name AND p2.id < p.id)
-    );
+DELETE FROM products p
+WHERE EXISTS (SELECT 1 FROM products p2 WHERE p2.name = p.name AND p2.id < p.id);
 
-    -- Update recipe_items to point to canonical products
-    UPDATE recipe_items ri
-    SET product_id = (SELECT MIN(p2.id) FROM products p2 WHERE p2.name = p.name)
-    FROM products p
-    WHERE ri.product_id = p.id
-    AND p.id != (SELECT MIN(p2.id) FROM products p2 WHERE p2.name = p.name);
+DO $$ BEGIN
+  ALTER TABLE products ADD CONSTRAINT products_name_key UNIQUE (name);
+EXCEPTION WHEN duplicate_table THEN NULL;
+END $$;
 
-    -- Delete duplicate products
-    DELETE FROM products p
-    WHERE EXISTS (
-      SELECT 1 FROM products p2
-      WHERE p2.name = p.name AND p2.id < p.id
-    );
+-- Recipes: Delete duplicates if exist, add constraint if not exists
+UPDATE meals m
+SET recipe_id = canonical.min_id
+FROM (SELECT name, MIN(id) as min_id FROM recipes GROUP BY name) canonical
+JOIN recipes r ON r.name = canonical.name AND r.id != canonical.min_id
+WHERE m.recipe_id = r.id;
 
-    -- Add constraint
-    ALTER TABLE products ADD CONSTRAINT products_name_key UNIQUE (name);
-    RAISE NOTICE 'Added UNIQUE constraint on products.name';
-  END IF;
+DELETE FROM recipe_items WHERE recipe_id IN (
+  SELECT r.id FROM recipes r
+  WHERE EXISTS (SELECT 1 FROM recipes r2 WHERE r2.name = r.name AND r2.id < r.id)
+);
 
-  -- ===== RECIPES DEDUPLICATION =====
-  IF NOT recipes_constraint_exists THEN
-    -- Update meals to point to canonical recipes
-    UPDATE meals m
-    SET recipe_id = (SELECT MIN(r2.id) FROM recipes r2 WHERE r2.name = r.name)
-    FROM recipes r
-    WHERE m.recipe_id = r.id
-    AND r.id != (SELECT MIN(r2.id) FROM recipes r2 WHERE r2.name = r.name);
+DELETE FROM recipe_tags WHERE recipe_id IN (
+  SELECT r.id FROM recipes r
+  WHERE EXISTS (SELECT 1 FROM recipes r2 WHERE r2.name = r.name AND r2.id < r.id)
+);
 
-    -- Delete recipe_items for duplicate recipes
-    DELETE FROM recipe_items ri
-    WHERE EXISTS (
-      SELECT 1 FROM recipes r
-      WHERE ri.recipe_id = r.id
-      AND EXISTS (SELECT 1 FROM recipes r2 WHERE r2.name = r.name AND r2.id < r.id)
-    );
+DELETE FROM recipes r
+WHERE EXISTS (SELECT 1 FROM recipes r2 WHERE r2.name = r.name AND r2.id < r.id);
 
-    -- Delete recipe_tags for duplicate recipes
-    DELETE FROM recipe_tags rt
-    WHERE EXISTS (
-      SELECT 1 FROM recipes r
-      WHERE rt.recipe_id = r.id
-      AND EXISTS (SELECT 1 FROM recipes r2 WHERE r2.name = r.name AND r2.id < r.id)
-    );
-
-    -- Delete duplicate recipes
-    DELETE FROM recipes r
-    WHERE EXISTS (
-      SELECT 1 FROM recipes r2
-      WHERE r2.name = r.name AND r2.id < r.id
-    );
-
-    -- Add constraint
-    ALTER TABLE recipes ADD CONSTRAINT recipes_name_key UNIQUE (name);
-    RAISE NOTICE 'Added UNIQUE constraint on recipes.name';
-  END IF;
-
+DO $$ BEGIN
+  ALTER TABLE recipes ADD CONSTRAINT recipes_name_key UNIQUE (name);
+EXCEPTION WHEN duplicate_table THEN NULL;
 END $$;
