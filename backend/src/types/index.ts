@@ -435,9 +435,11 @@ export type MealPlanStatus = 'draft' | 'active' | 'completed' | 'archived';
 export interface Product {
   id: string;
   fatsecret_id?: string;
+  openfoodfacts_code?: string;
   imported_by_user_id?: string;
   name: string;
   name_short?: string;
+  brand?: string | null;
   calories: number;
   protein: number;
   fat: number;

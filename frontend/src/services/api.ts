@@ -447,6 +447,21 @@ export const api = {
       return data
     }),
 
+  // Поиск продукта по штрихкоду
+  getProductByBarcode: (barcode: string) =>
+    fetch(`${API_URL}/api/nutrition/products/barcode/${encodeURIComponent(barcode)}`, {
+      headers: {
+        'X-Telegram-Init-Data': getInitData(),
+      },
+    }).then(async (res) => {
+      const data = await res.json()
+      if (!res.ok) {
+        if (res.status === 404) return { product: null, barcode }
+        throw new Error(data.error || 'Barcode search failed')
+      }
+      return data
+    }),
+
   // Импортировать продукт из OpenFoodFacts
   importProduct: (openFoodFactsCode: string, userId?: string) =>
     fetch(`${API_URL}/api/nutrition/products/import`, {

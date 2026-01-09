@@ -216,6 +216,63 @@ export class NutritionDataService {
   }
 
   /**
+   * Получить продукт по штрихкоду (EAN-13, UPC и т.д.)
+   * Сначала ищем в локальной БД, потом в OpenFoodFacts
+   */
+  async getProductByBarcode(barcode: string): Promise<(Product & { source: 'local' | 'openfoodfacts' }) | null> {
+    // 1. Ищем в локальной БД по openfoodfacts_code
+    const localResult = await query<Product>(`
+      SELECT * FROM products WHERE openfoodfacts_code = $1 LIMIT 1
+    `, [barcode]);
+
+    if (localResult.rows.length > 0) {
+      console.log('[NutritionDataService] Продукт найден в локальной БД:', barcode);
+      return { ...localResult.rows[0], source: 'local' as const };
+    }
+
+    // 2. Если не найден - ищем в OpenFoodFacts
+    try {
+      console.log('[NutritionDataService] Ищем в OpenFoodFacts:', barcode);
+      const response = await axios.get(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`, {
+        headers: {
+          'User-Agent': 'SportTransformationApp/1.0 (https://github.com/kimurazver67/sport-transformation-app)'
+        },
+        timeout: 15000
+      });
+
+      const product = response.data.product;
+      if (!product || response.data.status !== 1) {
+        console.log('[NutritionDataService] Продукт не найден в OpenFoodFacts:', barcode);
+        return null;
+      }
+
+      // Преобразуем в наш формат
+      return {
+        id: '',
+        openfoodfacts_code: barcode,
+        name: product.product_name_ru || product.product_name || 'Неизвестный продукт',
+        brand: product.brands || null,
+        calories: Math.round(product.nutriments?.['energy-kcal_100g'] || 0),
+        protein: Math.round((product.nutriments?.proteins_100g || 0) * 10) / 10,
+        fat: Math.round((product.nutriments?.fat_100g || 0) * 10) / 10,
+        carbs: Math.round((product.nutriments?.carbohydrates_100g || 0) * 10) / 10,
+        fiber: Math.round((product.nutriments?.fiber_100g || 0) * 10) / 10,
+        category: this.detectCategory(product.categories_tags || []),
+        is_perishable: true,
+        cooking_ratio: 1.0,
+        unit: 'г',
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        source: 'openfoodfacts' as const
+      };
+    } catch (error) {
+      console.error('[NutritionDataService] Ошибка поиска по штрихкоду:', error);
+      return null;
+    }
+  }
+
+  /**
    * Получить все теги
    */
   async getAllTags() {

@@ -42,6 +42,41 @@ router.get('/products/search', async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/nutrition/products/barcode/:code
+ * Поиск продукта по штрихкоду (EAN-13, UPC и т.д.)
+ */
+router.get('/products/barcode/:code', async (req: Request, res: Response) => {
+  try {
+    const { code } = req.params;
+
+    if (!code || code.length < 8) {
+      return res.status(400).json({
+        error: 'Invalid barcode. Must be at least 8 characters.'
+      });
+    }
+
+    const product = await nutritionService.getProductByBarcode(code);
+
+    if (!product) {
+      return res.status(404).json({
+        error: 'Product not found',
+        barcode: code
+      });
+    }
+
+    return res.json({
+      product,
+      barcode: code
+    });
+  } catch (error) {
+    console.error('[Nutrition API] Barcode search error:', error);
+    res.status(500).json({
+      error: 'Failed to search by barcode'
+    });
+  }
+});
+
+/**
  * POST /api/nutrition/products/import
  * Импортировать продукт из OpenFoodFacts в локальную БД
  */

@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { api } from '../services/api';
 import type { Product } from '../types';
+import BarcodeScanner from './BarcodeScanner';
 
 interface ProductSearchModalProps {
   isOpen: boolean;
@@ -35,6 +36,8 @@ const ProductSearchModal = ({
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
+  const [showScanner, setShowScanner] = useState(false);
+  const [scannerLoading, setScannerLoading] = useState(false);
   const ITEMS_PER_PAGE = 20;
 
   const listRef = useRef<HTMLDivElement>(null);
@@ -103,6 +106,31 @@ const ProductSearchModal = ({
     }
   };
 
+  const handleBarcodeScan = async (barcode: string) => {
+    setShowScanner(false);
+    setScannerLoading(true);
+    setError(null);
+
+    try {
+      const data = await api.getProductByBarcode(barcode);
+
+      if (data.product) {
+        // Продукт найден - сразу показываем в результатах
+        setResults([data.product]);
+        setHasMore(false);
+        setQuery(`Штрихкод: ${barcode}`);
+      } else {
+        setError(`Продукт со штрихкодом ${barcode} не найден`);
+        setResults([]);
+      }
+    } catch (err) {
+      console.error('Barcode search failed:', err);
+      setError(err instanceof Error ? err.message : 'Ошибка поиска по штрихкоду');
+    } finally {
+      setScannerLoading(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -130,10 +158,26 @@ const ProductSearchModal = ({
             />
             <button
               onClick={() => handleSearch(true)}
-              disabled={loading}
+              disabled={loading || scannerLoading}
               className="brutal-button px-6 flex-shrink-0"
             >
               {loading ? '...' : 'ПОИСК'}
+            </button>
+            <button
+              onClick={() => setShowScanner(true)}
+              disabled={scannerLoading}
+              className="brutal-button px-3 flex-shrink-0"
+              title="Сканировать штрихкод"
+            >
+              {scannerLoading ? (
+                <span className="animate-pulse">...</span>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h2M4 12h2m10 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
+                  />
+                </svg>
+              )}
             </button>
           </div>
 
@@ -264,6 +308,13 @@ const ProductSearchModal = ({
           </button>
         </div>
       </div>
+
+      {/* Barcode Scanner Modal */}
+      <BarcodeScanner
+        isOpen={showScanner}
+        onClose={() => setShowScanner(false)}
+        onScan={handleBarcodeScan}
+      />
     </div>
   );
 };
