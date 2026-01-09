@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Use ORDER BY LIMIT 1 instead of MIN() for UUID columns
 • Исправлено: Simplify 015a migration to plain SQL statements
 • Исправлено: Make 015a migration handle all FK references before deleting
 • Исправлено: Remove orphan ON CONFLICT statement in 015_seed_tags.sql
 • Исправлено: Update recipe_items/meals before deleting duplicate products/recipes
-• Исправлено: Rename 014b to 015a to ensure it runs before 016_seed_products
 
-09.01.2026 12:14
+09.01.2026 12:23
