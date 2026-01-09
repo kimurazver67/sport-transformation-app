@@ -1,9 +1,9 @@
 Последние изменения:
 
+• debug: Add first-recipe endpoint
 • debug: Add recipe calories debug endpoint
 • Исправлено: Recalculate meal calories from ingredients in API response
 • Исправлено: Parse PostgreSQL DECIMAL strings to numbers in mealPlanGenerator
 • Исправлено: Improve ProductSearchModal layout and add infinite scroll
-• Исправлено: Add debug endpoint for reseeding products
 
-09.01.2026 09:31
+09.01.2026 09:33

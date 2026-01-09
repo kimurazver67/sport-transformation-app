@@ -1434,6 +1434,40 @@ router.post('/debug/reseed-products', async (req: Request, res: Response) => {
 });
 
 /**
+ * POST /api/nutrition/debug/fix-recipe-duplicates
+ * Удалить дубликаты в recipe_items
+ */
+router.post('/debug/fix-recipe-duplicates', async (req: Request, res: Response) => {
+  try {
+    // Подсчитываем дубликаты до
+    const beforeCount = await pool.query('SELECT COUNT(*) FROM recipe_items');
+
+    // Удаляем дубликаты, оставляя только одну запись для каждой комбинации recipe_id + product_id
+    await pool.query(`
+      DELETE FROM recipe_items
+      WHERE id NOT IN (
+        SELECT MIN(id)
+        FROM recipe_items
+        GROUP BY recipe_id, product_id
+      )
+    `);
+
+    // Подсчитываем после
+    const afterCount = await pool.query('SELECT COUNT(*) FROM recipe_items');
+
+    res.json({
+      message: 'Duplicates removed',
+      before: parseInt(beforeCount.rows[0].count),
+      after: parseInt(afterCount.rows[0].count),
+      removed: parseInt(beforeCount.rows[0].count) - parseInt(afterCount.rows[0].count)
+    });
+  } catch (error) {
+    console.error('[Debug] Fix duplicates error:', error);
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+/**
  * GET /api/nutrition/debug/first-recipe
  * Получить первый рецепт с калориями для отладки
  */
