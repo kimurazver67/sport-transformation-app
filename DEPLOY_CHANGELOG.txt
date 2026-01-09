@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Use ctid for removing recipe_items duplicates
 • Исправлено: Add endpoint to remove recipe_items duplicates
 • debug: Add first-recipe endpoint
 • debug: Add recipe calories debug endpoint
 • Исправлено: Recalculate meal calories from ingredients in API response
-• Исправлено: Parse PostgreSQL DECIMAL strings to numbers in mealPlanGenerator
 
-09.01.2026 09:36
+09.01.2026 09:38
