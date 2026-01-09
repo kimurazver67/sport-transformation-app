@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Add 014b migration to create UNIQUE constraints before seed migrations
 • Исправлено: Simplify migration 025 with EXISTS-based deduplication
 • Исправлено: Simplify migration 025 using temp tables instead of CTEs
 • Исправлено: Make migration 025 remove duplicates before adding unique constraints
 • Исправлено: Make нижняя навигацияigation horizontally scrollable for 8+ items
-• Исправлено: Add UNIQUE constraints and ON CONFLICT to prevent seed duplicates
 
-09.01.2026 10:41
+09.01.2026 10:46
