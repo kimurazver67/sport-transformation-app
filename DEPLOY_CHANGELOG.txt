@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Recalculate meal calories from ingredients in API response
 • Исправлено: Parse PostgreSQL DECIMAL strings to numbers in mealPlanGenerator
 • Исправлено: Improve ProductSearchModal layout and add infinite scroll
 • Исправлено: Add debug endpoint for reseeding products
 • Исправлено: Add reseed migration for products after schema change
-• Исправлено: Update migration 014 to use openfoodfacts instead of fatsecret
 
-09.01.2026 09:02
+09.01.2026 09:25

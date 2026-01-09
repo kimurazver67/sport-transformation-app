@@ -1433,4 +1433,65 @@ router.post('/debug/reseed-products', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * GET /api/nutrition/debug/recipe-calories/:recipeId
+ * Отладка расчёта калорий рецепта
+ */
+router.get('/debug/recipe-calories/:recipeId', async (req: Request, res: Response) => {
+  try {
+    const { recipeId } = req.params;
+
+    // Получаем рецепт и его ингредиенты
+    const recipeResult = await pool.query(`
+      SELECT r.id, r.name, r.cached_calories, r.cached_protein, r.cached_fat, r.cached_carbs
+      FROM recipes r WHERE r.id = $1
+    `, [recipeId]);
+
+    if (recipeResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Recipe not found' });
+    }
+
+    // Получаем ингредиенты с их КБЖУ
+    const itemsResult = await pool.query(`
+      SELECT
+        ri.amount_grams,
+        p.name as product_name,
+        p.calories,
+        p.protein,
+        p.fat,
+        p.carbs,
+        (p.calories * ri.amount_grams / 100.0) as calc_calories,
+        (p.protein * ri.amount_grams / 100.0) as calc_protein,
+        (p.fat * ri.amount_grams / 100.0) as calc_fat,
+        (p.carbs * ri.amount_grams / 100.0) as calc_carbs,
+        pg_typeof(p.calories) as calories_type,
+        pg_typeof(ri.amount_grams) as amount_type
+      FROM recipe_items ri
+      JOIN products p ON ri.product_id = p.id
+      WHERE ri.recipe_id = $1
+    `, [recipeId]);
+
+    // Считаем итого
+    const totals = await pool.query(`
+      SELECT
+        ROUND(SUM(p.calories * ri.amount_grams / 100.0)) as total_calories,
+        ROUND(SUM(p.protein * ri.amount_grams / 100.0)) as total_protein,
+        ROUND(SUM(p.fat * ri.amount_grams / 100.0)) as total_fat,
+        ROUND(SUM(p.carbs * ri.amount_grams / 100.0)) as total_carbs
+      FROM recipe_items ri
+      JOIN products p ON ri.product_id = p.id
+      WHERE ri.recipe_id = $1
+    `, [recipeId]);
+
+    res.json({
+      recipe: recipeResult.rows[0],
+      items: itemsResult.rows,
+      calculated_totals: totals.rows[0]
+    });
+  } catch (error) {
+    console.error('[Debug] Recipe calories error:', error);
+    res.status(500).json({ error: 'Failed to calculate recipe calories' });
+  }
+});
+
 export default router;
