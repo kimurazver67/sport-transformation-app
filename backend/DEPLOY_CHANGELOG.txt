@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Add debug endpoint for reseeding products
 • Исправлено: Add reseed migration for products after schema change
 • Исправлено: Update migration 014 to use openfoodfacts instead of fatsecret
 • Исправлено: Make migration idempotent
 • Исправлено: Fix OpenFoodFacts product import
-• Добавлено: Replace FatSecret with OpenFoodFacts in фронтенд
 
-08.01.2026 23:35
+08.01.2026 23:39

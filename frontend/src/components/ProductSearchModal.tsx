@@ -1,6 +1,6 @@
 // frontend/src/components/ProductSearchModal.tsx
 
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { api } from '../services/api';
 import type { Product } from '../types';
 
@@ -12,6 +12,14 @@ interface ProductSearchModalProps {
   title?: string;
 }
 
+// Декодирование HTML entities
+const decodeHtmlEntities = (text: string): string => {
+  if (!text) return text;
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = text;
+  return textarea.value;
+};
+
 const ProductSearchModal = ({
   isOpen,
   onClose,
@@ -22,29 +30,67 @@ const ProductSearchModal = ({
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Array<Product & { source: 'local' | 'openfoodfacts' }>>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [source, setSource] = useState<'all' | 'local' | 'openfoodfacts'>('all');
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [offset, setOffset] = useState(0);
+  const ITEMS_PER_PAGE = 20;
 
-  const handleSearch = async () => {
+  const listRef = useRef<HTMLDivElement>(null);
+
+  const handleSearch = async (reset = true) => {
     if (query.length < 2) {
       setError('Введите минимум 2 символа');
       return;
     }
 
-    setLoading(true);
+    if (reset) {
+      setLoading(true);
+      setResults([]);
+      setOffset(0);
+      setHasMore(true);
+    } else {
+      setLoadingMore(true);
+    }
     setError(null);
 
     try {
-      const data = await api.searchProducts(query, source, 20);
-      setResults(data.products || []);
+      const newOffset = reset ? 0 : offset;
+      const data = await api.searchProducts(query, source, ITEMS_PER_PAGE + newOffset);
+
+      // Получаем только новые результаты
+      const newProducts = reset ? (data.products || []) : (data.products || []).slice(newOffset);
+
+      if (reset) {
+        setResults(newProducts);
+      } else {
+        setResults(prev => [...prev, ...newProducts.slice(prev.length - newOffset)]);
+      }
+
+      // Если вернулось меньше чем запросили - значит больше нет
+      setHasMore((data.products || []).length >= ITEMS_PER_PAGE + newOffset);
+      setOffset(newOffset + ITEMS_PER_PAGE);
     } catch (err) {
       console.error('Search failed:', err);
       setError(err instanceof Error ? err.message : 'Ошибка поиска');
-      setResults([]);
+      if (reset) setResults([]);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
+
+  const handleScroll = useCallback(() => {
+    if (!listRef.current || loadingMore || !hasMore || loading) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = listRef.current;
+
+    // Загружаем больше когда до конца осталось 100px
+    if (scrollHeight - scrollTop - clientHeight < 100) {
+      handleSearch(false);
+    }
+  }, [loadingMore, hasMore, loading, offset, query, source]);
 
   const handleSelect = async (product: Product & { source: 'local' | 'openfoodfacts' }) => {
     onSelect(product);
@@ -53,7 +99,7 @@ const ProductSearchModal = ({
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !loading) {
-      handleSearch();
+      handleSearch(true);
     }
   };
 
@@ -61,16 +107,16 @@ const ProductSearchModal = ({
 
   return (
     <div className="fixed inset-0 bg-void/90 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="brutal-card max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+      <div className="brutal-card max-w-2xl w-full max-h-[85vh] flex flex-col">
         {/* Header */}
-        <div className="p-4 border-b-2 border-void-400">
+        <div className="p-4 border-b-2 border-void-400 flex-shrink-0">
           <h2 className="font-display font-bold text-steel-100 text-xl uppercase">
             {title}
           </h2>
         </div>
 
         {/* Search Bar */}
-        <div className="p-4 border-b border-void-400">
+        <div className="p-4 border-b border-void-400 flex-shrink-0">
           <div className="flex gap-2">
             <input
               type="text"
@@ -83,16 +129,16 @@ const ProductSearchModal = ({
               autoFocus
             />
             <button
-              onClick={handleSearch}
+              onClick={() => handleSearch(true)}
               disabled={loading}
-              className="brutal-button px-6"
+              className="brutal-button px-6 flex-shrink-0"
             >
-              {loading ? 'ПОИСК...' : 'ПОИСК'}
+              {loading ? '...' : 'ПОИСК'}
             </button>
           </div>
 
           {/* Source Filter */}
-          <div className="flex gap-2 mt-3">
+          <div className="flex gap-2 mt-3 flex-wrap">
             <button
               onClick={() => setSource('all')}
               className={`font-mono text-xs px-3 py-1 border ${
@@ -133,15 +179,19 @@ const ProductSearchModal = ({
           )}
         </div>
 
-        {/* Results */}
-        <div className="p-4 space-y-2 max-h-[400px] overflow-y-auto">
+        {/* Results - scrollable area */}
+        <div
+          ref={listRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0"
+        >
           {results.length === 0 && !loading && !error && (
             <p className="font-mono text-sm text-steel-500 text-center py-8">
               Введите запрос для поиска продуктов
             </p>
           )}
 
-          {loading && (
+          {loading && results.length === 0 && (
             <div className="flex items-center justify-center py-8">
               <div className="text-neon-lime font-mono text-sm animate-pulse">
                 Поиск продуктов...
@@ -154,18 +204,14 @@ const ProductSearchModal = ({
               key={product.id || product.openfoodfacts_code || index}
               className="bg-void-300 border border-void-400 p-3 hover:border-neon-lime transition-colors"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-mono text-sm font-bold text-steel-100">
-                      {product.name}
+              <div className="flex items-start gap-2">
+                {/* Product info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start gap-2 flex-wrap">
+                    <h3 className="font-mono text-sm font-bold text-steel-100 break-words line-clamp-2">
+                      {decodeHtmlEntities(product.name)}
                     </h3>
-                    {product.brand && (
-                      <span className="font-mono text-xs text-steel-500">
-                        ({product.brand})
-                      </span>
-                    )}
-                    <span className={`font-mono text-xs px-2 py-0.5 ${
+                    <span className={`font-mono text-xs px-1.5 py-0.5 flex-shrink-0 ${
                       product.source === 'local'
                         ? 'bg-neon-lime/20 text-neon-lime'
                         : 'bg-neon-cyan/20 text-neon-cyan'
@@ -173,26 +219,46 @@ const ProductSearchModal = ({
                       {product.source === 'local' ? 'БД' : 'OFF'}
                     </span>
                   </div>
+                  {product.brand && (
+                    <p className="font-mono text-xs text-steel-500 mt-0.5 truncate">
+                      {decodeHtmlEntities(product.brand)}
+                    </p>
+                  )}
                   <p className="font-mono text-xs text-steel-400 mt-1">
-                    {Math.round(Number(product.calories))} ккал |
-                    Б: {Math.round(Number(product.protein))}г |
-                    Ж: {Math.round(Number(product.fat))}г |
-                    У: {Math.round(Number(product.carbs))}г
+                    {Math.round(Number(product.calories))} ккал | Б: {Math.round(Number(product.protein))}г | Ж: {Math.round(Number(product.fat))}г | У: {Math.round(Number(product.carbs))}г
                   </p>
                 </div>
+
+                {/* Add button */}
                 <button
                   onClick={() => handleSelect(product)}
-                  className="brutal-button-sm ml-4"
+                  className="brutal-button-sm flex-shrink-0 text-xs whitespace-nowrap"
                 >
-                  {mode === 'exclude' ? '+ ИСКЛЮЧИТЬ' : mode === 'replace' ? 'ЗАМЕНИТЬ' : '+ ДОБАВИТЬ'}
+                  {mode === 'exclude' ? '+ ИСКЛ' : mode === 'replace' ? 'ЗАМЕН' : '+ ДОБ'}
                 </button>
               </div>
             </div>
           ))}
+
+          {/* Loading more indicator */}
+          {loadingMore && (
+            <div className="flex items-center justify-center py-4">
+              <div className="text-neon-lime font-mono text-xs animate-pulse">
+                Загрузка...
+              </div>
+            </div>
+          )}
+
+          {/* End of results */}
+          {!hasMore && results.length > 0 && (
+            <p className="font-mono text-xs text-steel-500 text-center py-4">
+              Показано {results.length} продуктов
+            </p>
+          )}
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t-2 border-void-400">
+        <div className="p-4 border-t-2 border-void-400 flex-shrink-0">
           <button onClick={onClose} className="brutal-button w-full">
             ЗАКРЫТЬ
           </button>
