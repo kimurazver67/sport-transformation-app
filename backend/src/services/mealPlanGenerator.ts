@@ -141,7 +141,8 @@ export class MealPlanGenerator {
     for (const item of recipe.items) {
       const haveGrams = inventoryMap.get(item.product_id) || 0;
       // Считаем покрытым если есть хотя бы 50% нужного количества
-      if (haveGrams >= (item.amount_grams || 0) * 0.5) {
+      // PostgreSQL DECIMAL returns as string
+      if (haveGrams >= Number(item.amount_grams || 0) * 0.5) {
         coveredItems++;
       }
     }
@@ -573,22 +574,24 @@ export class MealPlanGenerator {
     const items = Array.isArray(rawItems) ? rawItems.filter(item => item && item.product) : [];
 
     if (items.length === 0) {
+      // PostgreSQL DECIMAL returns as string, need to parse to number
       return {
-        calories: recipe.cached_calories || 0,
-        protein: recipe.cached_protein || 0,
-        fat: recipe.cached_fat || 0,
-        carbs: recipe.cached_carbs || 0,
+        calories: Number(recipe.cached_calories || 0),
+        protein: Number(recipe.cached_protein || 0),
+        fat: Number(recipe.cached_fat || 0),
+        carbs: Number(recipe.cached_carbs || 0),
       };
     }
 
     const nutrition = items.reduce((acc, item) => {
       const product = item.product;
-      const ratio = (item.amount_grams || 0) / 100;
+      // PostgreSQL DECIMAL returns as string, need to parse to number
+      const ratio = Number(item.amount_grams || 0) / 100;
       return {
-        calories: acc.calories + ((product.calories || 0) * ratio),
-        protein: acc.protein + ((product.protein || 0) * ratio),
-        fat: acc.fat + ((product.fat || 0) * ratio),
-        carbs: acc.carbs + ((product.carbs || 0) * ratio),
+        calories: acc.calories + (Number(product.calories || 0) * ratio),
+        protein: acc.protein + (Number(product.protein || 0) * ratio),
+        fat: acc.fat + (Number(product.fat || 0) * ratio),
+        carbs: acc.carbs + (Number(product.carbs || 0) * ratio),
       };
     }, { calories: 0, protein: 0, fat: 0, carbs: 0 });
 
@@ -632,10 +635,10 @@ export class MealPlanGenerator {
       const portion = (meal.recipe as any).portion || 1;
 
       const nutrition = (meal.recipe as any).nutrition || {
-        calories: meal.recipe.cached_calories || 0,
-        protein: meal.recipe.cached_protein || 0,
-        fat: meal.recipe.cached_fat || 0,
-        carbs: meal.recipe.cached_carbs || 0,
+        calories: Number(meal.recipe.cached_calories || 0),
+        protein: Number(meal.recipe.cached_protein || 0),
+        fat: Number(meal.recipe.cached_fat || 0),
+        carbs: Number(meal.recipe.cached_carbs || 0),
       };
 
       await this.pool.query(`

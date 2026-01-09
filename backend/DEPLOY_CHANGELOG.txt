@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Improve ProductSearchModal layout and add infinite scroll
 • Исправлено: Add debug endpoint for reseeding products
 • Исправлено: Add reseed migration for products after schema change
 • Исправлено: Update migration 014 to use openfoodfacts instead of fatsecret
 • Исправлено: Make migration idempotent
-• Исправлено: Fix OpenFoodFacts product import
 
-08.01.2026 23:39
+09.01.2026 08:41
