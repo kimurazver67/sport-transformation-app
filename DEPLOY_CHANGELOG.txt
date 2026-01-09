@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Make migration 025 remove duplicates before adding unique constraints
 • Исправлено: Make нижняя навигацияigation horizontally scrollable for 8+ items
 • Исправлено: Add UNIQUE constraints and ON CONFLICT to prevent seed duplicates
 • Исправлено: Add endpoint to fix all duplicates (products + recipe_items)
 • debug: Check product duplicates
-• Исправлено: Dedupe recipe_items using temp table approach
 
-09.01.2026 10:23
+09.01.2026 10:30

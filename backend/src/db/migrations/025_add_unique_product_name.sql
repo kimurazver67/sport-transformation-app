@@ -2,70 +2,60 @@
 -- Date: 2026-01-09
 -- Description: Remove duplicate products/recipes and add unique constraints
 
--- Step 1: Remove duplicate products (keep the one with lowest id)
--- First, update recipe_items to point to canonical product
-WITH duplicates AS (
-  SELECT name, MIN(id) as keep_id
-  FROM products
-  GROUP BY name
-  HAVING COUNT(*) > 1
-),
-mapping AS (
-  SELECT p.id as old_id, d.keep_id as new_id
-  FROM products p
-  JOIN duplicates d ON p.name = d.name
-  WHERE p.id != d.keep_id
-)
+-- Step 1: Create temp table with product id mapping (old_id -> new_id)
+CREATE TEMP TABLE IF NOT EXISTS product_mapping AS
+SELECT p.id as old_id, (
+  SELECT MIN(p2.id) FROM products p2 WHERE p2.name = p.name
+) as new_id
+FROM products p
+WHERE p.id != (SELECT MIN(p2.id) FROM products p2 WHERE p2.name = p.name);
+
+-- Step 2: Update recipe_items to point to canonical products
 UPDATE recipe_items ri
-SET product_id = m.new_id
-FROM mapping m
-WHERE ri.product_id = m.old_id;
+SET product_id = pm.new_id
+FROM product_mapping pm
+WHERE ri.product_id = pm.old_id;
 
--- Delete duplicate products
+-- Step 3: Delete duplicate products
 DELETE FROM products
-WHERE id NOT IN (
-  SELECT MIN(id) FROM products GROUP BY name
-);
+WHERE id IN (SELECT old_id FROM product_mapping);
 
--- Step 2: Remove duplicate recipes (keep the one with lowest id)
--- First, update meals to point to canonical recipe
-WITH duplicates AS (
-  SELECT name, MIN(id) as keep_id
-  FROM recipes
-  GROUP BY name
-  HAVING COUNT(*) > 1
-),
-mapping AS (
-  SELECT r.id as old_id, d.keep_id as new_id
-  FROM recipes r
-  JOIN duplicates d ON r.name = d.name
-  WHERE r.id != d.keep_id
-)
+-- Step 4: Drop temp table
+DROP TABLE IF EXISTS product_mapping;
+
+-- Step 5: Create temp table for recipe mapping
+CREATE TEMP TABLE IF NOT EXISTS recipe_mapping AS
+SELECT r.id as old_id, (
+  SELECT MIN(r2.id) FROM recipes r2 WHERE r2.name = r.name
+) as new_id
+FROM recipes r
+WHERE r.id != (SELECT MIN(r2.id) FROM recipes r2 WHERE r2.name = r.name);
+
+-- Step 6: Update meals to point to canonical recipes
 UPDATE meals m
-SET recipe_id = mapping.new_id
-FROM mapping
-WHERE m.recipe_id = mapping.old_id;
+SET recipe_id = rm.new_id
+FROM recipe_mapping rm
+WHERE m.recipe_id = rm.old_id;
 
--- Delete duplicate recipe_items for recipes that will be deleted
+-- Step 7: Delete recipe_items for recipes that will be deleted
 DELETE FROM recipe_items
-WHERE recipe_id NOT IN (
-  SELECT MIN(id) FROM recipes GROUP BY name
-);
+WHERE recipe_id IN (SELECT old_id FROM recipe_mapping);
 
--- Delete duplicate recipes
+-- Step 8: Delete duplicate recipes
 DELETE FROM recipes
-WHERE id NOT IN (
-  SELECT MIN(id) FROM recipes GROUP BY name
-);
+WHERE id IN (SELECT old_id FROM recipe_mapping);
 
--- Step 3: Also remove duplicate recipe_items (same recipe_id + product_id)
+-- Step 9: Drop temp table
+DROP TABLE IF EXISTS recipe_mapping;
+
+-- Step 10: Remove duplicate recipe_items (same recipe_id + product_id)
 DELETE FROM recipe_items ri1
 USING recipe_items ri2
 WHERE ri1.ctid > ri2.ctid
   AND ri1.recipe_id = ri2.recipe_id
   AND ri1.product_id = ri2.product_id;
 
--- Step 4: Add unique constraint on product name
+-- Step 11: Add unique constraint on product name
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -75,7 +65,7 @@ BEGIN
   END IF;
 END $$;
 
--- Step 5: Add unique constraint on recipes.name
+-- Step 12: Add unique constraint on recipes.name
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -85,7 +75,7 @@ BEGIN
   END IF;
 END $$;
 
--- Step 6: Add unique constraint on recipe_items (recipe_id + product_id)
+-- Step 13: Add unique constraint on recipe_items (recipe_id + product_id)
 DO $$
 BEGIN
   IF NOT EXISTS (
