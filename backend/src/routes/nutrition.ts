@@ -408,6 +408,7 @@ router.get('/meal-plans/:mealPlanId', async (req: Request, res: Response) => {
     const plan = planResult.rows[0];
 
     // Получаем все дни с приёмами пищи
+    // Калории пересчитываем из ингредиентов (избегаем ошибок кэшированных значений)
     const daysResult = await pool.query(`
       SELECT
         md.*,
@@ -416,10 +417,30 @@ router.get('/meal-plans/:mealPlanId', async (req: Request, res: Response) => {
             'id', m.id,
             'meal_type', m.meal_type,
             'portion_multiplier', m.portion_multiplier,
-            'calories', m.calories,
-            'protein', m.protein,
-            'fat', m.fat,
-            'carbs', m.carbs,
+            'calories', COALESCE((
+              SELECT ROUND(SUM(p.calories * ri.amount_grams / 100.0 * m.portion_multiplier))
+              FROM recipe_items ri
+              JOIN products p ON ri.product_id = p.id
+              WHERE ri.recipe_id = r.id
+            ), m.calories),
+            'protein', COALESCE((
+              SELECT ROUND(SUM(p.protein * ri.amount_grams / 100.0 * m.portion_multiplier))
+              FROM recipe_items ri
+              JOIN products p ON ri.product_id = p.id
+              WHERE ri.recipe_id = r.id
+            ), m.protein),
+            'fat', COALESCE((
+              SELECT ROUND(SUM(p.fat * ri.amount_grams / 100.0 * m.portion_multiplier))
+              FROM recipe_items ri
+              JOIN products p ON ri.product_id = p.id
+              WHERE ri.recipe_id = r.id
+            ), m.fat),
+            'carbs', COALESCE((
+              SELECT ROUND(SUM(p.carbs * ri.amount_grams / 100.0 * m.portion_multiplier))
+              FROM recipe_items ri
+              JOIN products p ON ri.product_id = p.id
+              WHERE ri.recipe_id = r.id
+            ), m.carbs),
             'recipe', json_build_object(
               'id', r.id,
               'name', r.name,
@@ -466,9 +487,25 @@ router.get('/meal-plans/:mealPlanId', async (req: Request, res: Response) => {
       ORDER BY md.week_number, md.day_number
     `, [mealPlanId]);
 
+    // Пересчитываем total для дней на основе пересчитанных значений meals
+    const daysWithRecalculatedTotals = daysResult.rows.map(day => {
+      const meals = day.meals || [];
+      const totals = meals.reduce((acc: any, meal: any) => ({
+        total_calories: acc.total_calories + Number(meal.calories || 0),
+        total_protein: acc.total_protein + Number(meal.protein || 0),
+        total_fat: acc.total_fat + Number(meal.fat || 0),
+        total_carbs: acc.total_carbs + Number(meal.carbs || 0),
+      }), { total_calories: 0, total_protein: 0, total_fat: 0, total_carbs: 0 });
+
+      return {
+        ...day,
+        ...totals
+      };
+    });
+
     res.json({
       plan,
-      days: daysResult.rows
+      days: daysWithRecalculatedTotals
     });
   } catch (error) {
     console.error('[Nutrition API] Get meal plan error:', error);

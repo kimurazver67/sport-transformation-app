@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Parse PostgreSQL DECIMAL strings to numbers in mealPlanGenerator
 • Исправлено: Improve ProductSearchModal layout and add infinite scroll
 • Исправлено: Add debug endpoint for reseeding products
 • Исправлено: Add reseed migration for products after schema change
 • Исправлено: Update migration 014 to use openfoodfacts instead of fatsecret
-• Исправлено: Make migration idempotent
 
-09.01.2026 08:41
+09.01.2026 09:02
