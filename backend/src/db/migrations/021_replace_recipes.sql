@@ -24,6 +24,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -50,6 +51,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -76,6 +78,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -103,6 +106,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -128,6 +132,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -154,6 +159,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -179,6 +185,7 @@ WITH new_recipe AS (
     'medium',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -207,6 +214,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -233,6 +241,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -260,6 +269,7 @@ WITH new_recipe AS (
     'medium',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -285,6 +295,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -311,6 +322,7 @@ WITH new_recipe AS (
     'medium',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -339,6 +351,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -365,6 +378,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -392,6 +406,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -422,6 +437,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -447,6 +463,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -470,6 +487,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -494,6 +512,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -518,6 +537,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -545,6 +565,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -571,6 +592,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -597,6 +619,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -622,6 +645,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -646,6 +670,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -671,6 +696,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -698,6 +724,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -725,6 +752,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -750,6 +778,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -776,6 +805,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -804,6 +834,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -830,6 +861,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -856,6 +888,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -883,6 +916,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -911,6 +945,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -936,6 +971,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -962,6 +998,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -990,6 +1027,7 @@ WITH new_recipe AS (
     'medium',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -1019,6 +1057,7 @@ WITH new_recipe AS (
     'medium',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -1046,6 +1085,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -1073,6 +1113,7 @@ WITH new_recipe AS (
     'medium',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -1100,6 +1141,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -1126,6 +1168,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -1153,6 +1196,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -1179,6 +1223,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -1208,6 +1253,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -1235,6 +1281,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -1261,6 +1308,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -1288,6 +1336,7 @@ WITH new_recipe AS (
     'medium',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -1316,6 +1365,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -1341,6 +1391,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -1368,6 +1419,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -1394,6 +1446,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -1420,6 +1473,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -1447,6 +1501,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -1473,6 +1528,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -1500,6 +1556,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -1526,6 +1583,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -1554,6 +1612,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)
@@ -1582,6 +1641,7 @@ WITH new_recipe AS (
     'simple',
     1
   )
+  ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
   RETURNING id
 )
 INSERT INTO recipe_items (recipe_id, product_id, amount_grams)

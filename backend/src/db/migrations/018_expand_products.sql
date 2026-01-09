@@ -19,7 +19,8 @@ INSERT INTO products (name, calories, protein, fat, carbs, fiber, category, is_p
 ('Оленина', 134, 21.4, 4.5, 0, 0, 'meat', true, 0.72),
 ('Конина', 143, 19.5, 7.1, 0, 0, 'meat', true, 0.70),
 ('Язык говяжий', 173, 16.0, 12.1, 0, 0, 'meat', true, 0.80),
-('Печень говяжья', 127, 17.9, 3.7, 5.3, 0, 'meat', true, 0.85);
+('Печень говяжья', 127, 17.9, 3.7, 5.3, 0, 'meat', true, 0.85)
+ON CONFLICT (name) DO NOTHING;
 
 -- ===== ПТИЦА (POULTRY) - дополнительно 10 позиций =====
 
@@ -33,7 +34,8 @@ INSERT INTO products (name, calories, protein, fat, carbs, fiber, category, is_p
 ('Утка (грудка)', 308, 15.8, 28.6, 0, 0, 'poultry', true, 0.65),
 ('Гусь', 161, 16.4, 7.1, 0, 0, 'poultry', true, 0.70),
 ('Перепелка', 134, 21.8, 4.5, 0, 0, 'poultry', true, 0.72),
-('Цесарка', 110, 20.6, 2.5, 0, 0, 'poultry', true, 0.75);
+('Цесарка', 110, 20.6, 2.5, 0, 0, 'poultry', true, 0.75)
+ON CONFLICT (name) DO NOTHING;
 
 -- ===== РЫБА (FISH) - дополнительно 20 позиций =====
 
@@ -57,7 +59,8 @@ INSERT INTO products (name, calories, protein, fat, carbs, fiber, category, is_p
 ('Камбала', 83, 16.5, 1.8, 0, 0, 'fish', true, 0.82),
 ('Треска', 69, 16.0, 0.6, 0, 0, 'fish', true, 0.85),
 ('Налим', 81, 18.8, 0.6, 0, 0, 'fish', true, 0.82),
-('Сом', 115, 16.8, 5.1, 0, 0, 'fish', true, 0.78);
+('Сом', 115, 16.8, 5.1, 0, 0, 'fish', true, 0.78)
+ON CONFLICT (name) DO NOTHING;
 
 -- ===== МОРЕПРОДУКТЫ (SEAFOOD) - дополнительно 12 позиций =====
 
@@ -73,7 +76,8 @@ INSERT INTO products (name, calories, protein, fat, carbs, fiber, category, is_p
 ('Морские гребешки', 88, 17.0, 0.5, 3.2, 0, 'seafood', true, 0.90),
 ('Икра красная (горбуша)', 252, 31.6, 13.8, 0, 0, 'seafood', true, 1.0),
 ('Икра чёрная', 203, 28.0, 9.7, 0, 0, 'seafood', true, 1.0),
-('Морская капуста', 25, 0.9, 0.2, 3.0, 0.6, 'seafood', true, 1.0);
+('Морская капуста', 25, 0.9, 0.2, 3.0, 0.6, 'seafood', true, 1.0)
+ON CONFLICT (name) DO NOTHING;
 
 -- ===== МОЛОЧНЫЕ ПРОДУКТЫ (DAIRY) - дополнительно 30 позиций =====
 
@@ -107,7 +111,8 @@ INSERT INTO products (name, calories, protein, fat, carbs, fiber, category, is_p
 ('Сыр Камамбер', 291, 20.9, 23.7, 0.1, 0, 'dairy', true, 1.0),
 ('Сыр Бри', 334, 20.7, 27.7, 0.5, 0, 'dairy', true, 1.0),
 ('Сыр Дор Блю', 354, 21.0, 30.0, 0, 0, 'dairy', true, 1.0),
-('Брынза 20%', 260, 17.9, 20.1, 0, 0, 'dairy', true, 1.0);
+('Брынза 20%', 260, 17.9, 20.1, 0, 0, 'dairy', true, 1.0)
+ON CONFLICT (name) DO NOTHING;
 
 -- ===== ЯЙЦА (EGGS) - дополнительно 5 позиций =====
 
@@ -116,7 +121,8 @@ INSERT INTO products (name, calories, protein, fat, carbs, fiber, category, is_p
 ('Яйцо куриное С2', 143, 12.7, 10.9, 0.7, 0, 'eggs', true, 0.90),
 ('Яйцо перепелиное', 168, 11.9, 13.1, 0.6, 0, 'eggs', true, 0.92),
 ('Яичный белок', 44, 11.1, 0, 0, 0, 'eggs', true, 0.95),
-('Яичный желток', 322, 16.2, 26.5, 3.6, 0, 'eggs', true, 1.0);
+('Яичный желток', 322, 16.2, 26.5, 3.6, 0, 'eggs', true, 1.0)
+ON CONFLICT (name) DO NOTHING;
 
 -- ===== КРУПЫ (GRAINS) - дополнительно 15 позиций =====
 
@@ -135,7 +141,8 @@ INSERT INTO products (name, calories, protein, fat, carbs, fiber, category, is_p
 ('Полба', 338, 14.6, 2.4, 70.2, 10.7, 'grains', false, 2.5),
 ('Амарант', 371, 13.6, 7.0, 65.3, 6.7, 'grains', false, 2.8),
 ('Чиа семена', 486, 16.5, 30.7, 42.1, 34.4, 'grains', false, 1.0),
-('Льняное семя', 534, 18.3, 42.2, 28.9, 27.3, 'grains', false, 1.0);
+('Льняное семя', 534, 18.3, 42.2, 28.9, 27.3, 'grains', false, 1.0)
+ON CONFLICT (name) DO NOTHING;
 
 -- ===== МАКАРОНЫ (PASTA) - дополнительно 7 позиций =====
 
@@ -146,7 +153,8 @@ INSERT INTO products (name, calories, protein, fat, carbs, fiber, category, is_p
 ('Паста цельнозерновая', 352, 11.9, 2.9, 71.2, 10.1, 'pasta', false, 2.3),
 ('Лапша соба (гречневая)', 336, 14.7, 0.9, 70.5, 4.0, 'pasta', false, 2.8),
 ('Лапша удон', 352, 9.0, 0.7, 77.9, 2.4, 'pasta', false, 2.6),
-('Фунчоза (стеклянная)', 351, 0.5, 0.1, 86.9, 0.5, 'pasta', false, 3.0);
+('Фунчоза (стеклянная)', 351, 0.5, 0.1, 86.9, 0.5, 'pasta', false, 3.0)
+ON CONFLICT (name) DO NOTHING;
 
 -- ===== ХЛЕБ (BREAD) - дополнительно 15 позиций =====
 
@@ -165,7 +173,8 @@ INSERT INTO products (name, calories, protein, fat, carbs, fiber, category, is_p
 ('Хлебцы ржаные', 310, 11.0, 2.7, 57.1, 18.0, 'bread', false, 1.0),
 ('Хлебцы рисовые', 387, 8.7, 2.9, 81.5, 4.0, 'bread', false, 1.0),
 ('Панировочные сухари', 347, 11.3, 1.5, 72.1, 4.0, 'bread', false, 1.0),
-('Гренки белые', 331, 11.2, 5.8, 60.1, 3.5, 'bread', false, 1.0);
+('Гренки белые', 331, 11.2, 5.8, 60.1, 3.5, 'bread', false, 1.0)
+ON CONFLICT (name) DO NOTHING;
 
 -- ===== ОВОЩИ (VEGETABLES) - дополнительно 40 позиций =====
 
@@ -209,7 +218,8 @@ INSERT INTO products (name, calories, protein, fat, carbs, fiber, category, is_p
 ('Щавель', 22, 1.5, 0.3, 2.9, 2.8, 'vegetables', true, 0.95),
 ('Черемша (дикий чеснок)', 36, 2.4, 0.1, 6.5, 1.0, 'vegetables', true, 0.95),
 ('Ревень', 21, 0.9, 0.2, 4.5, 1.8, 'vegetables', true, 0.95),
-('Грибы шампиньоны жареные', 50, 4.2, 1.4, 4.6, 2.6, 'vegetables', true, 0.65);
+('Грибы шампиньоны жареные', 50, 4.2, 1.4, 4.6, 2.6, 'vegetables', true, 0.65)
+ON CONFLICT (name) DO NOTHING;
 
 -- ===== ФРУКТЫ (FRUITS) - дополнительно 35 позиций =====
 
@@ -248,7 +258,8 @@ INSERT INTO products (name, calories, protein, fat, carbs, fiber, category, is_p
 ('Киви', 61, 1.1, 0.5, 14.7, 3.0, 'fruits', true, 1.0),
 ('Личи', 66, 0.8, 0.4, 16.5, 1.3, 'fruits', true, 1.0),
 ('Маракуйя', 97, 2.2, 0.7, 23.4, 10.4, 'fruits', true, 1.0),
-('Гуава', 68, 2.6, 1.0, 14.3, 5.4, 'fruits', true, 1.0);
+('Гуава', 68, 2.6, 1.0, 14.3, 5.4, 'fruits', true, 1.0)
+ON CONFLICT (name) DO NOTHING;
 
 -- ===== ОРЕХИ И СЕМЕНА (NUTS) - дополнительно 15 позиций =====
 
@@ -267,7 +278,8 @@ INSERT INTO products (name, calories, protein, fat, carbs, fiber, category, is_p
 ('Семена тыквы', 559, 30.2, 49.0, 10.7, 6.0, 'nuts', false, 1.0),
 ('Семена кунжута', 573, 17.7, 49.7, 23.4, 11.8, 'nuts', false, 1.0),
 ('Арахисовая паста', 588, 25.8, 50.0, 20.0, 6.0, 'nuts', false, 1.0),
-('Миндальная паста', 614, 21.2, 55.5, 18.7, 10.4, 'nuts', false, 1.0);
+('Миндальная паста', 614, 21.2, 55.5, 18.7, 10.4, 'nuts', false, 1.0)
+ON CONFLICT (name) DO NOTHING;
 
 -- ===== СУХОФРУКТЫ (DRIED_FRUITS) - дополнительно 10 позиций =====
 
@@ -281,7 +293,8 @@ INSERT INTO products (name, calories, protein, fat, carbs, fiber, category, is_p
 ('Инжир сушёный', 257, 3.3, 0.9, 63.9, 9.8, 'dried_fruits', false, 1.0),
 ('Банановые чипсы', 519, 2.3, 33.6, 50.7, 7.7, 'dried_fruits', false, 1.0),
 ('Клюква сушёная', 308, 0.1, 1.4, 82.4, 5.3, 'dried_fruits', false, 1.0),
-('Ягоды годжи сушёные', 349, 14.3, 0.4, 77.1, 13.0, 'dried_fruits', false, 1.0);
+('Ягоды годжи сушёные', 349, 14.3, 0.4, 77.1, 13.0, 'dried_fruits', false, 1.0)
+ON CONFLICT (name) DO NOTHING;
 
 -- ===== МАСЛА (OILS) - дополнительно 8 позиций =====
 
@@ -293,7 +306,8 @@ INSERT INTO products (name, calories, protein, fat, carbs, fiber, category, is_p
 ('Масло виноградных косточек', 884, 0, 100, 0, 0, 'oils', false, 1.0),
 ('Масло грецкого ореха', 884, 0, 100, 0, 0, 'oils', false, 1.0),
 ('Масло льняное', 884, 0, 99.8, 0, 0, 'oils', false, 1.0),
-('Масло топлёное (гхи)', 876, 0.3, 99.0, 0, 0, 'oils', false, 1.0);
+('Масло топлёное (гхи)', 876, 0.3, 99.0, 0, 0, 'oils', false, 1.0)
+ON CONFLICT (name) DO NOTHING;
 
 -- ===== ПРИПРАВЫ И СОУСЫ (CONDIMENTS) - дополнительно 25 позиций =====
 
@@ -322,7 +336,8 @@ INSERT INTO products (name, calories, protein, fat, carbs, fiber, category, is_p
 ('Чёрный перец молотый', 251, 10.4, 3.3, 63.9, 25.3, 'condiments', false, 1.0),
 ('Базилик сушёный', 251, 23.0, 4.1, 47.8, 37.7, 'condiments', false, 1.0),
 ('Орегано сушёный', 265, 9.0, 4.3, 68.9, 42.5, 'condiments', false, 1.0),
-('Тимьян сушёный', 276, 9.1, 7.4, 63.9, 37.0, 'condiments', false, 1.0);
+('Тимьян сушёный', 276, 9.1, 7.4, 63.9, 37.0, 'condiments', false, 1.0)
+ON CONFLICT (name) DO NOTHING;
 
 -- ===== БОБОВЫЕ (LEGUMES) - дополнительно 10 позиций =====
 
@@ -336,7 +351,8 @@ INSERT INTO products (name, calories, protein, fat, carbs, fiber, category, is_p
 ('Чечевица чёрная (белуга)', 336, 24.6, 1.8, 60.0, 10.8, 'legumes', false, 2.8),
 ('Маш (бобы мунг)', 347, 23.9, 1.2, 62.6, 16.3, 'legumes', false, 2.5),
 ('Горох лущёный жёлтый', 298, 20.5, 2.0, 53.3, 11.0, 'legumes', false, 2.5),
-('Соевые бобы сухие', 381, 34.9, 17.3, 30.2, 9.3, 'legumes', false, 2.5);
+('Соевые бобы сухие', 381, 34.9, 17.3, 30.2, 9.3, 'legumes', false, 2.5)
+ON CONFLICT (name) DO NOTHING;
 
 -- ===== НАПИТКИ (BEVERAGES) - дополнительно 20 позиций =====
 
@@ -360,7 +376,8 @@ INSERT INTO products (name, calories, protein, fat, carbs, fiber, category, is_p
 ('Морковный сок', 40, 0.9, 0.1, 9.2, 0.8, 'beverages', true, 1.0),
 ('Кокосовая вода', 19, 0.7, 0.2, 3.7, 1.1, 'beverages', true, 1.0),
 ('Миндальное молоко несладкое', 17, 0.4, 1.1, 1.5, 0.2, 'beverages', true, 1.0),
-('Соевое молоко', 54, 3.3, 1.8, 6.3, 0.6, 'beverages', true, 1.0);
+('Соевое молоко', 54, 3.3, 1.8, 6.3, 0.6, 'beverages', true, 1.0)
+ON CONFLICT (name) DO NOTHING;
 
 -- ===== ПРОЧЕЕ (OTHER) - дополнительно 15 позиций =====
 
@@ -379,7 +396,8 @@ INSERT INTO products (name, calories, protein, fat, carbs, fiber, category, is_p
 ('Мука овсяная', 369, 13.0, 6.8, 64.9, 4.5, 'other', false, 1.0),
 ('Мука гречневая', 353, 13.6, 1.2, 71.9, 10.0, 'other', false, 1.0),
 ('Мука рисовая', 366, 6.0, 1.4, 80.1, 2.4, 'other', false, 1.0),
-('Мука кокосовая', 443, 20.0, 16.0, 60.0, 39.0, 'other', false, 1.0);
+('Мука кокосовая', 443, 20.0, 16.0, 60.0, 39.0, 'other', false, 1.0)
+ON CONFLICT (name) DO NOTHING;
 
 -- ===== ИТОГО: ~500 продуктов =====
 -- Начальная база: 121 продукт
