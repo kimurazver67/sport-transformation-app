@@ -48,71 +48,74 @@ export default function Layout({ children, isTrainer = false }: LayoutProps) {
         </motion.div>
       </main>
 
-      {/* Bottom Navigation - Brutal Style */}
+      {/* Bottom Navigation - Brutal Style with horizontal scroll */}
       <nav className="flex-shrink-0 bg-void-200/95 backdrop-blur-xl border-t-2 border-void-400 relative">
         {/* Glowing line */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-neon-lime/50 to-transparent" />
 
-        <div className="flex justify-around items-center h-20 px-2 pb-safe">
-          {items.map((item, index) => {
-            const isActive = location.pathname === item.path
+        <div className="overflow-x-auto scrollbar-hide pb-safe">
+          <div className="flex items-center h-20 px-1" style={{ minWidth: 'max-content' }}>
+            {items.map((item, index) => {
+              const isActive = location.pathname === item.path
 
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className="flex-1 h-full flex items-center justify-center relative"
-              >
-                <motion.div
-                  className={`flex flex-col items-center gap-1 px-3 py-2 relative ${
-                    isActive ? 'text-neon-lime' : 'text-steel-500'
-                  }`}
-                  whileTap={{ scale: 0.9 }}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className="h-full flex items-center justify-center relative px-1"
+                  style={{ minWidth: items.length > 6 ? '72px' : 'auto', flex: items.length <= 6 ? 1 : 'none' }}
                 >
-                  {/* Active Background */}
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeTab"
-                      className="absolute inset-0 border border-neon-lime bg-neon-lime/10"
-                      style={{ boxShadow: '0 0 20px rgba(191, 255, 0, 0.2)' }}
-                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                    />
-                  )}
-
-                  {/* Icon */}
-                  <motion.span
-                    className="text-xl relative z-10"
-                    animate={isActive ? {
-                      scale: [1, 1.2, 1],
-                      rotate: [0, 10, -10, 0]
-                    } : {}}
-                    transition={{ duration: 0.3 }}
+                  <motion.div
+                    className={`flex flex-col items-center gap-1 px-2 py-2 relative ${
+                      isActive ? 'text-neon-lime' : 'text-steel-500'
+                    }`}
+                    whileTap={{ scale: 0.9 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
                   >
-                    {isActive ? item.activeIcon : item.icon}
-                  </motion.span>
+                    {/* Active Background */}
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeTab"
+                        className="absolute inset-0 border border-neon-lime bg-neon-lime/10"
+                        style={{ boxShadow: '0 0 20px rgba(191, 255, 0, 0.2)' }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                      />
+                    )}
 
-                  {/* Label */}
-                  <span className={`font-mono text-[9px] tracking-wider relative z-10 ${
-                    isActive ? 'font-bold' : 'font-normal'
-                  }`}>
-                    {item.label}
-                  </span>
+                    {/* Icon */}
+                    <motion.span
+                      className="text-lg relative z-10"
+                      animate={isActive ? {
+                        scale: [1, 1.2, 1],
+                        rotate: [0, 10, -10, 0]
+                      } : {}}
+                      transition={{ duration: 0.3 }}
+                    >
+                      {isActive ? item.activeIcon : item.icon}
+                    </motion.span>
 
-                  {/* Active Indicator Line */}
-                  {isActive && (
-                    <motion.div
-                      className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-neon-lime"
-                      layoutId="activeIndicator"
-                      style={{ boxShadow: '0 0 10px #BFFF00' }}
-                    />
-                  )}
-                </motion.div>
-              </NavLink>
-            )
-          })}
+                    {/* Label */}
+                    <span className={`font-mono text-[8px] tracking-wider relative z-10 whitespace-nowrap ${
+                      isActive ? 'font-bold' : 'font-normal'
+                    }`}>
+                      {item.label}
+                    </span>
+
+                    {/* Active Indicator Line */}
+                    {isActive && (
+                      <motion.div
+                        className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-5 h-0.5 bg-neon-lime"
+                        layoutId="activeIndicator"
+                        style={{ boxShadow: '0 0 10px #BFFF00' }}
+                      />
+                    )}
+                  </motion.div>
+                </NavLink>
+              )
+            })}
+          </div>
         </div>
 
         {/* Decorative corners */}

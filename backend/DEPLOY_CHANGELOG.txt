@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Add UNIQUE constraints and ON CONFLICT to prevent seed duplicates
 • Исправлено: Add endpoint to fix all duplicates (products + recipe_items)
 • debug: Check product duplicates
 • Исправлено: Dedupe recipe_items using temp table approach
 • debug: Check recipe duplicates by name
-• debug: Add check-duplicates endpoint and fix with ROW_NUMBER
 
-09.01.2026 09:49
+09.01.2026 10:09
