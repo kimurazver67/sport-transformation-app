@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Simplify 015a migration to plain SQL statements
 • Исправлено: Make 015a migration handle all FK references before deleting
 • Исправлено: Remove orphan ON CONFLICT statement in 015_seed_tags.sql
 • Исправлено: Update recipe_items/meals before deleting duplicate products/recipes
 • Исправлено: Rename 014b to 015a to ensure it runs before 016_seed_products
-• Исправлено: Add 014b migration to create UNIQUE constraints before seed migrations
 
-09.01.2026 12:08
+09.01.2026 12:14
