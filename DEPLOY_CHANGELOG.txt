@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Make нижняя навигацияigation horizontally scrollable for 8+ items
 • Исправлено: Add UNIQUE constraints and ON CONFLICT to prevent seed duplicates
 • Исправлено: Add endpoint to fix all duplicates (products + recipe_items)
 • debug: Check product duplicates
 • Исправлено: Dedupe recipe_items using temp table approach
-• debug: Check recipe duplicates by name
 
-09.01.2026 10:09
+09.01.2026 10:23
