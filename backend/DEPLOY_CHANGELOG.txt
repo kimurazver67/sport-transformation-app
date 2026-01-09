@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Dedupe recipe_items using temp table approach
 • debug: Check recipe duplicates by name
 • debug: Add check-duplicates endpoint and fix with ROW_NUMBER
 • Исправлено: Use temp table to dedupe recipe_items
 • Исправлено: Use ctid for removing recipe_items duplicates
-• Исправлено: Add endpoint to remove recipe_items duplicates
 
-09.01.2026 09:44
+09.01.2026 09:46
