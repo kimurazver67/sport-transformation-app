@@ -1443,13 +1443,13 @@ router.post('/debug/fix-recipe-duplicates', async (req: Request, res: Response) 
     const beforeCount = await pool.query('SELECT COUNT(*) FROM recipe_items');
 
     // Удаляем дубликаты, оставляя только одну запись для каждой комбинации recipe_id + product_id
+    // Используем ctid вместо MIN для UUID
     await pool.query(`
-      DELETE FROM recipe_items
-      WHERE id NOT IN (
-        SELECT MIN(id)
-        FROM recipe_items
-        GROUP BY recipe_id, product_id
-      )
+      DELETE FROM recipe_items a
+      USING recipe_items b
+      WHERE a.ctid > b.ctid
+        AND a.recipe_id = b.recipe_id
+        AND a.product_id = b.product_id
     `);
 
     // Подсчитываем после
