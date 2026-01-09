@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Update recipe_items/meals before deleting duplicate products/recipes
 • Исправлено: Rename 014b to 015a to ensure it runs before 016_seed_products
 • Исправлено: Add 014b migration to create UNIQUE constraints before seed migrations
 • Исправлено: Simplify migration 025 with EXISTS-based deduplication
 • Исправлено: Simplify migration 025 using temp tables instead of CTEs
-• Исправлено: Make migration 025 remove duplicates before adding unique constraints
 
-09.01.2026 10:57
+09.01.2026 11:13
