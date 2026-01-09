@@ -1435,24 +1435,28 @@ router.post('/debug/reseed-products', async (req: Request, res: Response) => {
 
 /**
  * GET /api/nutrition/debug/check-duplicates
- * Проверить наличие дубликатов в recipe_items
+ * Проверить наличие дубликатов в recipes и recipe_items
  */
 router.get('/debug/check-duplicates', async (req: Request, res: Response) => {
   try {
-    const total = await pool.query('SELECT COUNT(*) FROM recipe_items');
-    const unique = await pool.query('SELECT COUNT(*) FROM (SELECT DISTINCT recipe_id, product_id FROM recipe_items) t');
-    const duplicates = await pool.query(`
-      SELECT recipe_id, product_id, COUNT(*) as cnt
-      FROM recipe_items
-      GROUP BY recipe_id, product_id
+    const totalRecipes = await pool.query('SELECT COUNT(*) FROM recipes');
+    const uniqueRecipeNames = await pool.query('SELECT COUNT(DISTINCT name) FROM recipes');
+    const totalItems = await pool.query('SELECT COUNT(*) FROM recipe_items');
+
+    // Дублированные рецепты по имени
+    const duplicateRecipes = await pool.query(`
+      SELECT name, COUNT(*) as cnt
+      FROM recipes
+      GROUP BY name
       HAVING COUNT(*) > 1
-      LIMIT 10
+      LIMIT 5
     `);
 
     res.json({
-      total: parseInt(total.rows[0].count),
-      unique_combinations: parseInt(unique.rows[0].count),
-      duplicate_examples: duplicates.rows
+      total_recipes: parseInt(totalRecipes.rows[0].count),
+      unique_recipe_names: parseInt(uniqueRecipeNames.rows[0].count),
+      total_recipe_items: parseInt(totalItems.rows[0].count),
+      duplicate_recipe_names: duplicateRecipes.rows
     });
   } catch (error) {
     res.status(500).json({ error: String(error) });

@@ -1,9 +1,9 @@
 Последние изменения:
 
+• debug: Add check-duplicates endpoint and fix with ROW_NUMBER
 • Исправлено: Use temp table to dedupe recipe_items
 • Исправлено: Use ctid for removing recipe_items duplicates
 • Исправлено: Add endpoint to remove recipe_items duplicates
 • debug: Add first-recipe endpoint
-• debug: Add recipe calories debug endpoint
 
-09.01.2026 09:40
+09.01.2026 09:42
