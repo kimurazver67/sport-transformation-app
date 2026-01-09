@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Force add recipe_items unique constraint with deduplication
 • Исправлено: Add recipe_items unique constraint to 015a for idempotent recipes
 • Исправлено: Add ON CONFLICT to all seed migrations (018-021)
 • Исправлено: Add ON CONFLICT to seed migrations for idempotency
 • Исправлено: Remove query logging to prevent Railway log rate limiting
-• Исправлено: Add missing semicolons to seed migrations after sed removal
 
-09.01.2026 13:42
+09.01.2026 13:45
