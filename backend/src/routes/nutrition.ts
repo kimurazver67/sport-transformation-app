@@ -1434,6 +1434,32 @@ router.post('/debug/reseed-products', async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/nutrition/debug/check-duplicates
+ * Проверить наличие дубликатов в recipe_items
+ */
+router.get('/debug/check-duplicates', async (req: Request, res: Response) => {
+  try {
+    const total = await pool.query('SELECT COUNT(*) FROM recipe_items');
+    const unique = await pool.query('SELECT COUNT(*) FROM (SELECT DISTINCT recipe_id, product_id FROM recipe_items) t');
+    const duplicates = await pool.query(`
+      SELECT recipe_id, product_id, COUNT(*) as cnt
+      FROM recipe_items
+      GROUP BY recipe_id, product_id
+      HAVING COUNT(*) > 1
+      LIMIT 10
+    `);
+
+    res.json({
+      total: parseInt(total.rows[0].count),
+      unique_combinations: parseInt(unique.rows[0].count),
+      duplicate_examples: duplicates.rows
+    });
+  } catch (error) {
+    res.status(500).json({ error: String(error) });
+  }
+});
+
+/**
  * POST /api/nutrition/debug/fix-recipe-duplicates
  * Удалить дубликаты в recipe_items
  */
@@ -1441,18 +1467,16 @@ router.post('/debug/fix-recipe-duplicates', async (req: Request, res: Response) 
   try {
     // Подсчитываем дубликаты до
     const beforeCount = await pool.query('SELECT COUNT(*) FROM recipe_items');
+    const beforeUnique = await pool.query('SELECT COUNT(*) FROM (SELECT DISTINCT recipe_id, product_id FROM recipe_items) t');
 
-    // Удаляем дубликаты через временную таблицу
-    await pool.query(`
-      CREATE TEMP TABLE recipe_items_unique AS
-      SELECT DISTINCT ON (recipe_id, product_id) *
-      FROM recipe_items;
-
-      TRUNCATE recipe_items;
-
-      INSERT INTO recipe_items SELECT * FROM recipe_items_unique;
-
-      DROP TABLE recipe_items_unique;
+    // Удаляем дубликаты через CTE с row_number
+    const deleted = await pool.query(`
+      WITH numbered AS (
+        SELECT id, ROW_NUMBER() OVER (PARTITION BY recipe_id, product_id ORDER BY created_at) as rn
+        FROM recipe_items
+      )
+      DELETE FROM recipe_items
+      WHERE id IN (SELECT id FROM numbered WHERE rn > 1)
     `);
 
     // Подсчитываем после
@@ -1460,7 +1484,8 @@ router.post('/debug/fix-recipe-duplicates', async (req: Request, res: Response) 
 
     res.json({
       message: 'Duplicates removed',
-      before: parseInt(beforeCount.rows[0].count),
+      before_total: parseInt(beforeCount.rows[0].count),
+      before_unique: parseInt(beforeUnique.rows[0].count),
       after: parseInt(afterCount.rows[0].count),
       removed: parseInt(beforeCount.rows[0].count) - parseInt(afterCount.rows[0].count)
     });
