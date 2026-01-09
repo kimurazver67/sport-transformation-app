@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS products (
   imported_by_user_id UUID REFERENCES users(id),
 
   -- Basic info
-  name VARCHAR(200) NOT NULL,
+  name VARCHAR(200) NOT NULL UNIQUE,
   name_short VARCHAR(50),
 
   -- Nutrition per 100g
@@ -144,7 +144,7 @@ CREATE TABLE IF NOT EXISTS recipes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
   -- Basic info
-  name VARCHAR(200) NOT NULL,
+  name VARCHAR(200) NOT NULL UNIQUE,
   name_short VARCHAR(100),
   meal_type meal_type NOT NULL,
 

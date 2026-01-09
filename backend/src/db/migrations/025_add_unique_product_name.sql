@@ -1,8 +1,9 @@
--- Migration 025: Add unique constraint on products.name
+-- Migration 025: Final cleanup and additional constraints
 -- Date: 2026-01-09
--- Description: Remove duplicate products/recipes and add unique constraints
+-- Description: Clean up any remaining duplicates and add all constraints
+-- Note: 014b should have added UNIQUE on products.name and recipes.name
 
--- Step 1: Update recipe_items to point to canonical products (lowest id for each name)
+-- Step 1: Update recipe_items to point to canonical products (in case duplicates exist)
 UPDATE recipe_items ri
 SET product_id = canonical.min_id
 FROM (
@@ -11,7 +12,7 @@ FROM (
 JOIN products p ON p.name = canonical.name AND p.id != canonical.min_id
 WHERE ri.product_id = p.id;
 
--- Step 2: Delete duplicate products (keep lowest id for each name)
+-- Step 2: Delete duplicate products
 DELETE FROM products p
 WHERE EXISTS (
   SELECT 1 FROM products p2
@@ -52,24 +53,30 @@ WHERE EXISTS (
     AND ri2.ctid < ri1.ctid
 );
 
--- Step 7: Add unique constraints
+-- Step 7: Add unique constraints (if not already added by 014b or table creation)
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'products_name_unique') THEN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname IN ('products_name_unique', 'products_name_key')
+  ) THEN
     ALTER TABLE products ADD CONSTRAINT products_name_unique UNIQUE (name);
   END IF;
 END $$;
 
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'recipes_name_unique') THEN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname IN ('recipes_name_unique', 'recipes_name_key')
+  ) THEN
     ALTER TABLE recipes ADD CONSTRAINT recipes_name_unique UNIQUE (name);
   END IF;
 END $$;
 
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'recipe_items_recipe_product_unique') THEN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'recipe_items_recipe_product_unique'
+  ) THEN
     ALTER TABLE recipe_items ADD CONSTRAINT recipe_items_recipe_product_unique UNIQUE (recipe_id, product_id);
   END IF;
 END $$;
