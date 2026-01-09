@@ -1465,23 +1465,36 @@ router.get('/debug/check-duplicates', async (req: Request, res: Response) => {
 
 /**
  * POST /api/nutrition/debug/fix-recipe-duplicates
- * Удалить дубликаты в recipe_items
+ * Удалить дубликаты в recipe_items (оставить по одному для каждой комбинации recipe_id + product_id)
  */
 router.post('/debug/fix-recipe-duplicates', async (req: Request, res: Response) => {
   try {
-    // Подсчитываем дубликаты до
+    // Подсчитываем до
     const beforeCount = await pool.query('SELECT COUNT(*) FROM recipe_items');
     const beforeUnique = await pool.query('SELECT COUNT(*) FROM (SELECT DISTINCT recipe_id, product_id FROM recipe_items) t');
 
-    // Удаляем дубликаты через CTE с row_number
-    const deleted = await pool.query(`
-      WITH numbered AS (
-        SELECT id, ROW_NUMBER() OVER (PARTITION BY recipe_id, product_id ORDER BY created_at) as rn
-        FROM recipe_items
-      )
-      DELETE FROM recipe_items
-      WHERE id IN (SELECT id FROM numbered WHERE rn > 1)
+    // Удаляем ВСЕ и вставляем только уникальные
+    // 1. Сохраняем уникальные в temp таблицу
+    await pool.query(`
+      CREATE TEMP TABLE temp_unique_items AS
+      SELECT DISTINCT ON (recipe_id, product_id)
+        id, recipe_id, product_id, amount_grams, is_optional, notes, created_at
+      FROM recipe_items
+      ORDER BY recipe_id, product_id, created_at DESC
     `);
+
+    // 2. Удаляем все записи
+    await pool.query('DELETE FROM recipe_items');
+
+    // 3. Вставляем обратно уникальные
+    await pool.query(`
+      INSERT INTO recipe_items (id, recipe_id, product_id, amount_grams, is_optional, notes, created_at)
+      SELECT id, recipe_id, product_id, amount_grams, is_optional, notes, created_at
+      FROM temp_unique_items
+    `);
+
+    // 4. Удаляем temp таблицу
+    await pool.query('DROP TABLE temp_unique_items');
 
     // Подсчитываем после
     const afterCount = await pool.query('SELECT COUNT(*) FROM recipe_items');
