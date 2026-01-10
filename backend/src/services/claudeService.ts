@@ -1,5 +1,5 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { config } from '../config';
+import { createAIClient } from './aiClient';
 import {
   WeeklyData,
   User,
@@ -10,19 +10,18 @@ import {
 } from '../types';
 
 /**
- * Сервис для интеграции с Claude AI (Anthropic)
+ * Сервис для интеграции с AI (Anthropic Claude или OpenRouter)
  *
  * Spec:
  * - Генерирует психологический анализ на основе недельных данных
  * - Использует промпт-инженерию для роли психолога
  * - Возвращает строго типизированный JSON
  * - Обрабатывает ошибки AI
+ * - Поддерживает Anthropic API и OpenRouter API
  */
 
-// Инициализация клиента Anthropic
-const anthropic = config.ai?.anthropicApiKey
-  ? new Anthropic({ apiKey: config.ai.anthropicApiKey })
-  : null;
+// Инициализация AI клиента (OpenRouter приоритет > Anthropic)
+const aiClient = createAIClient();
 
 /**
  * System Prompt для Claude - роль психолога-консультанта
@@ -264,7 +263,7 @@ export const claudeService = {
    * Проверяет доступность API
    */
   isAvailable(): boolean {
-    return !!anthropic && !!config.ai?.psychologist?.enabled;
+    return !!aiClient && !!config.ai?.psychologist?.enabled;
   },
 
   /**
@@ -280,22 +279,23 @@ export const claudeService = {
     user: User
   ): Promise<PsychologyAnalysis> {
     if (!this.isAvailable()) {
-      throw new Error('Claude AI is not configured or disabled');
+      throw new Error('AI is not configured or disabled');
     }
 
-    if (!anthropic) {
-      throw new Error('Anthropic client is not initialized');
+    if (!aiClient) {
+      throw new Error('AI client is not initialized');
     }
 
     const systemPrompt = PSYCHOLOGY_SYSTEM_PROMPT;
     const userPrompt = buildUserPrompt(weeklyData, user);
 
-    console.log('Generating psychology analysis via Claude API...');
+    const provider = config.ai!.openrouterApiKey ? 'OpenRouter' : 'Anthropic';
+    console.log(`Generating psychology analysis via ${provider} API...`);
     console.log('Model:', config.ai!.psychologist!.model);
     console.log('Max tokens:', config.ai!.psychologist!.maxTokens);
 
     try {
-      const response = await anthropic.messages.create({
+      const response = await aiClient.messages.create({
         model: config.ai!.psychologist!.model!,
         max_tokens: config.ai!.psychologist!.maxTokens!,
         temperature: config.ai!.psychologist!.temperature,
@@ -321,12 +321,7 @@ export const claudeService = {
       return analysis;
 
     } catch (error) {
-      console.error('Claude API error:', error);
-
-      if (error instanceof Anthropic.APIError) {
-        throw new Error(`Claude API error: ${error.message}`);
-      }
-
+      console.error('AI API error:', error);
       throw error;
     }
   },
@@ -334,18 +329,18 @@ export const claudeService = {
   /**
    * Тестовый метод для проверки подключения к API
    */
-  async healthCheck(): Promise<{ ok: boolean; model?: string; error?: string }> {
+  async healthCheck(): Promise<{ ok: boolean; model?: string; provider?: string; error?: string }> {
     if (!this.isAvailable()) {
       return {
         ok: false,
-        error: 'Claude AI is not configured or disabled'
+        error: 'AI is not configured or disabled'
       };
     }
 
     try {
-      if (!anthropic) throw new Error('Client not initialized');
+      if (!aiClient) throw new Error('Client not initialized');
 
-      const response = await anthropic.messages.create({
+      const response = await aiClient.messages.create({
         model: config.ai!.psychologist!.model!,
         max_tokens: 50,
         messages: [
@@ -353,9 +348,12 @@ export const claudeService = {
         ]
       });
 
+      const provider = config.ai!.openrouterApiKey ? 'OpenRouter' : 'Anthropic';
+
       return {
         ok: true,
-        model: config.ai!.psychologist!.model
+        model: config.ai!.psychologist!.model,
+        provider
       };
     } catch (error) {
       return {

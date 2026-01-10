@@ -31,10 +31,11 @@ const envSchema = z.object({
   // Admin Chat
   ADMIN_CHAT_ID: z.string().optional(),
 
-  // AI Psychologist (Anthropic Claude)
+  // AI Psychologist (Anthropic Claude or OpenRouter)
   ANTHROPIC_API_KEY: z.string().optional(),
+  OPENROUTER_API_KEY: z.string().optional(),
   AI_PSYCHOLOGIST_ENABLED: z.string().default('false'),
-  AI_PSYCHOLOGIST_MODEL: z.string().default('claude-sonnet-4-5-20250929'),
+  AI_PSYCHOLOGIST_MODEL: z.string().default('anthropic/claude-sonnet-4-5:beta'),
   AI_PSYCHOLOGIST_MAX_TOKENS: z.string().default('4000'),
   AI_PSYCHOLOGIST_TEMPERATURE: z.string().default('0.7'),
   MIN_CHECKINS_FOR_ANALYSIS: z.string().default('3'),
@@ -87,6 +88,7 @@ export const config = {
   },
   ai: {
     anthropicApiKey: parsed.data.ANTHROPIC_API_KEY,
+    openrouterApiKey: parsed.data.OPENROUTER_API_KEY,
     psychologist: {
       enabled: parsed.data.AI_PSYCHOLOGIST_ENABLED === 'true',
       model: parsed.data.AI_PSYCHOLOGIST_MODEL,
