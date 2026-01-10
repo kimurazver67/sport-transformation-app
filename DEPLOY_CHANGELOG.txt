@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Обслуживание: trigger фронтенд rebuild
 • Добавлено: Add barcode scanner for product search
 • Исправлено: Make 025 migration a no-op to avoid MIN(uuid) error
 • Исправлено: Add ON CONFLICT to all 272 recipe INSERTs in 020
 • Исправлено: Force add recipe_items unique constraint with deduplication
-• Исправлено: Add recipe_items unique constraint to 015a for idempotent recipes
 
 09.01.2026 16:09
