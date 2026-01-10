@@ -8,6 +8,7 @@ import { achievementService } from '../services/achievementService';
 import { mindfulnessService } from '../services/mindfulnessService';
 import { nutritionService } from '../services/nutritionService';
 import { aiPsychologistService } from '../services/aiPsychologistService';
+import { claudeService } from '../services/claudeService';
 import { getCurrentWeek, getDaysUntilStart, isCourseStarted, canSubmitMeasurement, config } from '../config';
 import { CheckinForm, MeasurementForm } from '../types';
 import { query } from '../db/postgres';
@@ -1113,6 +1114,23 @@ router.post('/temp-reset-points-50', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Temp reset points error:', error);
     res.status(500).json({ success: false, error: 'Failed to reset points' });
+  }
+});
+
+/**
+ * GET /api/psychology/health
+ * Проверка доступности AI психолога
+ */
+router.get('/psychology/health', async (req: Request, res: Response) => {
+  try {
+    const health = await claudeService.healthCheck();
+    res.json(health);
+  } catch (error) {
+    console.error('AI health check error:', error);
+    res.status(500).json({
+      ok: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 });
 
