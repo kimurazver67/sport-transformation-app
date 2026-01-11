@@ -233,9 +233,6 @@ export default function AdminPage() {
   }
 
   const unlockMeasurement = async (userId: string, userName: string) => {
-    const confirmed = await showConfirm(`Открыть замеры для ${userName} на 24 часа?`)
-    if (!confirmed) return
-
     try {
       const result = await api.unlockMeasurement(userId, 24)
       hapticFeedback('success')
@@ -254,9 +251,6 @@ export default function AdminPage() {
   }
 
   const lockMeasurement = async (userId: string, userName: string) => {
-    const confirmed = await showConfirm(`Закрыть замеры для ${userName}?`)
-    if (!confirmed) return
-
     try {
       await api.lockMeasurement(userId)
       hapticFeedback('success')

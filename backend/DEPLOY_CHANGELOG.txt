@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Improve error handling for lock/unlock measurement endpoints
 • Исправлено: Make migration 026 idempotent to prevent duplicate key errors
 • Добавлено: Add OpenRouter API support for AI Psychologist
 • Обслуживание: Update список изменений
 • Добавлено: Add health check endpoint for AI Psychologist
-• Добавлено: Extend measurement submission window from 6:00-10:00 to 6:00-13:00
 
-11.01.2026 17:29
+11.01.2026 19:37
