@@ -1,6 +1,6 @@
 import { Telegraf, Markup, Context } from 'telegraf';
 import { message } from 'telegraf/filters';
-import { config, getCurrentWeek } from '../config';
+import { config, getCurrentWeek, getWebAppUrl } from '../config';
 import { userService } from '../services/userService';
 import { checkinService } from '../services/checkinService';
 import { measurementService } from '../services/measurementService';
@@ -119,7 +119,7 @@ bot.start(async (ctx) => {
     : `💪 Добро пожаловать в курс "Трансформация тела", ${user.first_name}!\n\nЗдесь ты будешь отслеживать свой прогресс, выполнять задания и соревноваться с другими участниками.`;
 
   const keyboard = Markup.inlineKeyboard([
-    [Markup.button.webApp('📱 Открыть приложение', config.app.webappUrl)],
+    [Markup.button.webApp('📱 Открыть приложение', getWebAppUrl())],
     [Markup.button.callback('📊 Мой прогресс', 'my_progress')],
     [Markup.button.callback('✅ Чекин сегодня', 'quick_checkin')],
     [Markup.button.callback('📸 Загрузить фото', 'start_photo_session')],
@@ -140,7 +140,7 @@ bot.action('main_menu', async (ctx) => {
     : `💪 Курс "Трансформация тела"\n\nВыбери действие:`;
 
   const keyboard = Markup.inlineKeyboard([
-    [Markup.button.webApp('📱 Открыть приложение', config.app.webappUrl)],
+    [Markup.button.webApp('📱 Открыть приложение', getWebAppUrl())],
     [Markup.button.callback('📊 Мой прогресс', 'my_progress')],
     [Markup.button.callback('✅ Чекин сегодня', 'quick_checkin')],
     [Markup.button.callback('📸 Загрузить фото', 'start_photo_session')],
@@ -185,7 +185,7 @@ bot.command('help', async (ctx) => {
 
   if (isPrivateChat) {
     const keyboard = Markup.inlineKeyboard([
-      [Markup.button.webApp('📱 Открыть приложение', config.app.webappUrl)],
+      [Markup.button.webApp('📱 Открыть приложение', getWebAppUrl())],
     ]);
     await ctx.reply(helpText, { parse_mode: 'Markdown', ...keyboard });
   } else {
@@ -232,7 +232,7 @@ ${avgMoodEmoji} Среднее настроение: ${checkinStats.avgMood}/5
   `.trim();
 
   const keyboard = Markup.inlineKeyboard([
-    [Markup.button.webApp('📱 Подробнее в приложении', config.app.webappUrl)],
+    [Markup.button.webApp('📱 Подробнее в приложении', getWebAppUrl())],
     [Markup.button.callback('🏆 Рейтинг', 'leaderboard')],
   ]);
 
@@ -248,7 +248,7 @@ bot.command('photo', async (ctx) => {
 
   if (!measurement) {
     const keyboard = Markup.inlineKeyboard([
-      [Markup.button.webApp('📱 Внести замеры', config.app.webappUrl)],
+      [Markup.button.webApp('📱 Внести замеры', getWebAppUrl())],
     ]);
     return ctx.reply(
       '📸 Чтобы загрузить фото прогресса, сначала внеси данные о весе в приложении.',
@@ -423,7 +423,7 @@ bot.action('debug_off', async (ctx) => {
 // ===== КОМАНДА /app =====
 bot.command('app', async (ctx) => {
   const keyboard = Markup.inlineKeyboard([
-    [Markup.button.webApp('📱 Открыть Mini App', config.app.webappUrl)],
+    [Markup.button.webApp('📱 Открыть Mini App', getWebAppUrl())],
   ]);
   await ctx.reply('Нажми кнопку, чтобы открыть приложение:', keyboard);
 });
@@ -623,7 +623,7 @@ async function startCheckinFlow(ctx: BotContext) {
   if (todayCheckin) {
     const keyboard = Markup.inlineKeyboard([
       [Markup.button.callback('✏️ Изменить чекин', 'edit_checkin')],
-      [Markup.button.webApp('📱 Открыть приложение', config.app.webappUrl)],
+      [Markup.button.webApp('📱 Открыть приложение', getWebAppUrl())],
     ]);
     return ctx.reply('✅ Ты уже сделал чекин сегодня!', keyboard);
   }
@@ -800,7 +800,7 @@ bot.action(/mood_(\d)/, async (ctx) => {
     }
 
     const keyboard = Markup.inlineKeyboard([
-      [Markup.button.webApp('📱 Открыть приложение', config.app.webappUrl)],
+      [Markup.button.webApp('📱 Открыть приложение', getWebAppUrl())],
       [Markup.button.callback('🏠 Меню', 'main_menu')],
     ]);
 
@@ -866,7 +866,7 @@ bot.action('my_stats', async (ctx) => {
 
   const keyboard = Markup.inlineKeyboard([
     [Markup.button.callback('🏆 Рейтинг', 'leaderboard')],
-    [Markup.button.webApp('📱 Открыть приложение', config.app.webappUrl)],
+    [Markup.button.webApp('📱 Открыть приложение', getWebAppUrl())],
     [Markup.button.callback('🏠 Меню', 'main_menu')],
   ]);
 
@@ -903,7 +903,7 @@ bot.action('leaderboard', async (ctx) => {
 
   const keyboard = Markup.inlineKeyboard([
     [Markup.button.callback('📅 Рейтинг недели', 'weekly_leaderboard')],
-    [Markup.button.webApp('📱 Подробнее', config.app.webappUrl)],
+    [Markup.button.webApp('📱 Подробнее', getWebAppUrl())],
     [Markup.button.callback('🏠 Меню', 'main_menu')],
   ]);
 
@@ -930,7 +930,7 @@ bot.action('weekly_leaderboard', async (ctx) => {
 
   const keyboard = Markup.inlineKeyboard([
     [Markup.button.callback('🏆 Общий рейтинг', 'leaderboard')],
-    [Markup.button.webApp('📱 Подробнее', config.app.webappUrl)],
+    [Markup.button.webApp('📱 Подробнее', getWebAppUrl())],
     [Markup.button.callback('🏠 Меню', 'main_menu')],
   ]);
 
@@ -960,7 +960,7 @@ bot.action('my_progress', async (ctx) => {
   }
 
   const keyboard = Markup.inlineKeyboard([
-    [Markup.button.webApp('📱 Внести замеры', config.app.webappUrl)],
+    [Markup.button.webApp('📱 Внести замеры', getWebAppUrl())],
     [Markup.button.callback('📊 Статистика', 'my_stats')],
     [Markup.button.callback('🏠 Меню', 'main_menu')],
   ]);
@@ -978,7 +978,7 @@ bot.action('avatar_cancel', async (ctx) => {
     'Ты можешь загрузить аватарку позже через профиль в приложении.',
     {
       ...Markup.inlineKeyboard([
-        [Markup.button.webApp('📱 Открыть приложение', config.app.webappUrl)],
+        [Markup.button.webApp('📱 Открыть приложение', getWebAppUrl())],
       ]),
     }
   );
@@ -1004,7 +1004,7 @@ bot.on(message('photo'), async (ctx) => {
       avatarUploadState.delete(ctx.from!.id);
 
       const keyboard = Markup.inlineKeyboard([
-        [Markup.button.webApp('📱 Открыть приложение', config.app.webappUrl)],
+        [Markup.button.webApp('📱 Открыть приложение', getWebAppUrl())],
       ]);
 
       await ctx.reply(
@@ -1054,7 +1054,7 @@ bot.on(message('photo'), async (ctx) => {
         photoSessionState.delete(ctx.from!.id);
 
         const keyboard = Markup.inlineKeyboard([
-          [Markup.button.webApp('📱 Посмотреть в приложении', config.app.webappUrl)],
+          [Markup.button.webApp('📱 Посмотреть в приложении', getWebAppUrl())],
         ]);
 
         await ctx.reply(
@@ -1074,7 +1074,7 @@ bot.on(message('photo'), async (ctx) => {
       await ctx.reply(
         '📸 Фото получено!\n\nЧтобы сохранить его к замерам, сначала внеси данные о весе в приложении.',
         Markup.inlineKeyboard([
-          [Markup.button.webApp('📱 Внести замеры', config.app.webappUrl)],
+          [Markup.button.webApp('📱 Внести замеры', getWebAppUrl())],
           [Markup.button.callback('📸 Загрузить фото', 'start_photo_session')],
         ])
       );
@@ -1148,7 +1148,7 @@ bot.action('photo_skip', async (ctx) => {
     const uploadedCount = Object.values(session.photos).filter(Boolean).length;
 
     const keyboard = Markup.inlineKeyboard([
-      [Markup.button.webApp('📱 Посмотреть в приложении', config.app.webappUrl)],
+      [Markup.button.webApp('📱 Посмотреть в приложении', getWebAppUrl())],
     ]);
 
     await ctx.editMessageText(
@@ -1168,7 +1168,7 @@ bot.action('photo_finish', async (ctx) => {
   const uploadedCount = session ? Object.values(session.photos).filter(Boolean).length : 0;
 
   const keyboard = Markup.inlineKeyboard([
-    [Markup.button.webApp('📱 Посмотреть в приложении', config.app.webappUrl)],
+    [Markup.button.webApp('📱 Посмотреть в приложении', getWebAppUrl())],
   ]);
 
   await ctx.editMessageText(
@@ -1194,7 +1194,7 @@ bot.action('start_photo_session', async (ctx) => {
     return ctx.editMessageText(
       '📸 Сначала внеси данные о весе в приложении.',
       Markup.inlineKeyboard([
-        [Markup.button.webApp('📱 Внести замеры', config.app.webappUrl)],
+        [Markup.button.webApp('📱 Внести замеры', getWebAppUrl())],
       ])
     );
   }
@@ -1237,7 +1237,7 @@ export async function sendReminder(telegramId: number, message: string): Promise
     await bot.telegram.sendMessage(telegramId, message, {
       parse_mode: 'Markdown',
       ...Markup.inlineKeyboard([
-        [Markup.button.webApp('📱 Открыть приложение', config.app.webappUrl)],
+        [Markup.button.webApp('📱 Открыть приложение', getWebAppUrl())],
       ]),
     });
     return true;
@@ -1273,7 +1273,7 @@ ${urgency ? `${urgency}\n\n` : ''}${timeText}
     await bot.telegram.sendMessage(telegramId, message, {
       parse_mode: 'Markdown',
       ...Markup.inlineKeyboard([
-        [Markup.button.webApp('📱 Внести замеры', config.app.webappUrl + '?page=measurements')],
+        [Markup.button.webApp('📱 Внести замеры', getWebAppUrl('measurements'))],
         [Markup.button.callback('✅ Уже внёс замеры', `measurement_claimed_${weekNumber}`)],
       ]),
     });
@@ -1382,14 +1382,15 @@ export async function startBot(): Promise<void> {
 
       // Устанавливаем Menu Button для открытия Mini App
       try {
+        const webappUrl = getWebAppUrl();
         await bot.telegram.setChatMenuButton({
           menuButton: {
             type: 'web_app',
             text: 'Открыть',
-            web_app: { url: config.app.webappUrl },
+            web_app: { url: webappUrl },
           },
         });
-        console.log('🔘 Menu Button установлена');
+        console.log('🔘 Menu Button установлена:', webappUrl);
       } catch (menuErr) {
         console.error('Failed to set menu button:', menuErr);
       }

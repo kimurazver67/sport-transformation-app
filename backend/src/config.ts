@@ -74,8 +74,7 @@ export const config = {
     port: parseInt(parsed.data.PORT, 10),
     nodeEnv: parsed.data.NODE_ENV,
     frontendUrl: parsed.data.FRONTEND_URL,
-    // Добавляем версию для сброса кэша Telegram WebView
-    webappUrl: `${parsed.data.WEBAPP_URL || parsed.data.FRONTEND_URL}?v=${Date.now()}`,
+    webappUrl: parsed.data.WEBAPP_URL || parsed.data.FRONTEND_URL,
   },
   course: {
     startDate: new Date(parsed.data.COURSE_START_DATE),
@@ -137,6 +136,17 @@ export function isCourseStarted(): boolean {
 // Проверка, является ли сегодня воскресенье (день замеров)
 export function isMeasurementDay(): boolean {
   return new Date().getDay() === 0;
+}
+
+// Получить WebApp URL с timestamp для сброса кэша
+export function getWebAppUrl(page?: string): string {
+  const baseUrl = config.app.webappUrl;
+  const timestamp = Date.now();
+  const params = new URLSearchParams({ v: timestamp.toString() });
+  if (page) {
+    params.set('page', page);
+  }
+  return `${baseUrl}?${params.toString()}`;
 }
 
 // Проверка, можно ли вносить замеры (воскресенье 6:00-10:00 по таймзоне клиента)
