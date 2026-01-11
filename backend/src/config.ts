@@ -170,7 +170,7 @@ export function canSubmitMeasurement(timezoneOffset?: number): {
 
   // Воскресенье = 0
   const isSunday = clientDay === 0;
-  const isInTimeWindow = clientHour >= 6 && clientHour < 10;
+  const isInTimeWindow = clientHour >= 6 && clientHour < 13;
 
   if (isSunday && isInTimeWindow) {
     return { allowed: true };
@@ -182,11 +182,11 @@ export function canSubmitMeasurement(timezoneOffset?: number): {
   return {
     allowed: false,
     reason: isSunday
-      ? 'Замеры можно вносить только с 6:00 до 10:00'
+      ? 'Замеры можно вносить только с 6:00 до 13:00'
       : 'Замеры можно вносить только в воскресенье',
     nextWindow: {
       day: daysUntilSunday === 0 ? 'сегодня' : daysUntilSunday === 1 ? 'завтра' : `через ${daysUntilSunday} дн.`,
-      time: '6:00 - 10:00'
+      time: '6:00 - 13:00'
     }
   };
 }
