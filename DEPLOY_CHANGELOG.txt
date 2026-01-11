@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Support week 0 for baseline measurements to prevent data loss
 • Добавлено: Add debug endpoint to check user measurements by telegram_id
 • Обслуживание: Update деплой список изменений
 • Исправлено: Update nutrition formulas per new requirements
 • Обслуживание: Remove temporary reset endpoint
-• temp: Add temporary endpoint to reset all points to 50
 
-11.01.2026 11:58
+11.01.2026 12:06
