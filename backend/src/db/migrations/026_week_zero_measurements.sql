@@ -3,11 +3,16 @@
 -- Это позволит не затирать стартовый замер при внесении первого недельного замера
 
 -- Обновляем существующие стартовые замеры (неделя 1, созданные до старта курса)
--- Переносим их в неделю 0
+-- Переносим их в неделю 0, ТОЛЬКО если у пользователя ещё нет замера с week_number = 0
 UPDATE weekly_measurements
 SET week_number = 0
 WHERE week_number = 1
-  AND created_at < '2026-01-05 00:00:00+00'::timestamptz;
+  AND created_at < '2026-01-05 00:00:00+00'::timestamptz
+  AND NOT EXISTS (
+    SELECT 1 FROM weekly_measurements wm2
+    WHERE wm2.user_id = weekly_measurements.user_id
+      AND wm2.week_number = 0
+  );
 
 -- Комментарий к изменению
 COMMENT ON COLUMN weekly_measurements.week_number IS
