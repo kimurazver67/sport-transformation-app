@@ -166,12 +166,16 @@ async function getWeeklyMeasurement(
 
 /**
  * Получает замер предыдущей недели (для сравнения)
+ * Неделя 0 = стартовый замер (baseline), неделя 1+ = еженедельные замеры
+ * Для недели 1 предыдущий замер = неделя 0 (стартовый)
  */
 async function getPreviousMeasurement(
   userId: string,
   weekNumber: number
 ): Promise<WeeklyMeasurement | undefined> {
-  if (weekNumber <= 0) return undefined;
+  // Для недели 0 (стартовый) - нет предыдущего замера
+  // Для недели 1 - предыдущий это неделя 0 (стартовый)
+  // Для недели 2+ - предыдущий это неделя N-1
 
   const result = await query<WeeklyMeasurement>(
     `SELECT * FROM weekly_measurements

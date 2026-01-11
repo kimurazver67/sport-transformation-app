@@ -13,8 +13,9 @@ export const measurementService = {
     data: MeasurementForm
   ): Promise<WeeklyMeasurement> {
     try {
-      // Если курс не начался, используем неделю 1 (подготовительная/стартовая)
-      const weekNumber = isCourseStarted() ? getCurrentWeek() : 1;
+      // ВАЖНО: Замеры до старта курса = неделя 0 (стартовый замер)
+      // После старта курса = текущая неделя (1, 2, 3...)
+      const weekNumber = isCourseStarted() ? getCurrentWeek() : 0;
       const today = new Date().toISOString().split('T')[0];
 
       // Проверяем существующий замер
@@ -87,8 +88,8 @@ export const measurementService = {
         await statsService.addPoints(userId, POINTS.WEEKLY_MEASUREMENT);
       }
 
-      // Обновляем стартовый вес, если это первый замер
-      if (weekNumber === 1) {
+      // Обновляем стартовый вес, если это стартовый замер (неделя 0)
+      if (weekNumber === 0) {
         await userService.updateStartWeight(userId, data.weight);
       }
 
@@ -109,7 +110,7 @@ export const measurementService = {
 
   // Получить замер текущей недели
   async getCurrentWeekMeasurement(userId: string): Promise<WeeklyMeasurement | null> {
-    const weekNumber = isCourseStarted() ? getCurrentWeek() : 1;
+    const weekNumber = isCourseStarted() ? getCurrentWeek() : 0;
 
     const result = await query<WeeklyMeasurement>(
       'SELECT * FROM weekly_measurements WHERE user_id = $1 AND week_number = $2',
