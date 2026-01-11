@@ -404,6 +404,63 @@ router.post('/reset-points', async (req: Request, res: Response) => {
   }
 });
 
+// ===== DEBUG: Проверка замеров пользователя =====
+
+// Получить все замеры пользователя по telegram_id
+router.get('/debug/user-measurements/:telegramId', async (req: Request, res: Response) => {
+  try {
+    const telegramId = parseInt(req.params.telegramId, 10);
+
+    // Найти пользователя
+    const participants = await userService.getAllParticipants();
+    const user = participants.find(p => p.telegram_id === telegramId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: `User with telegram_id ${telegramId} not found`
+      });
+    }
+
+    // Получить все замеры
+    const measurements = await measurementService.getAllByUser(user.id);
+
+    // Проверить дубликаты недель
+    const weekNumbers = measurements.map(m => m.week_number);
+    const duplicates = weekNumbers.filter((w, i) => weekNumbers.indexOf(w) !== i);
+    const hasDuplicates = duplicates.length > 0;
+
+    res.json({
+      success: true,
+      data: {
+        user: {
+          id: user.id,
+          telegram_id: user.telegram_id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          start_weight: user.start_weight
+        },
+        measurements_count: measurements.length,
+        has_duplicate_weeks: hasDuplicates,
+        duplicate_weeks: hasDuplicates ? [...new Set(duplicates)] : [],
+        measurements: measurements.map(m => ({
+          id: m.id,
+          week_number: m.week_number,
+          date: m.date,
+          weight: m.weight,
+          chest: m.chest,
+          waist: m.waist,
+          hips: m.hips,
+          created_at: m.created_at
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('Debug user measurements error:', error);
+    res.status(500).json({ success: false, error: 'Failed to get user measurements' });
+  }
+});
+
 // ===== ВРЕМЕННОЕ: Компенсация за баг с еженедельными заданиями =====
 
 // Начислить всем пользователям XP за баг
