@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Add health check endpoint for AI Psychologist
 • Добавлено: Extend measurement submission window from 6:00-10:00 to 6:00-13:00
 • Обслуживание: Remove temporary debug script
 • Исправлено: Support week 0 for baseline measurements to prevent data loss
 • Добавлено: Add debug endpoint to check user measurements by telegram_id
-• Обслуживание: Update деплой список изменений
 
-11.01.2026 12:13
+11.01.2026 12:25
