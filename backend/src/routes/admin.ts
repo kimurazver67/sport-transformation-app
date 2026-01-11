@@ -330,7 +330,12 @@ router.post('/lock-measurement/:userId', async (req: Request, res: Response) => 
     res.json({ success: true });
   } catch (error) {
     console.error('Lock measurement error:', error);
-    res.status(500).json({ success: false, error: 'Internal server error' });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      details: errorMessage
+    });
   }
 });
 

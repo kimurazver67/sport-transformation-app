@@ -264,7 +264,9 @@ export default function AdminPage() {
       fetchData()
     } catch (err) {
       hapticFeedback('error')
-      showAlert('Ошибка при закрытии замеров')
+      const errorMsg = err instanceof Error ? err.message : 'Неизвестная ошибка'
+      showAlert(`Ошибка при закрытии замеров: ${errorMsg}`)
+      console.error('Lock measurement error:', err)
     }
   }
 
