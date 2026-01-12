@@ -119,13 +119,6 @@ export const taskService = {
     weekNumber?: number,
     userGoal?: UserGoal
   ): Promise<(Task & { completed: boolean })[]> {
-    // ВРЕМЕННО: Скрываем задания до следующего понедельника (2026-01-13)
-    const now = new Date();
-    const hideUntil = new Date('2026-01-13T00:00:00+03:00');
-    if (now < hideUntil) {
-      return [];
-    }
-
     const week = weekNumber || getCurrentWeek();
 
     // Если указана цель, фильтруем по ней
