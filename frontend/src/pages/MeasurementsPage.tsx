@@ -117,6 +117,7 @@ function MeasurementsPageContent() {
   const { hapticFeedback } = useTelegram()
 
   const [isEditing, setIsEditing] = useState(false)
+  const [isCreatingNew, setIsCreatingNew] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null)
 
@@ -144,7 +145,8 @@ function MeasurementsPageContent() {
   }, [])
 
   useEffect(() => {
-    if (currentMeasurement) {
+    // Заполняем форму только если НЕ создаём новый замер
+    if (currentMeasurement && !isCreatingNew) {
       setFormData({
         weight: currentMeasurement.weight,
         chest: currentMeasurement.chest ?? undefined,
@@ -156,8 +158,21 @@ function MeasurementsPageContent() {
         thigh_right: currentMeasurement.thigh_right ?? undefined,
         body_fat_percent: currentMeasurement.body_fat_percent ?? undefined,
       })
+    } else if (isCreatingNew) {
+      // Очищаем форму для нового замера
+      setFormData({
+        weight: undefined,
+        chest: undefined,
+        waist: undefined,
+        hips: undefined,
+        bicep_left: undefined,
+        bicep_right: undefined,
+        thigh_left: undefined,
+        thigh_right: undefined,
+        body_fat_percent: undefined,
+      })
     }
-  }, [currentMeasurement])
+  }, [currentMeasurement, isCreatingNew])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -172,6 +187,7 @@ function MeasurementsPageContent() {
       await submitMeasurement(formData)
       hapticFeedback('success')
       setIsEditing(false)
+      setIsCreatingNew(false) // Сбрасываем режим создания нового
       showToast('Замеры сохранены!', 'success')
     } catch (error) {
       console.error('Failed to submit measurement:', error)
@@ -383,15 +399,23 @@ function MeasurementsPageContent() {
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-display font-bold text-steel-100 uppercase">
-            {currentMeasurement ? `Неделя_${courseWeek}_Данные` : 'Новая_запись'}
+            {isCreatingNew ? 'Новый_замер' : currentMeasurement ? `Неделя_${courseWeek}_Данные` : 'Новая_запись'}
           </h3>
-          {currentMeasurement && !isEditing && canSubmitMeasurement && (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="font-mono text-xs text-neon-lime hover:underline"
-            >
-              [ИЗМЕНИТЬ]
-            </button>
+          {currentMeasurement && !isEditing && !isCreatingNew && canSubmitMeasurement && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsCreatingNew(true)}
+                className="font-mono text-xs px-2 py-1 border border-neon-lime text-neon-lime hover:bg-neon-lime hover:text-void transition-all"
+              >
+                [+ НОВЫЙ]
+              </button>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="font-mono text-xs text-steel-400 hover:text-neon-lime hover:underline"
+              >
+                [ИЗМЕНИТЬ]
+              </button>
+            </div>
           )}
         </div>
 
@@ -414,8 +438,8 @@ function MeasurementsPageContent() {
           </div>
         )}
 
-        {/* Show form only when allowed AND (editing OR no data yet) */}
-        {canSubmitMeasurement && (isEditing || !currentMeasurement) ? (
+        {/* Show form only when allowed AND (editing OR creating new OR no data yet) */}
+        {canSubmitMeasurement && (isEditing || isCreatingNew || !currentMeasurement) ? (
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Weight - Required */}
             <div>
@@ -523,10 +547,13 @@ function MeasurementsPageContent() {
             </div>
 
             <div className="flex gap-3 pt-2">
-              {isEditing && (
+              {(isEditing || isCreatingNew) && (
                 <button
                   type="button"
-                  onClick={() => setIsEditing(false)}
+                  onClick={() => {
+                    setIsEditing(false)
+                    setIsCreatingNew(false)
+                  }}
                   className="flex-1 py-3 border-2 border-void-400 font-mono text-sm font-bold text-steel-400 uppercase hover:border-steel-400 transition-all"
                 >
                   Отмена
