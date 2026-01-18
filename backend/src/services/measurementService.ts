@@ -7,7 +7,7 @@ import { userService } from './userService';
 import { adminNotifier } from './adminNotifierService';
 
 export const measurementService = {
-  // Создать или обновить замер недели
+  // Создать новый замер (всегда создаёт новую запись)
   async createOrUpdate(
     userId: string,
     data: MeasurementForm
@@ -18,75 +18,32 @@ export const measurementService = {
       const weekNumber = isCourseStarted() ? getCurrentWeek() : 0;
       const today = new Date().toISOString().split('T')[0];
 
-      // Проверяем существующий замер
-      const existingResult = await query<{ id: string }>(
-        'SELECT id FROM weekly_measurements WHERE user_id = $1 AND week_number = $2',
-        [userId, weekNumber]
+      // Всегда создаём новую запись (без проверки существующих)
+      const insertResult = await query<WeeklyMeasurement>(
+        `INSERT INTO weekly_measurements
+          (user_id, week_number, date, weight, chest, waist, hips, bicep_left, bicep_right, thigh_left, thigh_right, body_fat_percent)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        RETURNING *`,
+        [
+          userId,
+          weekNumber,
+          today,
+          data.weight,
+          data.chest || null,
+          data.waist || null,
+          data.hips || null,
+          data.bicep_left || null,
+          data.bicep_right || null,
+          data.thigh_left || null,
+          data.thigh_right || null,
+          data.body_fat_percent || null,
+        ]
       );
 
-      const existing = existingResult.rows[0];
-      let result: WeeklyMeasurement;
-      let isNew = false;
+      const result = insertResult.rows[0];
 
-      if (existing) {
-        const updateResult = await query<WeeklyMeasurement>(
-          `UPDATE weekly_measurements SET
-            date = $1,
-            weight = $2,
-            chest = $3,
-            waist = $4,
-            hips = $5,
-            bicep_left = $6,
-            bicep_right = $7,
-            thigh_left = $8,
-            thigh_right = $9,
-            body_fat_percent = $10
-          WHERE id = $11
-          RETURNING *`,
-          [
-            today,
-            data.weight,
-            data.chest || null,
-            data.waist || null,
-            data.hips || null,
-            data.bicep_left || null,
-            data.bicep_right || null,
-            data.thigh_left || null,
-            data.thigh_right || null,
-            data.body_fat_percent || null,
-            existing.id,
-          ]
-        );
-
-        result = updateResult.rows[0];
-      } else {
-        const insertResult = await query<WeeklyMeasurement>(
-          `INSERT INTO weekly_measurements
-            (user_id, week_number, date, weight, chest, waist, hips, bicep_left, bicep_right, thigh_left, thigh_right, body_fat_percent)
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-          RETURNING *`,
-          [
-            userId,
-            weekNumber,
-            today,
-            data.weight,
-            data.chest || null,
-            data.waist || null,
-            data.hips || null,
-            data.bicep_left || null,
-            data.bicep_right || null,
-            data.thigh_left || null,
-            data.thigh_right || null,
-            data.body_fat_percent || null,
-          ]
-        );
-
-        result = insertResult.rows[0];
-        isNew = true;
-
-        // Начисляем очки за новый замер
-        await statsService.addPoints(userId, POINTS.WEEKLY_MEASUREMENT);
-      }
+      // Начисляем очки за каждый замер
+      await statsService.addPoints(userId, POINTS.WEEKLY_MEASUREMENT);
 
       // Обновляем стартовый вес, если это стартовый замер (неделя 0)
       if (weekNumber === 0) {
@@ -108,12 +65,12 @@ export const measurementService = {
     }
   },
 
-  // Получить замер текущей недели
+  // Получить последний замер текущей недели
   async getCurrentWeekMeasurement(userId: string): Promise<WeeklyMeasurement | null> {
     const weekNumber = isCourseStarted() ? getCurrentWeek() : 0;
 
     const result = await query<WeeklyMeasurement>(
-      'SELECT * FROM weekly_measurements WHERE user_id = $1 AND week_number = $2',
+      'SELECT * FROM weekly_measurements WHERE user_id = $1 AND week_number = $2 ORDER BY created_at DESC LIMIT 1',
       [userId, weekNumber]
     );
 
@@ -190,10 +147,10 @@ export const measurementService = {
     );
   },
 
-  // Получить замер по пользователю и неделе
+  // Получить последний замер по пользователю и неделе
   async getByUserAndWeek(userId: string, weekNumber: number): Promise<WeeklyMeasurement | null> {
     const result = await query<WeeklyMeasurement>(
-      'SELECT * FROM weekly_measurements WHERE user_id = $1 AND week_number = $2',
+      'SELECT * FROM weekly_measurements WHERE user_id = $1 AND week_number = $2 ORDER BY created_at DESC LIMIT 1',
       [userId, weekNumber]
     );
 
