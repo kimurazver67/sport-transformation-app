@@ -232,7 +232,7 @@ export default function AdminPage() {
     }
   }
 
-  const unlockMeasurement = async (userId: string, userName: string) => {
+  const unlockMeasurement = async (userId: string) => {
     try {
       const result = await api.unlockMeasurement(userId, 24)
       hapticFeedback('success')
@@ -250,7 +250,7 @@ export default function AdminPage() {
     }
   }
 
-  const lockMeasurement = async (userId: string, userName: string) => {
+  const lockMeasurement = async (userId: string) => {
     try {
       await api.lockMeasurement(userId)
       hapticFeedback('success')
@@ -548,7 +548,7 @@ export default function AdminPage() {
                   {/* Кнопка разблокировки замеров */}
                   {isUnlocked(p.user.measurement_unlocked_until) ? (
                     <button
-                      onClick={() => lockMeasurement(p.user.id, p.user.first_name)}
+                      onClick={() => lockMeasurement(p.user.id)}
                       className="font-mono text-[10px] px-2 py-1 border border-neon-orange bg-neon-orange/20 text-neon-orange hover:bg-neon-orange hover:text-void transition-all"
                       title="Замеры открыты — нажми чтобы закрыть"
                     >
@@ -556,7 +556,7 @@ export default function AdminPage() {
                     </button>
                   ) : (
                     <button
-                      onClick={() => unlockMeasurement(p.user.id, p.user.first_name)}
+                      onClick={() => unlockMeasurement(p.user.id)}
                       className="font-mono text-[10px] px-2 py-1 border border-steel-500 text-steel-500 hover:border-neon-orange hover:text-neon-orange transition-all"
                       title="Открыть замеры на 24ч"
                     >

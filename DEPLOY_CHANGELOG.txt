@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Add nixpacks.toml for proper Railway фронтенд build
 • Исправлено: Regenerate package-lock.json for Railway деплойment
 • Исправлено: Improve нижняя навигацияigation layout for better scrolling
 • Исправлено: Add horizontal scroll to нижняя навигацияigation for admin icon
 • Добавлено: Add measurement unlock counter for admin-granted entries
-• Добавлено: Allow multiple measurement entries per week
 
-18.01.2026 14:48
+18.01.2026 14:50
