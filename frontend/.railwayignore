@@ -1,5 +1,7 @@
-../backend
-../node_modules
-../.git
-../package.json
-../package-lock.json
+../backend/
+../.git/
+../node_modules/
+../.github/
+node_modules/
+*.log
+.DS_Store

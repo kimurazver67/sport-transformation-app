@@ -161,7 +161,7 @@ function MeasurementsPageContent() {
     } else if (isCreatingNew) {
       // Очищаем форму для нового замера
       setFormData({
-        weight: undefined,
+        weight: 0,
         chest: undefined,
         waist: undefined,
         hips: undefined,
