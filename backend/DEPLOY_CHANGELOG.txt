@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Add 'Create New Measurement' button when admin unlocks
 • Исправлено: Remove unused userName parameter from lock/unlock functions
 • Исправлено: Add nixpacks.toml for proper Railway фронтенд build
 • Исправлено: Regenerate package-lock.json for Railway деплойment
 • Исправлено: Improve нижняя навигацияigation layout for better scrolling
-• Исправлено: Add horizontal scroll to нижняя навигацияigation for admin icon
 
-18.01.2026 14:54
+18.01.2026 15:04
