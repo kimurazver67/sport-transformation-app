@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Regenerate package-lock.json for Railway деплойment
 • Исправлено: Improve нижняя навигацияigation layout for better scrolling
 • Исправлено: Add horizontal scroll to нижняя навигацияigation for admin icon
 • Добавлено: Add measurement unlock counter for admin-granted entries
 • Добавлено: Allow multiple measurement entries per week
-• Исправлено: Remove temporary tasks hiding until 2026-01-13
 
-18.01.2026 14:44
+18.01.2026 14:48
