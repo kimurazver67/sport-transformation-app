@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Add horizontal scroll to нижняя навигацияigation for admin icon
 • Добавлено: Add measurement unlock counter for admin-granted entries
 • Добавлено: Allow multiple measurement entries per week
 • Исправлено: Remove temporary tasks hiding until 2026-01-13
 • Исправлено: Force cache refresh with timestamp on each bot restart
-• Исправлено: Remove confirmation dialogs for lock/unlock measurements
 
-18.01.2026 14:34
+18.01.2026 14:38

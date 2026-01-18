@@ -52,7 +52,7 @@ export default function Layout({ children, isTrainer = false }: LayoutProps) {
         {/* Glowing line */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-neon-lime/50 to-transparent" />
 
-        <div className="flex overflow-x-auto items-center h-20 px-2 pb-safe scrollbar-hide">
+        <div className="flex overflow-x-auto items-center h-20 px-2 pb-2 gap-1 scrollbar-hide">
           {items.map((item, index) => {
             const isActive = location.pathname === item.path
 
@@ -60,10 +60,10 @@ export default function Layout({ children, isTrainer = false }: LayoutProps) {
               <NavLink
                 key={item.path}
                 to={item.path}
-                className="flex-shrink-0 h-full flex items-center justify-center relative min-w-[80px]"
+                className="flex-shrink-0 h-full flex items-center justify-center relative w-[70px]"
               >
                 <motion.div
-                  className={`flex flex-col items-center gap-1 px-3 py-2 relative ${
+                  className={`flex flex-col items-center gap-1 px-2 py-2 relative ${
                     isActive ? 'text-neon-lime' : 'text-steel-500'
                   }`}
                   whileTap={{ scale: 0.9 }}
@@ -94,7 +94,7 @@ export default function Layout({ children, isTrainer = false }: LayoutProps) {
                   </motion.span>
 
                   {/* Label */}
-                  <span className={`font-mono text-[9px] tracking-wider relative z-10 ${
+                  <span className={`font-mono text-[8px] tracking-wide relative z-10 whitespace-nowrap ${
                     isActive ? 'font-bold' : 'font-normal'
                   }`}>
                     {item.label}
