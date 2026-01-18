@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Добавлено: Allow multiple measurement entries per week
 • Исправлено: Remove temporary tasks hiding until 2026-01-13
 • Исправлено: Force cache refresh with timestamp on each bot restart
 • Исправлено: Remove confirmation dialogs for lock/unlock measurements
 • Исправлено: Improve error handling for lock/unlock measurement endpoints
-• Исправлено: Make migration 026 idempotent to prevent duplicate key errors
 
-12.01.2026 12:04
+18.01.2026 14:26

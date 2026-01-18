@@ -188,12 +188,16 @@ export const userService = {
     return result.rows;
   },
 
-  // Разблокировать замеры для пользователя на определённое количество часов
+  // Разблокировать замеры для пользователя (дать 1 дополнительную попытку)
   async unlockMeasurement(userId: string, hours: number = 24): Promise<Date> {
     const unlockUntil = new Date(Date.now() + hours * 60 * 60 * 1000);
 
     await query(
-      `UPDATE users SET measurement_unlocked_until = $1, updated_at = NOW() WHERE id = $2`,
+      `UPDATE users
+       SET measurement_unlocked_until = $1,
+           measurement_unlocks_remaining = measurement_unlocks_remaining + 1,
+           updated_at = NOW()
+       WHERE id = $2`,
       [unlockUntil.toISOString(), userId]
     );
 
@@ -203,22 +207,45 @@ export const userService = {
   // Заблокировать замеры (убрать разблокировку)
   async lockMeasurement(userId: string): Promise<void> {
     await query(
-      `UPDATE users SET measurement_unlocked_until = NULL, updated_at = NOW() WHERE id = $1`,
+      `UPDATE users
+       SET measurement_unlocked_until = NULL,
+           measurement_unlocks_remaining = 0,
+           updated_at = NOW()
+       WHERE id = $1`,
+      [userId]
+    );
+  },
+
+  // Использовать одну разблокировку (вызывается при создании замера)
+  async consumeMeasurementUnlock(userId: string): Promise<void> {
+    await query(
+      `UPDATE users
+       SET measurement_unlocks_remaining = GREATEST(measurement_unlocks_remaining - 1, 0),
+           updated_at = NOW()
+       WHERE id = $1`,
       [userId]
     );
   },
 
   // Проверить, разблокированы ли замеры для пользователя
   async isMeasurementUnlocked(userId: string): Promise<boolean> {
-    const result = await query<{ measurement_unlocked_until: string | null }>(
-      `SELECT measurement_unlocked_until FROM users WHERE id = $1`,
+    const result = await query<{
+      measurement_unlocked_until: string | null;
+      measurement_unlocks_remaining: number;
+    }>(
+      `SELECT measurement_unlocked_until, measurement_unlocks_remaining FROM users WHERE id = $1`,
       [userId]
     );
 
-    const unlockUntil = result.rows[0]?.measurement_unlocked_until;
-    if (!unlockUntil) return false;
+    const user = result.rows[0];
+    if (!user) return false;
 
-    return new Date(unlockUntil) > new Date();
+    // Проверяем: есть ли оставшиеся разблокировки И не истекло ли время
+    const hasUnlocksRemaining = (user.measurement_unlocks_remaining || 0) > 0;
+    const unlockUntil = user.measurement_unlocked_until;
+    const timeNotExpired = unlockUntil ? new Date(unlockUntil) > new Date() : false;
+
+    return hasUnlocksRemaining && timeNotExpired;
   },
 
   // Получить время разблокировки замеров

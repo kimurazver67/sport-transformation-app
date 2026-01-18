@@ -18,7 +18,15 @@ export const measurementService = {
       const weekNumber = isCourseStarted() ? getCurrentWeek() : 0;
       const today = new Date().toISOString().split('T')[0];
 
-      // Всегда создаём новую запись (без проверки существующих)
+      // Проверяем разблокировку от админа
+      const isUnlocked = await userService.isMeasurementUnlocked(userId);
+
+      // Если разблокирован админом - используем разблокировку
+      if (isUnlocked) {
+        await userService.consumeMeasurementUnlock(userId);
+      }
+
+      // Всегда создаём новую запись
       const insertResult = await query<WeeklyMeasurement>(
         `INSERT INTO weekly_measurements
           (user_id, week_number, date, weight, chest, waist, hips, bicep_left, bicep_right, thigh_left, thigh_right, body_fat_percent)
