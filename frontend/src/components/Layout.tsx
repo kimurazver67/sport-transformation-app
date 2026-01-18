@@ -52,7 +52,7 @@ export default function Layout({ children, isTrainer = false }: LayoutProps) {
         {/* Glowing line */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-neon-lime/50 to-transparent" />
 
-        <div className="flex justify-around items-center h-20 px-2 pb-safe">
+        <div className="flex overflow-x-auto items-center h-20 px-2 pb-safe scrollbar-hide">
           {items.map((item, index) => {
             const isActive = location.pathname === item.path
 
@@ -60,7 +60,7 @@ export default function Layout({ children, isTrainer = false }: LayoutProps) {
               <NavLink
                 key={item.path}
                 to={item.path}
-                className="flex-1 h-full flex items-center justify-center relative"
+                className="flex-shrink-0 h-full flex items-center justify-center relative min-w-[80px]"
               >
                 <motion.div
                   className={`flex flex-col items-center gap-1 px-3 py-2 relative ${
