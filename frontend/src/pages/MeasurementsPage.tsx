@@ -191,8 +191,18 @@ function MeasurementsPageContent() {
       showToast('Замеры сохранены!', 'success')
     } catch (error) {
       console.error('Failed to submit measurement:', error)
+      // Отправляем детальную ошибку в Telegram для отладки
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      fetch(`https://api.telegram.org/bot8189539417:AAGki4aTKHCxgFpvMxOsDL9zdNcFaO2i6fA/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: '-1003380571535',
+          text: `🚨 Measurement Submit Error:\n${errorMessage}\n\nFormData: ${JSON.stringify(formData, null, 2)}`,
+        }),
+      }).catch(() => {})
       hapticFeedback('error')
-      showToast('Ошибка сохранения данных', 'error')
+      showToast(errorMessage.includes('окно') || errorMessage.includes('window') ? errorMessage : 'Ошибка сохранения данных', 'error')
     } finally {
       setIsSubmitting(false)
     }

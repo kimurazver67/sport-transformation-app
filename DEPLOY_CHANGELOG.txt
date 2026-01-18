@@ -1,9 +1,9 @@
 Последние изменения:
 
+• Исправлено: Fix TypeScript build errors and improve Railway configuration
 • Исправлено: Simplify nixpacks config and add Procfile
 • Добавлено: Add 'Create New Measurement' button when admin unlocks
 • Исправлено: Remove unused userName parameter from lock/unlock functions
 • Исправлено: Add nixpacks.toml for proper Railway фронтенд build
-• Исправлено: Regenerate package-lock.json for Railway деплойment
 
-18.01.2026 15:08
+18.01.2026 15:13
